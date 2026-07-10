@@ -10,3 +10,6 @@ This ledger tracks the progress of the subagent-driven implementation of Quodom 
 - [ ] Task 6: Frontend Styles, Layout, and Routing
 - [ ] Task 7: Frontend Authentication & Home Screen (IA Mode)
 - [ ] Task 8: Frontend Products list & Quodom Editor (WhatsApp sharing)
+
+## History
+- Task 1: complete (commits 4ac32da..bc2c146, review clean)
