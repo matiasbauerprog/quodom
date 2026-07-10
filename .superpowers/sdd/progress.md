@@ -1,0 +1,12 @@
+# SDD Progress Ledger - Quodom 3.0 Transformation
+
+This ledger tracks the progress of the subagent-driven implementation of Quodom 3.0.
+
+- [ ] Task 1: API Specification and Project Scaffolding
+- [ ] Task 2: Prisma Database Setup and Excel Seeder
+- [ ] Task 3: Backend Authentication & Middleware
+- [ ] Task 4: Catalog & Quodoms CRUD Endpoints
+- [ ] Task 5: AI Generation Endpoint
+- [ ] Task 6: Frontend Styles, Layout, and Routing
+- [ ] Task 7: Frontend Authentication & Home Screen (IA Mode)
+- [ ] Task 8: Frontend Products list & Quodom Editor (WhatsApp sharing)
