@@ -21,8 +21,12 @@ app.get('/health', (req, res) => {
 
 // Global error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(err.status || 500).json({
+  console.error(err);
+  const status = err.status || 500;
+  if (status === 500) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+  return res.status(status).json({
     error: err.message || 'Internal Server Error',
   });
 });

@@ -9,12 +9,6 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_quodom_development_jwt_key_32_chars';
-
-export interface AuthenticatedRequest extends Request {
-  userId?: string;
-}
-
 export function authMiddleware(
   req: Request,
   res: Response,
@@ -27,9 +21,10 @@ export function authMiddleware(
   }
 
   const token = authHeader.split(' ')[1];
+  const jwtSecret = process.env.JWT_SECRET || 'super_secret_quodom_development_jwt_key_32_chars';
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const decoded = jwt.verify(token, jwtSecret) as { userId: string };
     req.userId = decoded.userId;
     next();
   } catch (error) {

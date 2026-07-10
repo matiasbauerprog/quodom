@@ -3,8 +3,13 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_quodom_development_jwt_key_32_chars';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+function getJwtSecret(): string {
+  return process.env.JWT_SECRET || 'super_secret_quodom_development_jwt_key_32_chars';
+}
+
+function getJwtExpiresIn(): string {
+  return process.env.JWT_EXPIRES_IN || '7d';
+}
 
 export async function signup(req: Request, res: Response) {
   try {
@@ -12,6 +17,11 @@ export async function signup(req: Request, res: Response) {
 
     if (!email || !password || !name || !whatsapp) {
       return res.status(400).json({ error: 'Missing required fields: email, password, name, and whatsapp are required' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
     }
 
     // Check if email already exists
@@ -41,7 +51,7 @@ export async function signup(req: Request, res: Response) {
     });
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
+    const token = jwt.sign({ userId: user.id }, getJwtSecret(), { expiresIn: getJwtExpiresIn() as any });
 
     // Exclude passwordHash from response user object
     const { passwordHash: _, ...userWithoutPassword } = user;
@@ -50,7 +60,10 @@ export async function signup(req: Request, res: Response) {
       token,
       user: userWithoutPassword,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error && error.code === 'P2002') {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
     console.error('Signup error:', error);
     return res.status(500).json({ error: 'Internal server error during registration' });
   }
@@ -79,7 +92,7 @@ export async function login(req: Request, res: Response) {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
+    const token = jwt.sign({ userId: user.id }, getJwtSecret(), { expiresIn: getJwtExpiresIn() as any });
 
     // Exclude passwordHash from response user object
     const { passwordHash: _, ...userWithoutPassword } = user;
