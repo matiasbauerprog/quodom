@@ -2,7 +2,7 @@
 
 This ledger tracks the progress of the subagent-driven implementation of Quodom 3.0.
 
-- [ ] Task 1: API Specification and Project Scaffolding
+- [x] Task 1: API Specification and Project Scaffolding
 - [ ] Task 2: Prisma Database Setup and Excel Seeder
 - [ ] Task 3: Backend Authentication & Middleware
 - [ ] Task 4: Catalog & Quodoms CRUD Endpoints
