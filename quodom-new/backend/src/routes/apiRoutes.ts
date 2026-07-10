@@ -8,6 +8,7 @@ import {
   deleteQuodom,
   sendQuodom
 } from '../controllers/quodomController';
+import { generateQuodom } from '../controllers/aiController';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
@@ -23,5 +24,8 @@ router.post('/quodoms', authMiddleware, createQuodom);
 router.put('/quodoms/:id', authMiddleware, updateQuodom);
 router.delete('/quodoms/:id', authMiddleware, deleteQuodom);
 router.post('/quodoms/:id/send', authMiddleware, sendQuodom);
+
+// AI routes (protected)
+router.post('/ai/generate', authMiddleware, generateQuodom);
 
 export default router;
