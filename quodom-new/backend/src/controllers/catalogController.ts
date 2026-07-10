@@ -62,8 +62,8 @@ export async function getProducts(req: Request, res: Response) {
       const searchStr = String(search).trim();
       if (searchStr) {
         where.OR = [
-          { name: { contains: searchStr, mode: 'insensitive' } },
-          { description: { contains: searchStr, mode: 'insensitive' } },
+          { name: { contains: searchStr } },
+          { description: { contains: searchStr } },
         ];
       }
     }

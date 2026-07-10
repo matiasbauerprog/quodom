@@ -68,18 +68,34 @@ export async function createQuodom(req: Request, res: Response) {
       return res.status(400).json({ error: 'Title is required' });
     }
 
-    const itemsList = Array.isArray(items) ? items : [];
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ error: 'Each item must have a valid numeric productId and positive quantity' });
+    }
 
-    // Create the Quodom and associated items inside a transaction
+    for (const item of items) {
+      if (
+        !item ||
+        item.productId === undefined ||
+        item.productId === null ||
+        isNaN(Number(item.productId)) ||
+        item.quantity === undefined ||
+        item.quantity === null ||
+        isNaN(Number(item.quantity)) ||
+        Number(item.quantity) <= 0
+      ) {
+        return res.status(400).json({ error: 'Each item must have a valid numeric productId and positive quantity' });
+      }
+    }
+
     const newQuodom = await prisma.quodom.create({
       data: {
         title,
         status: 'En Proceso',
         userId,
         items: {
-          create: itemsList.map((item: any) => ({
-            productId: item.productId,
-            quantity: item.quantity,
+          create: items.map((item: any) => ({
+            productId: Number(item.productId),
+            quantity: Number(item.quantity),
           })),
         },
       },
@@ -125,50 +141,47 @@ export async function updateQuodom(req: Request, res: Response) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      // 1. Update title if provided
-      const updateData: any = {};
-      if (title !== undefined) {
-        updateData.title = title;
+    if (items !== undefined) {
+      if (!Array.isArray(items)) {
+        return res.status(400).json({ error: 'Each item must have a valid numeric productId and positive quantity' });
       }
-
-      if (Object.keys(updateData).length > 0) {
-        await tx.quodom.update({
-          where: { id: quodomId },
-          data: updateData,
-        });
-      }
-
-      // 2. Sync items if provided
-      if (items !== undefined && Array.isArray(items)) {
-        // Delete existing items
-        await tx.quodomItem.deleteMany({
-          where: { quodomId },
-        });
-
-        // Create new items
-        for (const item of items) {
-          await tx.quodomItem.create({
-            data: {
-              quodomId,
-              productId: item.productId,
-              quantity: item.quantity,
-            },
-          });
+      for (const item of items) {
+        if (
+          !item ||
+          item.productId === undefined ||
+          item.productId === null ||
+          isNaN(Number(item.productId)) ||
+          item.quantity === undefined ||
+          item.quantity === null ||
+          isNaN(Number(item.quantity)) ||
+          Number(item.quantity) <= 0
+        ) {
+          return res.status(400).json({ error: 'Each item must have a valid numeric productId and positive quantity' });
         }
       }
+    }
 
-      // 3. Retrieve and return the updated Quodom with items and products
-      return tx.quodom.findUnique({
-        where: { id: quodomId },
-        include: {
+    const updated = await prisma.quodom.update({
+      where: { id: quodomId },
+      data: {
+        ...(title !== undefined ? { title } : {}),
+        ...(items !== undefined ? {
           items: {
-            include: {
-              product: true,
-            },
+            deleteMany: {},
+            create: items.map((item: any) => ({
+              productId: Number(item.productId),
+              quantity: Number(item.quantity),
+            })),
+          }
+        } : {}),
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
           },
         },
-      });
+      },
     });
 
     return res.status(200).json(updated);
@@ -202,15 +215,7 @@ export async function deleteQuodom(req: Request, res: Response) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // Delete items first to be 100% sure, then delete the Quodom
-    await prisma.$transaction(async (tx) => {
-      await tx.quodomItem.deleteMany({
-        where: { quodomId },
-      });
-      await tx.quodom.delete({
-        where: { id: quodomId },
-      });
-    });
+    await prisma.quodom.delete({ where: { id: quodomId } });
 
     return res.status(204).send();
   } catch (error) {
