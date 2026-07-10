@@ -1,5 +1,10 @@
-import express from 'express';
+import dotenv from 'dotenv';
+// Load environment variables early
+dotenv.config();
+
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -7,8 +12,19 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Routes
+app.use('/api/auth', authRoutes);
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Global error handling middleware
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+  });
 });
 
 app.listen(PORT, () => {
