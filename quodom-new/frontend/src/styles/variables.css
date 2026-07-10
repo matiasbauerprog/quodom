@@ -1,0 +1,33 @@
+:root {
+  /* Brand color variables matching Quodom 1.0 and CMD Soluciones */
+  --color-yellow: #F6EE5D;
+  --color-violet: #706F9A;
+  --color-green: #2DAB66;
+  --color-dark-gray: #45444C;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-light-gray: #F1F1F1;
+
+  /* CMD Soluciones Palette - secondary/details if needed */
+  --color-coral: #C0443C;
+  --color-blue: #3460A8;
+  --color-purple: #7C4DFF;
+
+  /* Border radius tokens */
+  --border-radius-leaf: 8px 0px 8px 0px;
+  --border-radius-pill: 50px;
+  --border-radius-brutal: 0px;
+
+  /* Typography variables */
+  --font-family-display: 'Montserrat', sans-serif;
+  --font-family-title: 'Prompt', sans-serif;
+  --font-family-body: 'Work Sans', sans-serif;
+  --font-family-accent: 'Jaldi', sans-serif;
+  --font-family-space: 'Space Grotesk', sans-serif;
+
+  /* Box Shadows (Brutalist style) */
+  --box-shadow-brutal: 4px 4px 0px 0px var(--color-black);
+  --box-shadow-brutal-large: 8px 8px 0px 0px var(--color-black);
+  --box-shadow-violet: 4px 4px 0px 0px var(--color-violet);
+  --box-shadow-success: 4px 4px 0px 0px var(--color-green);
+}
