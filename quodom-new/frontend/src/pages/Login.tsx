@@ -46,20 +46,8 @@ export default function Login() {
         
         {error && (
           <div 
-            className="error-message" 
+            className="error-message login-page-error" 
             role="alert" 
-            style={{
-              color: 'var(--color-coral)',
-              backgroundColor: '#fff0f0',
-              border: '2px solid var(--color-coral)',
-              padding: '0.75rem',
-              borderRadius: '4px',
-              marginBottom: '1rem',
-              fontFamily: 'var(--font-family-space)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              textAlign: 'left'
-            }}
           >
             ⚠️ {error}
           </div>
@@ -94,8 +82,7 @@ export default function Login() {
           </label>
           <button 
             type="submit" 
-            className="btn btn-violet" 
-            style={{ width: '100%', marginTop: '0.5rem' }}
+            className="btn btn-violet auth-submit-btn" 
             disabled={loading}
           >
             {loading ? 'Ingresando...' : 'Ingresar'}

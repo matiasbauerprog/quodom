@@ -331,6 +331,7 @@ a {
   grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-top: 1.5rem;
+  list-style: none;
 }
 
 .category-card {
@@ -358,6 +359,7 @@ a {
   font-size: 1.25rem;
   font-weight: 900;
   color: var(--color-black);
+  margin: 0;
 }
 
 .category-icon {
@@ -387,8 +389,10 @@ a {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 900;
+  margin: 0;
+  letter-spacing: 0.02em;
 }
 
 .modo-ia-indicator {
@@ -400,7 +404,7 @@ a {
 }
 
 .modo-ia-body {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -409,6 +413,7 @@ a {
 .modo-ia-input-wrapper {
   display: flex;
   gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .modo-ia-input {
@@ -573,6 +578,9 @@ a {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
+    left: auto;
+    transform: none;
+    width: auto;
     border-radius: 8px;
     box-shadow: var(--box-shadow-brutal);
     z-index: 1000;
@@ -632,28 +640,32 @@ a {
 .btn-toggle-ia {
   width: 28px;
   height: 28px;
-  padding: 0;
-  border: 2px solid black;
+  padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
+  border: 2px solid var(--color-black);
 }
 
 .ia-chat-list {
   list-style: none;
-  max-height: 180px;
+  max-height: 150px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding-right: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--color-light-gray);
+  border: 2px solid var(--color-black);
+  border-radius: 4px;
 }
 
 .ia-chat-bubble {
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   max-width: 85%;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-family: var(--font-family-body);
-  border: 2px solid var(--color-black);
+  border: 1.5px solid var(--color-black);
+  text-align: left;
 }
 
 .ia-chat-bubble.bubble-user {
@@ -664,12 +676,14 @@ a {
 
 .ia-chat-bubble.bubble-ia {
   align-self: flex-start;
-  background-color: var(--color-light-gray);
+  background-color: #FFFFFF;
   color: var(--color-black);
 }
 
 .btn-ia-send {
   padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  box-shadow: none;
 }
 
 /* MyQuodoms filters and list */
@@ -811,12 +825,14 @@ a {
   gap: 0.5rem;
   margin-bottom: 1.5rem;
   overflow-x: auto;
-  padding-bottom: 0.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-light-gray);
 }
 
 .btn-sub-filter {
   padding: 0.4rem 0.8rem;
   font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .catalog-list {
@@ -952,4 +968,278 @@ a {
 .btn-full-width {
   width: 100%;
 }
+
+/* Newly added classes to support inline style extraction */
+.register-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 601px) {
+  .register-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.error-message {
+  color: var(--color-coral);
+  background-color: #fff0f0;
+  border: 2px solid var(--color-coral);
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1.25rem;
+  font-family: var(--font-family-space);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.error-message.login-page-error {
+  margin-bottom: 1rem;
+}
+
+.auth-card.register-card {
+  max-width: 500px;
+  padding: 2rem 1.5rem;
+}
+
+.auth-title.register-title {
+  margin-bottom: 1.5rem;
+}
+
+.auth-form.register-form {
+  gap: 1rem;
+}
+
+.register-divider {
+  border: 0;
+  border-top: 2px solid var(--color-light-gray);
+  margin: 0.5rem 0;
+}
+
+.register-section-title {
+  font-family: var(--font-family-space);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--color-violet);
+  font-weight: bold;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.register-auth-links {
+  margin-top: 1.25rem;
+}
+
+.home-page-container {
+  padding-bottom: 80px; /* space for Modo IA drawer */
+}
+
+.ia-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(246, 238, 93, 0.96); /* Quodom Yellow with transparency */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 2rem;
+  text-align: center;
+}
+
+.brutalist-spinner {
+  width: 80px;
+  height: 80px;
+  border: 8px solid var(--color-black);
+  border-top: 8px solid var(--color-violet);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 2rem;
+  box-shadow: var(--box-shadow-brutal-large);
+}
+
+.ia-loading-title {
+  font-family: var(--font-family-display);
+  font-size: 2rem;
+  color: var(--color-black);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.ia-loading-text {
+  font-family: var(--font-family-space);
+  color: var(--color-dark-gray);
+  font-size: 1.1rem;
+  max-width: 500px;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.catalog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.catalog-panel-title {
+  margin: 0;
+  text-transform: uppercase;
+  font-size: 1.5rem;
+}
+
+.catalog-subtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+.btn-back-categories {
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+}
+
+.catalog-loading {
+  text-align: center;
+  padding: 3rem;
+  font-family: var(--font-family-space);
+  font-weight: bold;
+}
+
+.catalog-error {
+  color: var(--color-coral);
+  padding: 2rem;
+  text-align: center;
+  font-weight: bold;
+}
+
+.catalog-empty {
+  text-align: center;
+  padding: 3rem;
+  font-family: var(--font-family-space);
+}
+
+.catalog-list-expanded {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.product-item-home {
+  justify-content: space-between;
+  padding: 1rem;
+  cursor: default;
+}
+
+.product-item-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.product-image-figure {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.product-image-preview {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--color-black);
+}
+
+.product-image-fallback {
+  width: 48px;
+  height: 48px;
+  background-color: var(--color-light-gray);
+  border: 1px solid var(--color-black);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.product-details {
+  text-align: left;
+}
+
+.product-name-home {
+  margin: 0;
+  font-size: 1.05rem;
+  text-transform: none;
+  font-family: var(--font-family-body);
+  font-weight: 700;
+}
+
+.product-desc-home {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85rem;
+  color: var(--color-dark-gray);
+  font-family: var(--font-family-body);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.product-unit-badge {
+  font-weight: 700;
+  background-color: var(--color-light-gray);
+  padding: 0.3rem 0.75rem;
+  border: 2px solid var(--color-black);
+  border-radius: var(--border-radius-pill);
+  white-space: nowrap;
+}
+
+.category-icon-home {
+  font-size: 2.5rem;
+}
+
+.category-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.modo-ia-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  z-index: 900;
+  box-shadow: 0px -6px 0px 0px var(--color-black);
+  transition: max-height 0.3s ease-out;
+}
+
+.ia-error-message {
+  color: var(--color-coral);
+  font-size: 0.85rem;
+  font-weight: bold;
+  padding: 0.25rem 0;
+  text-align: left;
+}
+
+.modo-ia-input-home {
+  border-radius: 4px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+}
+
 

@@ -61,31 +61,19 @@ export default function Register() {
 
   return (
     <section className="auth-page">
-      <article className="auth-card" style={{ maxWidth: '500px', padding: '2rem 1.5rem' }}>
-        <h1 className="auth-title" style={{ marginBottom: '1.5rem' }}>Registrarse</h1>
+      <article className="auth-card register-card">
+        <h1 className="auth-title register-title">Registrarse</h1>
         
         {error && (
           <div 
             className="error-message" 
             role="alert" 
-            style={{
-              color: 'var(--color-coral)',
-              backgroundColor: '#fff0f0',
-              border: '2px solid var(--color-coral)',
-              padding: '0.75rem',
-              borderRadius: '4px',
-              marginBottom: '1.25rem',
-              fontFamily: 'var(--font-family-space)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              textAlign: 'left'
-            }}
           >
             ⚠️ {error}
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit} style={{ gap: '1rem' }}>
+        <form className="auth-form register-form" onSubmit={handleSubmit}>
           <label className="form-group" htmlFor="name-input">
             <span className="form-label">Nombre Completo *</span>
             <input
@@ -128,7 +116,7 @@ export default function Register() {
             />
           </label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div className="register-form-grid">
             <label className="form-group" htmlFor="password-input">
               <span className="form-label">Contraseña *</span>
               <input
@@ -158,11 +146,11 @@ export default function Register() {
             </label>
           </div>
 
-          <hr style={{ border: '0', borderTop: '2px solid var(--color-light-gray)', margin: '0.5rem 0' }} />
+          <hr className="register-divider" />
           
-          <p style={{ fontFamily: 'var(--font-family-space)', fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--color-violet)', fontWeight: 'bold' }}>Datos de Empresa (Opcional)</p>
+          <p className="register-section-title">Datos de Empresa (Opcional)</p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div className="register-form-grid">
             <label className="form-group" htmlFor="company-input">
               <span className="form-label">Empresa</span>
               <input
@@ -205,15 +193,14 @@ export default function Register() {
 
           <button 
             type="submit" 
-            className="btn btn-violet" 
-            style={{ width: '100%', marginTop: '0.5rem' }}
+            className="btn btn-violet auth-submit-btn" 
             disabled={loading}
           >
             {loading ? 'Creando Cuenta...' : 'Crear Cuenta'}
           </button>
         </form>
         
-        <nav className="auth-links" aria-label="Enlaces de autenticación" style={{ marginTop: '1.25rem' }}>
+        <nav className="auth-links register-auth-links" aria-label="Enlaces de autenticación">
           <Link to="/login" className="auth-link">¿Ya tienes cuenta? Inicia Sesión</Link>
         </nav>
       </article>

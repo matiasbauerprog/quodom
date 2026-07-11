@@ -101,6 +101,8 @@ export default function Home() {
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchProducts = async () => {
       setLoadingProducts(true);
       setProductsError(null);
@@ -116,17 +118,24 @@ export default function Home() {
           queryParams.append('search', searchTerm.trim());
         }
 
-        const response = await fetch(`/api/catalog/products?${queryParams.toString()}`);
+        const response = await fetch(`/api/catalog/products?${queryParams.toString()}`, {
+          signal: controller.signal
+        });
         if (!response.ok) {
           throw new Error('No se pudieron cargar los productos');
         }
         const data = await response.json();
         setProducts(data);
       } catch (err: any) {
+        if (err.name === 'AbortError') {
+          return;
+        }
         console.error('Error fetching products:', err);
         setProductsError(err.message || 'Error de conexión');
       } finally {
-        setLoadingProducts(false);
+        if (!controller.signal.aborted) {
+          setLoadingProducts(false);
+        }
       }
     };
 
@@ -135,13 +144,23 @@ export default function Home() {
       fetchProducts();
     }, 300);
 
-    return () => clearTimeout(delayDebounce);
+    return () => {
+      clearTimeout(delayDebounce);
+      controller.abort();
+    };
   }, [selectedCategoryId, activeSubcategoryId, searchTerm]);
 
   const handleCategoryClick = (catId: number, catName: string) => {
     setSelectedCategoryId(catId);
     setSelectedCategoryName(catName);
     setActiveSubcategoryId(null); // Reset subcategory filter when root category changes
+  };
+
+  const handleCategoryKeyDown = (e: React.KeyboardEvent, catId: number, catName: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCategoryClick(catId, catName);
+    }
   };
 
   const handleClearFilters = () => {
@@ -212,69 +231,17 @@ export default function Home() {
   const subcategories = activeCategoryObj?.subcategories || [];
 
   return (
-    <section className="page-container-grow" style={{ paddingBottom: '80px' /* space for Modo IA drawer */ }}>
+    <section className="page-container-grow home-page-container">
       {/* Modo IA Loading Overlay */}
       {isIaLoading && (
-        <div 
-          className="ia-loading-overlay" 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(246, 238, 93, 0.96)', // Quodom Yellow with transparency
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '2rem',
-            textAlign: 'center'
-          }}
-        >
-          <div 
-            className="brutalist-spinner" 
-            style={{
-              width: '80px',
-              height: '80px',
-              border: '8px solid var(--color-black)',
-              borderTop: '8px solid var(--color-violet)',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              marginBottom: '2rem',
-              boxShadow: 'var(--box-shadow-brutal-large)'
-            }}
-          ></div>
-          <h2 
-            style={{ 
-              fontFamily: 'var(--font-family-display)', 
-              fontSize: '2rem', 
-              color: 'var(--color-black)',
-              marginBottom: '1rem',
-              textTransform: 'uppercase'
-            }}
-          >
+        <div className="ia-loading-overlay">
+          <div className="brutalist-spinner"></div>
+          <h2 className="ia-loading-title">
             IA de Quodom procesando tus productos...
           </h2>
-          <p 
-            style={{ 
-              fontFamily: 'var(--font-family-space)', 
-              color: 'var(--color-dark-gray)', 
-              fontSize: '1.1rem',
-              maxWidth: '500px',
-              fontWeight: 500
-            }}
-          >
+          <p className="ia-loading-text">
             Estamos analizando tu solicitud en lenguaje natural para armar la lista de materiales perfecta para tu proyecto. ¡Un momento, por favor!
           </p>
-          
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
         </div>
       )}
 
@@ -304,22 +271,21 @@ export default function Home() {
       {selectedCategoryId !== null || searchTerm.trim() !== '' ? (
         /* PRODUCT LISTING STATE */
         <section aria-label="Listado de productos" className="catalog-panel">
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <header className="catalog-header">
             <div>
-              <h2 className="panel-title" style={{ margin: 0, textTransform: 'uppercase', fontSize: '1.5rem' }}>
+              <h2 className="panel-title catalog-panel-title">
                 {selectedCategoryName ? `Productos en ${selectedCategoryName}` : 'Resultados de Búsqueda'}
               </h2>
               {searchTerm.trim() && (
-                <p className="page-subtitle" style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+                <p className="page-subtitle catalog-subtitle">
                   Buscando: "{searchTerm}"
                 </p>
               )}
             </div>
             <button 
               type="button" 
-              className="btn btn-secondary" 
+              className="btn btn-secondary btn-back-categories" 
               onClick={handleClearFilters}
-              style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
             >
               Volver a Categorías
             </button>
@@ -327,12 +293,11 @@ export default function Home() {
 
           {/* Subcategories Selector */}
           {selectedCategoryId !== null && subcategories.length > 0 && (
-            <nav aria-label="Subcategorías" className="subcategory-nav" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-light-gray)' }}>
+            <nav aria-label="Subcategorías" className="subcategory-nav">
               <button
                 type="button"
                 className={`btn ${activeSubcategoryId === null ? 'btn-primary' : 'btn-secondary'} btn-sub-filter`}
                 onClick={() => setActiveSubcategoryId(null)}
-                style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', whiteSpace: 'nowrap' }}
               >
                 Todos
               </button>
@@ -342,7 +307,6 @@ export default function Home() {
                   type="button"
                   className={`btn ${activeSubcategoryId === sub.id ? 'btn-primary' : 'btn-secondary'} btn-sub-filter`}
                   onClick={() => setActiveSubcategoryId(sub.id)}
-                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', whiteSpace: 'nowrap' }}
                 >
                   {sub.name}
                 </button>
@@ -351,70 +315,48 @@ export default function Home() {
           )}
 
           {loadingProducts ? (
-            <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-family-space)', fontWeight: 'bold' }}>
+            <div className="catalog-loading">
               Cargando productos...
             </div>
           ) : productsError ? (
-            <div style={{ color: 'var(--color-coral)', padding: '2rem', textAlign: 'center', fontWeight: 'bold' }}>
+            <div className="catalog-error">
               ⚠️ {productsError}
             </div>
           ) : products.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-family-space)' }}>
+            <div className="catalog-empty">
               No se encontraron productos en esta selección.
             </div>
           ) : (
-            <ul className="catalog-list" style={{ maxLines: 'none', maxHeight: 'none', overflowY: 'visible' }}>
+            <ul className="catalog-list catalog-list-expanded">
               {products.map((product) => (
                 <li key={product.id}>
-                  <article 
-                    className="product-item-label" 
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1rem',
-                      cursor: 'default',
-                      gap: '1rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexGrow: 1 }}>
+                  <article className="product-item-label product-item-home">
+                    <div className="product-item-info">
                       {product.image ? (
-                        <figure style={{ margin: 0, flexShrink: 0 }}>
+                        <figure className="product-image-figure">
                           <img 
                             src={product.image} 
                             alt={product.name} 
-                            style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--color-black)' }} 
+                            className="product-image-preview" 
                           />
                         </figure>
                       ) : (
-                        <div style={{ width: '48px', height: '48px', backgroundColor: 'var(--color-light-gray)', border: '1px solid var(--color-black)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', flexShrink: 0 }}>
+                        <div className="product-image-fallback">
                           📦
                         </div>
                       )}
-                      <div style={{ textAlign: 'left' }}>
-                        <h3 className="product-name" style={{ margin: 0, fontSize: '1.05rem', textTransform: 'none', fontFamily: 'var(--font-family-body)', fontWeight: 700 }}>
+                      <div className="product-details">
+                        <h3 className="product-name product-name-home">
                           {product.name}
                         </h3>
                         {product.description && (
-                          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--color-dark-gray)', fontFamily: 'var(--font-family-body)' }}>
+                          <p className="product-desc-home">
                             {product.description}
                           </p>
                         )}
                       </div>
                     </div>
-                    <span 
-                      className="product-price" 
-                      style={{
-                        fontFamily: 'var(--font-family-space)',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        backgroundColor: 'var(--color-light-gray)',
-                        padding: '0.3rem 0.75rem',
-                        border: '2px solid var(--color-black)',
-                        borderRadius: 'var(--border-radius-pill)',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
+                    <span className="product-price product-unit-badge">
                       {product.unit}
                     </span>
                   </article>
@@ -427,36 +369,36 @@ export default function Home() {
         /* CATEGORIES GRID STATE */
         <section aria-label="Categorías de productos">
           {loadingCategories ? (
-            <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-family-space)', fontWeight: 'bold' }}>
+            <div className="catalog-loading">
               Cargando categorías...
             </div>
           ) : categoriesError ? (
-            <div style={{ color: 'var(--color-coral)', padding: '2rem', textAlign: 'center', fontWeight: 'bold' }}>
+            <div className="catalog-error">
               ⚠️ {categoriesError}
             </div>
           ) : (
-            <ul className="categories-grid" style={{ listStyle: 'none' }}>
+            <ul className="categories-grid">
               {categories.map(category => {
                 const icon = getCategoryIcon(category.name);
                 return (
                   <li key={category.id}>
-                    <button 
-                      type="button"
-                      onClick={() => handleCategoryClick(category.id, category.name)} 
+                    <article 
                       className="category-card"
-                      style={{ width: '100%', background: 'var(--color-white)', border: '3px solid var(--color-black)' }}
+                      tabIndex={0}
+                      onClick={() => handleCategoryClick(category.id, category.name)} 
+                      onKeyDown={(e) => handleCategoryKeyDown(e, category.id, category.name)}
                     >
-                      <span className="category-icon" aria-hidden="true" style={{ fontSize: '2.5rem' }}>
+                      <span className="category-icon category-icon-home" aria-hidden="true">
                         {category.image ? (
                           <img 
                             src={category.image} 
                             alt={category.name} 
-                            style={{ width: '50px', height: '50px', objectFit: 'contain' }}
+                            className="category-img"
                           />
                         ) : icon}
                       </span>
-                      <h2 className="category-title" style={{ margin: 0 }}>{category.name}</h2>
-                    </button>
+                      <h2 className="category-title">{category.name}</h2>
+                    </article>
                   </li>
                 );
               })}
@@ -467,26 +409,14 @@ export default function Home() {
 
       {/* Modo IA Drawer / Container */}
       <aside 
-        className="modo-ia-container" 
+        className="modo-ia-container modo-ia-drawer" 
         aria-label="Asistente de Inteligencia Artificial"
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '100%',
-          maxWidth: '600px',
-          zIndex: 900,
-          boxShadow: '0px -6px 0px 0px var(--color-black)',
-          transition: 'max-height 0.3s ease-out'
-        }}
       >
         <header 
           className="modo-ia-header" 
           onClick={() => setIsIaOpen(!isIaOpen)}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <h2 className="modo-ia-title" style={{ margin: 0, fontSize: '0.95rem', letterSpacing: '0.02em' }}>
+          <h2 className="modo-ia-title">
             <span className="modo-ia-indicator"></span>
             MODO IA - GENERAR LISTA CON IA
           </h2>
@@ -495,71 +425,42 @@ export default function Home() {
             className="btn btn-secondary btn-icon btn-toggle-ia"
             aria-expanded={isIaOpen}
             aria-label={isIaOpen ? "Colapsar Modo IA" : "Expandir Modo IA"}
-            style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '2px solid var(--color-black)' }}
           >
             {isIaOpen ? '▼' : '▲'}
           </button>
         </header>
 
         {isIaOpen && (
-          <section className="modo-ia-body" style={{ marginTop: '0.75rem' }}>
+          <section className="modo-ia-body">
             {iaError && (
-              <div style={{ color: 'var(--color-coral)', fontSize: '0.85rem', fontWeight: 'bold', padding: '0.25rem 0', textAlign: 'left' }}>
+              <div className="ia-error-message">
                 ⚠️ {iaError}
               </div>
             )}
             
-            <ul 
-              className="ia-chat-list" 
-              style={{ 
-                listStyle: 'none', 
-                padding: '0.5rem', 
-                maxHeight: '150px', 
-                overflowY: 'auto', 
-                backgroundColor: 'var(--color-light-gray)', 
-                border: '2px solid var(--color-black)',
-                borderRadius: '4px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem'
-              }}
-            >
+            <ul className="ia-chat-list">
               {iaChatHistory.map((chat) => (
                 <li
                   key={chat.id}
                   className={`ia-chat-bubble bubble-${chat.sender}`}
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '8px',
-                    fontSize: '0.85rem',
-                    fontFamily: 'var(--font-family-body)',
-                    alignSelf: chat.sender === 'user' ? 'flex-end' : 'flex-start',
-                    backgroundColor: chat.sender === 'user' ? 'var(--color-violet)' : '#FFFFFF',
-                    color: chat.sender === 'user' ? '#FFFFFF' : 'var(--color-black)',
-                    border: '1.5px solid var(--color-black)',
-                    maxWidth: '85%',
-                    textAlign: 'left'
-                  }}
                 >
                   {chat.text}
                 </li>
               ))}
             </ul>
             
-            <form onSubmit={handleIaSubmit} className="modo-ia-input-wrapper" style={{ marginTop: '0.5rem' }}>
+            <form onSubmit={handleIaSubmit} className="modo-ia-input-wrapper">
               <input
                 aria-label="Mensaje para la IA"
                 type="text"
-                className="modo-ia-input"
+                className="modo-ia-input modo-ia-input-home"
                 placeholder='Ej. "Quiero pintar una habitación de 4x4"'
                 value={iaMessage}
                 onChange={(e) => setIaMessage(e.target.value)}
-                style={{ borderRadius: '4px', padding: '0.6rem 0.8rem', fontSize: '0.9rem' }}
               />
               <button 
                 type="submit" 
                 className="btn btn-primary btn-ia-send"
-                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', boxShadow: 'none' }}
               >
                 Enviar
               </button>
