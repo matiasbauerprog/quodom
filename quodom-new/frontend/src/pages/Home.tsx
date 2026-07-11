@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 
 interface Category {
   id: string;
@@ -19,33 +19,41 @@ const MOCK_CATEGORIES: Category[] = [
   { id: 'perfumeria', name: 'Perfumería', icon: '🧴', description: 'Cuidado personal e higiene' }
 ];
 
+interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ia';
+  text: string;
+}
+
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [iaMessage, setIaMessage] = useState('');
   const [isIaOpen, setIsIaOpen] = useState(false);
-  const [iaChatHistory, setIaChatHistory] = useState<Array<{ sender: 'user' | 'ia', text: string }>>([
-    { sender: 'ia', text: '¡Hola! Soy tu asistente IA Quodom. ¿Qué necesitas comprar hoy? Puedes dictarme tu lista de compras directamente aquí.' }
+  const [iaChatHistory, setIaChatHistory] = useState<ChatMessage[]>([
+    {
+      id: 'msg-welcome',
+      sender: 'ia',
+      text: '¡Hola! Soy tu asistente IA Quodom. ¿Qué necesitas comprar hoy? Puedes dictarme tu lista de compras directamente aquí.'
+    }
   ]);
-  const navigate = useNavigate();
 
   const filteredCategories = MOCK_CATEGORIES.filter(cat =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCategoryClick = (catId: string) => {
-    navigate(`/quodom/${catId}`);
-  };
-
-  const handleIaSubmit = (e: React.FormEvent) => {
+  const handleIaSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!iaMessage.trim()) return;
 
     const userMsg = iaMessage;
-    setIaChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
+    const userMsgId = `msg-user-${Date.now()}`;
+    setIaChatHistory(prev => [...prev, { id: userMsgId, sender: 'user', text: userMsg }]);
     setIaMessage('');
 
     setTimeout(() => {
+      const iaMsgId = `msg-ia-${Date.now()}`;
       setIaChatHistory(prev => [...prev, {
+        id: iaMsgId,
         sender: 'ia',
         text: `Entendido. He procesado tu solicitud: "${userMsg}". Creando tu Quodom sugerido...`
       }]);
@@ -53,18 +61,18 @@ export default function Home() {
   };
 
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '2rem' }}>
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <h1 style={{ fontSize: '2.5rem' }}>Selecciona Categorías</h1>
-        <p style={{ fontFamily: 'var(--font-family-space)', fontWeight: 500 }}>
+    <section className="page-container-grow">
+      <header className="page-header">
+        <h1 className="page-title">Selecciona Categorías</h1>
+        <p className="page-subtitle">
           Arma tu Quodom seleccionando una categoría o usando el Modo IA abajo.
         </p>
       </header>
 
       {/* Buscador */}
-      <section className="card-leaf" style={{ padding: '1.25rem' }}>
+      <section className="card-leaf search-card">
         <label htmlFor="search-input" className="form-group">
-          <span className="form-label" style={{ fontSize: '0.8rem' }}>Buscar Categorías</span>
+          <span className="form-label search-label">Buscar Categorías</span>
           <input
             id="search-input"
             type="search"
@@ -78,20 +86,14 @@ export default function Home() {
 
       {/* Grilla de categorías */}
       <section aria-label="Categorías de productos">
-        <ul className="categories-grid" style={{ listStyle: 'none' }}>
+        <ul className="categories-grid">
           {filteredCategories.map(category => (
             <li key={category.id}>
-              <article
-                className="category-card"
-                onClick={() => handleCategoryClick(category.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCategoryClick(category.id); }}
-              >
+              <Link to={`/quodom/${category.id}`} className="category-card">
                 <span className="category-icon" aria-hidden="true">{category.icon}</span>
                 <h2 className="category-title">{category.name}</h2>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-dark-gray)' }}>{category.description}</p>
-              </article>
+                <p className="category-desc">{category.description}</p>
+              </Link>
             </li>
           ))}
         </ul>
@@ -106,8 +108,7 @@ export default function Home() {
           </h2>
           <button
             type="button"
-            className="btn btn-secondary btn-icon"
-            style={{ width: '28px', height: '28px', padding: 0, border: '2px solid black', fontSize: '0.75rem' }}
+            className="btn btn-secondary btn-icon btn-toggle-ia"
             aria-expanded={isIaOpen}
             aria-label={isIaOpen ? "Colapsar Modo IA" : "Expandir Modo IA"}
           >
@@ -117,21 +118,11 @@ export default function Home() {
 
         {isIaOpen && (
           <section className="modo-ia-body">
-            <ul style={{ listStyle: 'none', maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.5rem' }}>
-              {iaChatHistory.map((chat, idx) => (
+            <ul className="ia-chat-list">
+              {iaChatHistory.map((chat) => (
                 <li
-                  key={idx}
-                  style={{
-                    alignSelf: chat.sender === 'user' ? 'flex-end' : 'flex-start',
-                    backgroundColor: chat.sender === 'user' ? 'var(--color-violet)' : 'var(--color-light-gray)',
-                    color: chat.sender === 'user' ? 'var(--color-white)' : 'var(--color-black)',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '8px',
-                    maxWidth: '85%',
-                    fontSize: '0.875rem',
-                    fontFamily: 'var(--font-family-body)',
-                    border: '2px solid var(--color-black)'
-                  }}
+                  key={chat.id}
+                  className={`ia-chat-bubble bubble-${chat.sender}`}
                 >
                   {chat.text}
                 </li>
@@ -146,7 +137,7 @@ export default function Home() {
                 value={iaMessage}
                 onChange={(e) => setIaMessage(e.target.value)}
               />
-              <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>
+              <button type="submit" className="btn btn-primary btn-ia-send">
                 Enviar
               </button>
             </form>

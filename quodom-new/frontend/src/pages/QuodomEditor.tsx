@@ -75,29 +75,16 @@ export default function QuodomEditor() {
   };
 
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <section className="page-container">
+      <header className="page-header-small-gap">
         <input
           type="text"
-          className="form-input"
+          className="form-input editable-title-input"
           value={quodomName}
           onChange={(e) => setQuodomName(e.target.value)}
-          style={{
-            fontSize: '1.75rem',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            fontFamily: 'var(--font-family-display)',
-            border: 'none',
-            borderBottom: '3px dashed var(--color-black)',
-            background: 'transparent',
-            padding: '0.25rem 0',
-            borderRadius: 0,
-            width: '100%',
-            maxWidth: '500px'
-          }}
           aria-label="Nombre de Quodom"
         />
-        <p style={{ fontFamily: 'var(--font-family-space)', fontWeight: 500 }}>
+        <p className="page-subtitle">
           Agrega productos del catálogo y envía la orden por WhatsApp.
         </p>
       </header>
@@ -106,18 +93,17 @@ export default function QuodomEditor() {
       <section className="editor-layout">
         {/* Catálogo Panel */}
         <article className="catalog-panel">
-          <header style={{ borderBottom: '2px solid var(--color-black)', paddingBottom: '1rem', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.25rem' }}>Catálogo de Productos</h2>
+          <header className="panel-header">
+            <h2 className="panel-title">Catálogo de Productos</h2>
           </header>
 
           {/* Subcategory horizontal tabs */}
-          <nav aria-label="Subcategorías" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+          <nav aria-label="Subcategorías" className="subcategory-nav">
             {(['todos', 'verduras', 'frutas'] as const).map(sub => (
               <button
                 key={sub}
                 type="button"
-                className={`btn ${activeSubcategory === sub ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                className={`btn ${activeSubcategory === sub ? 'btn-primary' : 'btn-secondary'} btn-sub-filter`}
                 onClick={() => setActiveSubcategory(sub)}
               >
                 {sub}
@@ -126,37 +112,20 @@ export default function QuodomEditor() {
           </nav>
 
           {/* Product checklist */}
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+          <ul className="catalog-list">
             {filteredProducts.map(product => {
               const isChecked = selectedItems.some(item => item.product.id === product.id);
               return (
                 <li key={product.id}>
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '1rem',
-                      padding: '0.75rem 1rem',
-                      border: '2px solid var(--color-black)',
-                      borderRadius: 'var(--border-radius-leaf)',
-                      backgroundColor: isChecked ? '#f6f9f6' : 'var(--color-white)',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
-                  >
+                  <label className={`product-item-label ${isChecked ? 'checked' : ''}`}>
                     <input
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => handleProductToggle(product)}
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        accentColor: 'var(--color-green)',
-                        cursor: 'pointer'
-                      }}
+                      className="product-item-checkbox"
                     />
-                    <span style={{ flexGrow: 1, fontWeight: 700 }}>{product.name}</span>
-                    <span style={{ fontFamily: 'var(--font-family-space)', fontSize: '0.9rem', color: 'var(--color-dark-gray)' }}>
+                    <span className="product-name">{product.name}</span>
+                    <span className="product-price">
                       ${product.price} / {product.unit}
                     </span>
                   </label>
@@ -168,51 +137,40 @@ export default function QuodomEditor() {
 
         {/* Selected Items Panel */}
         <aside className="selected-items-panel">
-          <header style={{ borderBottom: '2px solid var(--color-black)', paddingBottom: '1rem', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.25rem' }}>Ítems Seleccionados ({selectedItems.length})</h2>
+          <header className="panel-header">
+            <h2 className="panel-title">Ítems Seleccionados ({selectedItems.length})</h2>
           </header>
 
           {selectedItems.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--color-dark-gray)' }}>
+            <p className="empty-cart-text">
               No has seleccionado productos aún. Utiliza el checklist del catálogo.
             </p>
           ) : (
-            <section style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto' }}>
+            <section className="selected-items-container">
+              <ul className="selected-items-list">
                 {selectedItems.map(item => (
-                  <li
-                    key={item.product.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.5rem 0',
-                      borderBottom: '1px solid var(--color-light-gray)'
-                    }}
-                  >
-                    <hgroup>
-                      <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.product.name}</p>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--color-dark-gray)' }}>
+                  <li key={item.product.id} className="selected-item-row">
+                    <div className="item-info-group">
+                      <p className="selected-item-name">{item.product.name}</p>
+                      <p className="selected-item-meta">
                         ${item.product.price * item.quantity} (${item.product.price} x {item.product.unit})
                       </p>
-                    </hgroup>
+                    </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="quantity-controls">
                       <button
                         type="button"
-                        className="btn btn-secondary"
-                        style={{ padding: '0.25rem 0.5rem', minWidth: '28px', height: '28px', fontSize: '0.8rem' }}
+                        className="btn btn-secondary btn-quantity"
                         onClick={() => handleQuantityChange(item.product.id, -1)}
                       >
                         -
                       </button>
-                      <span style={{ fontFamily: 'var(--font-family-space)', fontWeight: 700, minWidth: '24px', textAlign: 'center' }}>
+                      <span className="quantity-value">
                         {item.quantity}
                       </span>
                       <button
                         type="button"
-                        className="btn btn-secondary"
-                        style={{ padding: '0.25rem 0.5rem', minWidth: '28px', height: '28px', fontSize: '0.8rem' }}
+                        className="btn btn-secondary btn-quantity"
                         onClick={() => handleQuantityChange(item.product.id, 1)}
                       >
                         +
@@ -223,22 +181,21 @@ export default function QuodomEditor() {
               </ul>
 
               {/* Total Calculation */}
-              <footer style={{ borderTop: '2px solid var(--color-black)', paddingTop: '1rem', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <p style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '1.2rem' }}>
+              <footer className="panel-footer">
+                <p className="total-row">
                   <span>TOTAL ESTIMADO:</span>
                   <span>
                     ${selectedItems.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0)}
                   </span>
                 </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <button type="button" className="btn btn-success" style={{ width: '100%' }} onClick={handleSendWhatsApp}>
+                <div className="panel-footer-actions">
+                  <button type="button" className="btn btn-success btn-full-width" onClick={handleSendWhatsApp}>
                     Enviar vía WhatsApp
                   </button>
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    style={{ width: '100%' }}
+                    className="btn btn-secondary btn-full-width"
                     onClick={() => {
                       alert('Quodom guardado en borradores');
                       navigate('/my-quodoms');

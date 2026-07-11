@@ -21,11 +21,11 @@ export default function RootLayout() {
   return (
     <div className="app-container">
       <header className="main-header">
-        <hgroup className="logo-container">
+        <div className="logo-container">
           <NavLink to="/home" className="logo" onClick={closeNav}>
             QUODOM
           </NavLink>
-        </hgroup>
+        </div>
 
         {/* Mobile Navigation Toggle Button */}
         <button

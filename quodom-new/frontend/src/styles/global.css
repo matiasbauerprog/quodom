@@ -578,3 +578,378 @@ a {
     z-index: 1000;
   }
 }
+
+/* Page layouts and containers */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.page-container-grow {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 2rem;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.page-header-small-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.page-title {
+  font-size: 2.5rem;
+}
+
+.page-subtitle {
+  font-family: var(--font-family-space);
+  font-weight: 500;
+}
+
+/* Search Card & List Categories style */
+.search-card {
+  padding: 1.25rem;
+}
+
+.search-label {
+  font-size: 0.8rem;
+}
+
+.category-desc {
+  font-size: 0.9rem;
+  color: var(--color-dark-gray);
+}
+
+/* Modo IA Drawer styling additions */
+.btn-toggle-ia {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid black;
+  font-size: 0.75rem;
+}
+
+.ia-chat-list {
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.ia-chat-bubble {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  max-width: 85%;
+  font-size: 0.875rem;
+  font-family: var(--font-family-body);
+  border: 2px solid var(--color-black);
+}
+
+.ia-chat-bubble.bubble-user {
+  align-self: flex-end;
+  background-color: var(--color-violet);
+  color: var(--color-white);
+}
+
+.ia-chat-bubble.bubble-ia {
+  align-self: flex-start;
+  background-color: var(--color-light-gray);
+  color: var(--color-black);
+}
+
+.btn-ia-send {
+  padding: 0.5rem 1rem;
+}
+
+/* MyQuodoms filters and list */
+.filters-container {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-filter {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.card-empty {
+  text-align: center;
+  padding: 3rem;
+}
+
+.quodoms-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.quodom-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quodom-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.quodom-card-title {
+  font-size: 1.25rem;
+}
+
+.quodom-card-time {
+  font-size: 0.85rem;
+  color: var(--color-dark-gray);
+  font-family: var(--font-family-space);
+}
+
+/* Status badges */
+.status-badge {
+  color: var(--color-white);
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-family-space);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  border: 2px solid var(--color-black);
+}
+
+.status-badge.badge-borrador {
+  background-color: var(--color-violet);
+}
+
+.status-badge.badge-enviado {
+  background-color: var(--color-green);
+}
+
+.status-badge.badge-recibido {
+  background-color: var(--color-dark-gray);
+}
+
+/* Progress bar container and fill */
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progress-text-wrapper {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.progress-bar-container {
+  height: 14px;
+  border: 2px solid var(--color-black);
+  background-color: var(--color-light-gray);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--color-violet);
+  transition: width 0.3s ease;
+}
+
+.card-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.btn-action {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* QuodomEditor components */
+.editable-title-input {
+  font-size: 1.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-family: var(--font-family-display);
+  border: none;
+  border-bottom: 3px dashed var(--color-black);
+  background: transparent;
+  padding: 0.25rem 0;
+  border-radius: 0;
+  width: 100%;
+  max-width: 500px;
+}
+
+.panel-header {
+  border-bottom: 2px solid var(--color-black);
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.panel-title {
+  font-size: 1.25rem;
+}
+
+.subcategory-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.btn-sub-filter {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.catalog-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.product-item-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--color-black);
+  border-radius: var(--border-radius-leaf);
+  background-color: var(--color-white);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.product-item-label.checked {
+  background-color: #f6f9f6;
+}
+
+.product-item-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-green);
+  cursor: pointer;
+}
+
+.product-name {
+  flex-grow: 1;
+  font-weight: 700;
+}
+
+.product-price {
+  font-family: var(--font-family-space);
+  font-size: 0.9rem;
+  color: var(--color-dark-gray);
+}
+
+.empty-cart-text {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-dark-gray);
+}
+
+.selected-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.selected-items-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.selected-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-light-gray);
+}
+
+.item-info-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.selected-item-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.selected-item-meta {
+  font-size: 0.8rem;
+  color: var(--color-dark-gray);
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-quantity {
+  padding: 0.25rem 0.5rem;
+  min-width: 28px;
+  height: 28px;
+  font-size: 0.8rem;
+}
+
+.quantity-value {
+  font-family: var(--font-family-space);
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+}
+
+.panel-footer {
+  border-top: 2px solid var(--color-black);
+  padding-top: 1rem;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.panel-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-full-width {
+  width: 100%;
+}
+

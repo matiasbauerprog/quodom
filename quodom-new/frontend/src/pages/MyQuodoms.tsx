@@ -25,32 +25,22 @@ export default function MyQuodoms() {
     return q.status === filter;
   });
 
-  const getStatusColor = (status: QuodomItem['status']) => {
-    switch (status) {
-      case 'Borrador': return 'var(--color-violet)';
-      case 'Enviado': return 'var(--color-green)';
-      case 'Recibido': return 'var(--color-dark-gray)';
-      default: return 'var(--color-dark-gray)';
-    }
-  };
-
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <section className="page-container">
       <header>
-        <h1 style={{ fontSize: '2.5rem' }}>Mis Quodoms</h1>
-        <p style={{ fontFamily: 'var(--font-family-space)', fontWeight: 500 }}>
+        <h1 className="page-title">Mis Quodoms</h1>
+        <p className="page-subtitle">
           Historial y estado de tus listas de compras guardadas.
         </p>
       </header>
 
       {/* Filters */}
-      <nav aria-label="Filtro de estados de Quodom" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <nav aria-label="Filtro de estados de Quodom" className="filters-container">
         {(['Todos', 'Borrador', 'Enviado', 'Recibido'] as const).map(option => (
           <button
             key={option}
             type="button"
-            className={`btn ${filter === option ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+            className={`btn ${filter === option ? 'btn-primary' : 'btn-secondary'} btn-filter`}
             onClick={() => setFilter(option)}
           >
             {option}
@@ -61,62 +51,53 @@ export default function MyQuodoms() {
       {/* List */}
       <main aria-label="Listado de Quodoms">
         {filteredQuodoms.length === 0 ? (
-          <article className="card-leaf" style={{ textAlign: 'center', padding: '3rem' }}>
+          <article className="card-leaf card-empty">
             <p>No tienes Quodoms en este estado.</p>
           </article>
         ) : (
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <ul className="quodoms-list">
             {filteredQuodoms.map(quodom => {
               const progressPct = Math.round((quodom.itemsCount / quodom.totalItems) * 100);
               return (
                 <li key={quodom.id}>
-                  <article className="card-leaf" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <hgroup>
-                        <h2 style={{ fontSize: '1.25rem' }}>{quodom.name}</h2>
-                        <time style={{ fontSize: '0.85rem', color: 'var(--color-dark-gray)', fontFamily: 'var(--font-family-space)' }}>
+                  <article className="card-leaf quodom-card">
+                    <header className="quodom-card-header">
+                      <div className="item-info-group">
+                        <h2 className="quodom-card-title">{quodom.name}</h2>
+                        <time className="quodom-card-time" dateTime={quodom.date}>
                           Creado el: {quodom.date}
                         </time>
-                      </hgroup>
-                      <span
-                        style={{
-                          backgroundColor: getStatusColor(quodom.status),
-                          color: 'var(--color-white)',
-                          padding: '0.25rem 0.75rem',
-                          fontFamily: 'var(--font-family-space)',
-                          fontWeight: 700,
-                          fontSize: '0.8rem',
-                          textTransform: 'uppercase',
-                          border: '2px solid var(--color-black)'
-                        }}
-                      >
+                      </div>
+                      <span className={`status-badge badge-${quodom.status.toLowerCase()}`}>
                         {quodom.status}
                       </span>
                     </header>
 
-                    <section style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <p style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 700 }}>
+                    <section className="progress-container">
+                      <p className="progress-text-wrapper">
                         <span>Progreso: {quodom.itemsCount}/{quodom.totalItems} ítems</span>
                         <span>{progressPct}%</span>
                       </p>
                       {/* Custom brutalist progress bar */}
-                      <div style={{ height: '14px', border: '2px solid var(--color-black)', backgroundColor: 'var(--color-light-gray)' }}>
+                      <div
+                        className="progress-bar-container"
+                        role="progressbar"
+                        aria-valuenow={progressPct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Progreso de la lista: ${quodom.itemsCount} de ${quodom.totalItems} ítems`}
+                      >
                         <div
-                          style={{
-                            height: '100%',
-                            width: `${progressPct}%`,
-                            backgroundColor: 'var(--color-violet)',
-                            transition: 'width 0.3s ease'
-                          }}
+                          className="progress-bar-fill"
+                          style={{ width: `${progressPct}%` }}
                         ></div>
                       </div>
                     </section>
 
-                    <footer style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
+                    <footer className="card-footer-actions">
                       <button
                         type="button"
-                        className="btn btn-secondary"
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                        className="btn btn-secondary btn-action"
                         onClick={() => navigate(`/quodom/${quodom.id}`)}
                       >
                         Editar/Ver
@@ -124,8 +105,7 @@ export default function MyQuodoms() {
                       {quodom.status === 'Borrador' && (
                         <button
                           type="button"
-                          className="btn btn-success"
-                          style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                          className="btn btn-success btn-action"
                           onClick={() => alert('¡Enviado por WhatsApp!')}
                         >
                           Enviar WhatsApp
