@@ -32,6 +32,18 @@ export default function QuodomEditor() {
   const [selectedItems, setSelectedItems] = useState<CartItem[]>([]);
   const [loadingQuodom, setLoadingQuodom] = useState(true);
   const [quodomError, setQuodomError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   // Catalog Hierarchy & Products Filter
   const [categories, setCategories] = useState<Category[]>([]);
@@ -83,10 +95,12 @@ export default function QuodomEditor() {
         setQuodomName(data.title);
         
         // Map items structure
-        const mappedItems = (data.items || []).map((item: any) => ({
-          product: item.product,
-          quantity: item.quantity,
-        }));
+        const mappedItems = (data.items || [])
+          .filter((item: any) => item && item.product)
+          .map((item: any) => ({
+            product: item.product,
+            quantity: item.quantity,
+          }));
         setSelectedItems(mappedItems);
       } catch (err: any) {
         console.error('Fetch Quodom detail error:', err);
@@ -171,6 +185,7 @@ export default function QuodomEditor() {
 
   // Product checkbox toggle
   const handleProductToggle = (product: Product) => {
+    setIsDirty(true);
     const exists = selectedItems.find(item => item.product.id === product.id);
     if (exists) {
       setSelectedItems(prev => prev.filter(item => item.product.id !== product.id));
@@ -181,6 +196,7 @@ export default function QuodomEditor() {
 
   // Quantity control handlers
   const handleQuantityChange = (productId: number, increment: number) => {
+    setIsDirty(true);
     setSelectedItems(prev => prev.map(item => {
       if (item.product.id === productId) {
         const newQty = Math.max(1, item.quantity + increment);
@@ -225,6 +241,7 @@ export default function QuodomEditor() {
         throw new Error(data.error || 'Error al guardar el borrador');
       }
 
+      setIsDirty(false);
       alert('¡Quodom guardado en borradores con éxito!');
       navigate('/my-quodoms');
     } catch (err: any) {
@@ -272,6 +289,7 @@ export default function QuodomEditor() {
         throw new Error(data.error || 'Error al enviar el Quodom');
       }
 
+      setIsDirty(false);
       // 3. Open WhatsApp link and redirect
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
       navigate('/my-quodoms');
@@ -300,7 +318,7 @@ export default function QuodomEditor() {
       <section className="page-container">
         <article className="card-leaf card-empty">
           <p className="error-message">⚠️ Error: {quodomError}</p>
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('/my-quodoms')} style={{ marginTop: '1rem' }}>
+          <button type="button" className="btn btn-secondary mt-1" onClick={() => navigate('/my-quodoms')}>
             Volver a Mis Quodoms
           </button>
         </article>
@@ -315,7 +333,10 @@ export default function QuodomEditor() {
           type="text"
           className="form-input editable-title-input"
           value={quodomName}
-          onChange={(e) => setQuodomName(e.target.value)}
+          onChange={(e) => {
+            setQuodomName(e.target.value);
+            setIsDirty(true);
+          }}
           aria-label="Nombre de Quodom"
           placeholder="Nombre del Quodom"
         />
@@ -333,7 +354,7 @@ export default function QuodomEditor() {
           </header>
 
           {/* Search bar inside the catalog checklist */}
-          <div style={{ marginBottom: '1rem' }}>
+          <div className="mb-1">
             <input
               type="text"
               className="form-input"
@@ -396,15 +417,15 @@ export default function QuodomEditor() {
 
           {/* Product checklist */}
           {loadingProducts ? (
-            <div style={{ padding: '1rem', textAlign: 'center' }}>
+            <div className="catalog-message">
               <p>Buscando productos...</p>
             </div>
           ) : productsError ? (
-            <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-coral)' }}>
+            <div className="catalog-message error">
               <p>⚠️ Error: {productsError}</p>
             </div>
           ) : products.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <div className="catalog-message">
               <p>No se encontraron productos en esta categoría.</p>
             </div>
           ) : (

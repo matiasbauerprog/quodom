@@ -176,7 +176,7 @@ export default function Home() {
       <section className="card-leaf search-card">
         <form onSubmit={handleSearchSubmit} className="form-group">
           <label htmlFor="search-input" className="form-label search-label">Buscar Productos</label>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="search-input-wrapper">
             <input
               id="search-input"
               type="search"
@@ -184,9 +184,8 @@ export default function Home() {
               placeholder="Escribe para buscar productos... (ej. Pintura, Ladrillo, Cable) y presiona Enter"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ flexGrow: 1 }}
             />
-            <button type="submit" className="btn btn-primary" style={{ textTransform: 'uppercase' }}>
+            <button type="submit" className="btn btn-primary">
               Buscar
             </button>
           </div>

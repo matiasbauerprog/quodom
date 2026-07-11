@@ -1260,5 +1260,26 @@ a {
   gap: 1rem;
 }
 
+.search-input-wrapper {
+  display: flex;
+  gap: 1rem;
+}
+.search-input-wrapper .form-input {
+  flex-grow: 1;
+}
+.mt-1 {
+  margin-top: 1rem;
+}
+.mb-1 {
+  margin-bottom: 1rem;
+}
+.catalog-message {
+  padding: 1.5rem;
+  text-align: center;
+}
+.catalog-message.error {
+  color: var(--color-coral);
+}
+
 
 
