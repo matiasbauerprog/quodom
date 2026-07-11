@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import MyQuodoms from './pages/MyQuodoms';
 import QuodomEditor from './pages/QuodomEditor';
+import Products from './pages/Products';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/my-quodoms" element={<MyQuodoms />} />
           <Route path="/quodom/:id" element={<QuodomEditor />} />
+          <Route path="/products" element={<Products />} />
         </Route>
 
         {/* Fallback 404 route */}

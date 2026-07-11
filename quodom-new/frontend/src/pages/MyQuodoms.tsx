@@ -163,7 +163,7 @@ export default function MyQuodoms() {
                           Creado el: {formattedDate}
                         </time>
                       </div>
-                      <span className={`status-badge ${quodom.status === 'Enviado' ? 'badge-enviado' : 'badge-borrador'}`}>
+                      <span className={`status-badge ${quodom.status === 'Enviado' ? 'badge-enviado' : 'badge-proceso'}`}>
                         {quodom.status}
                       </span>
                     </header>

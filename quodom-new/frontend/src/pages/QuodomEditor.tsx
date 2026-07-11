@@ -120,11 +120,10 @@ export default function QuodomEditor() {
   // 3. Fetch products based on category, subcategory, and search term (with AbortController & debounce)
   useEffect(() => {
     const controller = new AbortController();
+    setLoadingProducts(true);
+    setProductsError(null);
 
     const fetchProducts = async () => {
-      setLoadingProducts(true);
-      setProductsError(null);
-
       try {
         const queryParams = new URLSearchParams();
         
