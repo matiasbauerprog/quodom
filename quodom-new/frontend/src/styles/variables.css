@@ -14,9 +14,11 @@
   --color-purple: #7C4DFF;
 
   /* Border radius tokens */
-  --border-radius-leaf: 8px 0px 8px 0px;
+  --border-radius-leaf: 12px 0px 12px 0px;
+  --border-radius-card: 12px;
+  --border-radius-button: 10px;
+  --border-radius-input: 8px;
   --border-radius-pill: 50px;
-  --border-radius-brutal: 0px;
 
   /* Typography variables */
   --font-family-display: 'Montserrat', sans-serif;
@@ -25,9 +27,7 @@
   --font-family-accent: 'Jaldi', sans-serif;
   --font-family-space: 'Space Grotesk', sans-serif;
 
-  /* Box Shadows (Brutalist style) */
-  --box-shadow-brutal: 4px 4px 0px 0px var(--color-black);
-  --box-shadow-brutal-large: 8px 8px 0px 0px var(--color-black);
-  --box-shadow-violet: 4px 4px 0px 0px var(--color-violet);
-  --box-shadow-success: 4px 4px 0px 0px var(--color-green);
+  /* Box Shadows (Flat/Soft style matching Quodom 1.0) */
+  --box-shadow-soft: 0px 4px 12px rgba(0, 0, 0, 0.08);
+  --box-shadow-card: 0px 2px 8px rgba(0, 0, 0, 0.05);
 }

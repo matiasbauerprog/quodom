@@ -155,7 +155,7 @@ export default function MyQuodoms() {
 
               return (
                 <li key={quodom.id}>
-                  <article className="card-leaf quodom-card">
+                  <article className={`card-leaf quodom-card status-${quodom.status === 'Enviado' ? 'enviado' : 'proceso'}`}>
                     <header className="quodom-card-header">
                       <div className="item-info-group">
                         <h2 className="quodom-card-title">{quodom.title}</h2>
