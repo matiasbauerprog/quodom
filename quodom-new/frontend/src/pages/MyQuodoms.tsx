@@ -1,42 +1,125 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface QuodomItem {
   id: string;
-  name: string;
-  date: string;
-  status: 'Borrador' | 'Enviado' | 'Recibido';
-  itemsCount: number;
-  totalItems: number;
+  title: string;
+  status: 'En Proceso' | 'Enviado';
+  createdAt: string;
+  items?: {
+    id: string;
+    productId: number;
+    quantity: number;
+  }[];
 }
 
-const MOCK_QUODOMS: QuodomItem[] = [
-  { id: '1', name: 'Lista de Fin de Semana', date: '2026-07-08', status: 'Borrador', itemsCount: 4, totalItems: 10 },
-  { id: '2', name: 'Compras Mensuales Almacén', date: '2026-07-05', status: 'Enviado', itemsCount: 15, totalItems: 15 },
-  { id: '3', name: 'Asado con amigos', date: '2026-06-30', status: 'Recibido', itemsCount: 8, totalItems: 8 }
-];
-
 export default function MyQuodoms() {
-  const [filter, setFilter] = useState<'Todos' | 'Borrador' | 'Enviado' | 'Recibido'>('Todos');
+  const [quodoms, setQuodoms] = useState<QuodomItem[]>([]);
+  const [filter, setFilter] = useState<'Todos' | 'En Proceso' | 'Enviado'>('Todos');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const filteredQuodoms = MOCK_QUODOMS.filter(q => {
+  useEffect(() => {
+    const token = localStorage.getItem('quodom_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const fetchQuodoms = async () => {
+      try {
+        const response = await fetch('/api/quodoms', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem('quodom_token');
+          navigate('/login');
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error('Error al cargar las listas de Quodoms');
+        }
+
+        const data = await response.json();
+        setQuodoms(data);
+      } catch (err: any) {
+        console.error('Fetch Quodoms error:', err);
+        setError(err.message || 'Error de conexión');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuodoms();
+  }, [navigate]);
+
+  const handleCreateQuodom = async () => {
+    const token = localStorage.getItem('quodom_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/quodoms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: 'Mi Quodom', items: [] }),
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('quodom_token');
+        navigate('/login');
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Error al crear el Quodom');
+      }
+
+      const newQuodom = await response.json();
+      navigate(`/quodom/${newQuodom.id}`);
+    } catch (err: any) {
+      console.error('Create Quodom error:', err);
+      alert(err.message || 'No se pudo crear la lista');
+    }
+  };
+
+  const filteredQuodoms = quodoms.filter(q => {
     if (filter === 'Todos') return true;
     return q.status === filter;
   });
 
   return (
     <section className="page-container">
-      <header>
-        <h1 className="page-title">Mis Quodoms</h1>
-        <p className="page-subtitle">
-          Historial y estado de tus listas de compras guardadas.
-        </p>
+      <header className="page-header-row">
+        <div className="page-header-text">
+          <h1 className="page-title">Mis Quodoms</h1>
+          <p className="page-subtitle">
+            Historial y estado de tus listas de compras guardadas.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={handleCreateQuodom}
+        >
+          Crear Nueva Lista
+        </button>
       </header>
 
       {/* Filters */}
       <nav aria-label="Filtro de estados de Quodom" className="filters-container">
-        {(['Todos', 'Borrador', 'Enviado', 'Recibido'] as const).map(option => (
+        {(['Todos', 'En Proceso', 'Enviado'] as const).map(option => (
           <button
             key={option}
             type="button"
@@ -50,32 +133,44 @@ export default function MyQuodoms() {
 
       {/* List */}
       <main aria-label="Listado de Quodoms">
-        {filteredQuodoms.length === 0 ? (
+        {loading ? (
+          <div className="card-leaf card-empty">
+            <p>Cargando tus listas de Quodoms...</p>
+          </div>
+        ) : error ? (
+          <article className="card-leaf card-empty">
+            <p className="error-message">⚠️ Error: {error}</p>
+          </article>
+        ) : filteredQuodoms.length === 0 ? (
           <article className="card-leaf card-empty">
             <p>No tienes Quodoms en este estado.</p>
           </article>
         ) : (
           <ul className="quodoms-list">
             {filteredQuodoms.map(quodom => {
-              const progressPct = Math.round((quodom.itemsCount / quodom.totalItems) * 100);
+              const itemsCount = quodom.items?.length || 0;
+              const totalItems = quodom.status === 'Enviado' ? itemsCount : Math.max(10, itemsCount);
+              const progressPct = quodom.status === 'Enviado' ? 100 : (totalItems > 0 ? Math.round((itemsCount / totalItems) * 100) : 0);
+              const formattedDate = quodom.createdAt ? quodom.createdAt.substring(0, 10) : '';
+
               return (
                 <li key={quodom.id}>
                   <article className="card-leaf quodom-card">
                     <header className="quodom-card-header">
                       <div className="item-info-group">
-                        <h2 className="quodom-card-title">{quodom.name}</h2>
-                        <time className="quodom-card-time" dateTime={quodom.date}>
-                          Creado el: {quodom.date}
+                        <h2 className="quodom-card-title">{quodom.title}</h2>
+                        <time className="quodom-card-time" dateTime={quodom.createdAt}>
+                          Creado el: {formattedDate}
                         </time>
                       </div>
-                      <span className={`status-badge badge-${quodom.status.toLowerCase()}`}>
+                      <span className={`status-badge ${quodom.status === 'Enviado' ? 'badge-enviado' : 'badge-borrador'}`}>
                         {quodom.status}
                       </span>
                     </header>
 
                     <section className="progress-container">
                       <p className="progress-text-wrapper">
-                        <span>Progreso: {quodom.itemsCount}/{quodom.totalItems} ítems</span>
+                        <span>Progreso: {itemsCount}/{totalItems} ítems</span>
                         <span>{progressPct}%</span>
                       </p>
                       {/* Custom brutalist progress bar */}
@@ -85,7 +180,7 @@ export default function MyQuodoms() {
                         aria-valuenow={progressPct}
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        aria-label={`Progreso de la lista: ${quodom.itemsCount} de ${quodom.totalItems} ítems`}
+                        aria-label={`Progreso de la lista: ${itemsCount} de ${totalItems} ítems`}
                       >
                         <div
                           className="progress-bar-fill"
@@ -102,15 +197,6 @@ export default function MyQuodoms() {
                       >
                         Editar/Ver
                       </button>
-                      {quodom.status === 'Borrador' && (
-                        <button
-                          type="button"
-                          className="btn btn-success btn-action"
-                          onClick={() => alert('¡Enviado por WhatsApp!')}
-                        >
-                          Enviar WhatsApp
-                        </button>
-                      )}
                     </footer>
                   </article>
                 </li>

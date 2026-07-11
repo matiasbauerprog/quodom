@@ -10,6 +10,9 @@ export async function getQuodoms(req: Request, res: Response) {
 
     const quodoms = await prisma.quodom.findMany({
       where: { userId },
+      include: {
+        items: true
+      },
       orderBy: { createdAt: 'desc' }
     });
 
