@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 export default function RootLayout() {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('quodom_token');
+    if (!token) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('quodom_token');

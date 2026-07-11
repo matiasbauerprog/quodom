@@ -6,38 +6,102 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [company, setCompany] = useState('');
+  const [cuit, setCuit] = useState('');
+  const [address, setAddress] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (password !== confirmPassword) {
-      alert('Las contraseñas no coinciden');
+      setError('Las contraseñas no coinciden');
       return;
     }
-    // Simulate registration
-    localStorage.setItem('quodom_token', 'mock-token');
-    navigate('/home');
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          whatsapp,
+          company: company.trim() || undefined,
+          cuit: cuit.trim() || undefined,
+          address: address.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear la cuenta');
+      }
+
+      // Save token to localStorage and redirect to home
+      localStorage.setItem('quodom_token', data.token);
+      navigate('/home');
+    } catch (err: any) {
+      console.error('Error de registro:', err);
+      setError(err.message || 'Error de conexión con el servidor');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <section className="auth-page">
-      <article className="auth-card">
-        <h1 className="auth-title">Registrarse</h1>
-        <form className="auth-form" onSubmit={handleSubmit}>
+      <article className="auth-card" style={{ maxWidth: '500px', padding: '2rem 1.5rem' }}>
+        <h1 className="auth-title" style={{ marginBottom: '1.5rem' }}>Registrarse</h1>
+        
+        {error && (
+          <div 
+            className="error-message" 
+            role="alert" 
+            style={{
+              color: 'var(--color-coral)',
+              backgroundColor: '#fff0f0',
+              border: '2px solid var(--color-coral)',
+              padding: '0.75rem',
+              borderRadius: '4px',
+              marginBottom: '1.25rem',
+              fontFamily: 'var(--font-family-space)',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              textAlign: 'left'
+            }}
+          >
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form className="auth-form" onSubmit={handleSubmit} style={{ gap: '1rem' }}>
           <label className="form-group" htmlFor="name-input">
-            <span className="form-label">Nombre Completo</span>
+            <span className="form-label">Nombre Completo *</span>
             <input
               id="name-input"
               type="text"
               className="form-input"
-              placeholder="Tu nombre"
+              placeholder="Tu nombre completo"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              disabled={loading}
               required
             />
           </label>
+          
           <label className="form-group" htmlFor="email-input">
-            <span className="form-label">Email</span>
+            <span className="form-label">Email *</span>
             <input
               id="email-input"
               type="email"
@@ -45,41 +109,115 @@ export default function Register() {
               placeholder="ejemplo@quodom.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
               required
             />
           </label>
-          <label className="form-group" htmlFor="password-input">
-            <span className="form-label">Contraseña</span>
+
+          <label className="form-group" htmlFor="whatsapp-input">
+            <span className="form-label">WhatsApp *</span>
             <input
-              id="password-input"
-              type="password"
+              id="whatsapp-input"
+              type="tel"
               className="form-input"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Ej: +5491122334455"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              disabled={loading}
               required
             />
           </label>
-          <label className="form-group" htmlFor="confirm-password-input">
-            <span className="form-label">Confirmar Contraseña</span>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <label className="form-group" htmlFor="password-input">
+              <span className="form-label">Contraseña *</span>
+              <input
+                id="password-input"
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </label>
+            
+            <label className="form-group" htmlFor="confirm-password-input">
+              <span className="form-label">Confirmar *</span>
+              <input
+                id="confirm-password-input"
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </label>
+          </div>
+
+          <hr style={{ border: '0', borderTop: '2px solid var(--color-light-gray)', margin: '0.5rem 0' }} />
+          
+          <p style={{ fontFamily: 'var(--font-family-space)', fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--color-violet)', fontWeight: 'bold' }}>Datos de Empresa (Opcional)</p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <label className="form-group" htmlFor="company-input">
+              <span className="form-label">Empresa</span>
+              <input
+                id="company-input"
+                type="text"
+                className="form-input"
+                placeholder="Nombre Empresa"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                disabled={loading}
+              />
+            </label>
+
+            <label className="form-group" htmlFor="cuit-input">
+              <span className="form-label">CUIT</span>
+              <input
+                id="cuit-input"
+                type="text"
+                className="form-input"
+                placeholder="30-XXXXXXXX-X"
+                value={cuit}
+                onChange={(e) => setCuit(e.target.value)}
+                disabled={loading}
+              />
+            </label>
+          </div>
+
+          <label className="form-group" htmlFor="address-input">
+            <span className="form-label">Dirección</span>
             <input
-              id="confirm-password-input"
-              type="password"
+              id="address-input"
+              type="text"
               className="form-input"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
+              placeholder="Calle 123, Ciudad"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={loading}
             />
           </label>
-          <button type="submit" className="btn btn-violet" style={{ width: '100%', marginTop: '0.5rem' }}>
-            Crear Cuenta
+
+          <button 
+            type="submit" 
+            className="btn btn-violet" 
+            style={{ width: '100%', marginTop: '0.5rem' }}
+            disabled={loading}
+          >
+            {loading ? 'Creando Cuenta...' : 'Crear Cuenta'}
           </button>
         </form>
-        <nav className="auth-links" aria-label="Enlaces de autenticación">
+        
+        <nav className="auth-links" aria-label="Enlaces de autenticación" style={{ marginTop: '1.25rem' }}>
           <Link to="/login" className="auth-link">¿Ya tienes cuenta? Inicia Sesión</Link>
         </nav>
       </article>
     </section>
   );
 }
+
