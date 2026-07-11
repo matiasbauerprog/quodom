@@ -63,7 +63,12 @@ export default function Home() {
         if (!response.ok) {
           throw new Error('No se pudieron cargar las categorías del catálogo');
         }
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         setCategories(data);
       } catch (err: any) {
         console.error('Error fetching categories:', err);
@@ -119,7 +124,12 @@ export default function Home() {
         body: JSON.stringify({ prompt: promptText }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'La generación con IA falló');

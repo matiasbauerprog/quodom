@@ -91,7 +91,12 @@ export default function QuodomEditor() {
           throw new Error('Error al cargar la información del Quodom');
         }
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         setQuodomName(data.title);
         
         // Map items structure
@@ -121,7 +126,12 @@ export default function QuodomEditor() {
         if (!response.ok) {
           throw new Error('No se pudieron cargar las categorías del catálogo');
         }
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         setCategories(data);
       } catch (err: any) {
         console.error('Error fetching categories:', err);
@@ -158,7 +168,12 @@ export default function QuodomEditor() {
           throw new Error('Error al buscar los productos');
         }
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         setProducts(data);
       } catch (err: any) {
         if (err.name === 'AbortError') {
@@ -237,7 +252,12 @@ export default function QuodomEditor() {
       }
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         throw new Error(data.error || 'Error al guardar el borrador');
       }
 
@@ -285,7 +305,12 @@ export default function QuodomEditor() {
       }
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         throw new Error(data.error || 'Error al enviar el Quodom');
       }
 

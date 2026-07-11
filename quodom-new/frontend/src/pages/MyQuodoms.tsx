@@ -45,7 +45,12 @@ export default function MyQuodoms() {
           throw new Error('Error al cargar las listas de Quodoms');
         }
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         setQuodoms(data);
       } catch (err: any) {
         console.error('Fetch Quodoms error:', err);
@@ -82,11 +87,21 @@ export default function MyQuodoms() {
       }
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         throw new Error(data.error || 'Error al crear el Quodom');
       }
 
-      const newQuodom = await response.json();
+      let newQuodom;
+      try {
+        newQuodom = await response.json();
+      } catch (jsonErr) {
+        throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+      }
       navigate(`/quodom/${newQuodom.id}`);
     } catch (err: any) {
       console.error('Create Quodom error:', err);

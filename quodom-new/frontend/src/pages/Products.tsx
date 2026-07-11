@@ -83,7 +83,12 @@ export default function Products() {
         if (!response.ok) {
           throw new Error('No se pudieron cargar los productos');
         }
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new Error('El servidor backend no está respondiendo. Por favor, asegúrate de que esté iniciado en el puerto 3000.');
+        }
         setProducts(data);
       } catch (err: any) {
         if (err.name === 'AbortError') {
