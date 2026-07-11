@@ -205,6 +205,19 @@ async function generateMockQuodom(prompt: string): Promise<GeneratedQuodom> {
   let categoryLabel = 'Generado';
 
   if (
+    /\bconstruc/i.test(promptLower) ||
+    promptLower.includes('cemento') ||
+    promptLower.includes('arena') ||
+    promptLower.includes('cal') ||
+    promptLower.includes('ladrillo') ||
+    promptLower.includes('ladrillos') ||
+    promptLower.includes('hierro') ||
+    promptLower.includes('viga') ||
+    promptLower.includes('obra')
+  ) {
+    keywordsToSearch = ['cemento', 'arena', 'cal', 'ladrillo', 'hierro', 'viga', 'piedra', 'adhesivo', 'cerecita', 'mezcla'];
+    categoryLabel = 'Construcción';
+  } else if (
     /\bpint(ar|ura|ando)?\b/i.test(promptLower) ||
     promptLower.includes('látex') ||
     promptLower.includes('latex') ||
@@ -227,19 +240,6 @@ async function generateMockQuodom(prompt: string): Promise<GeneratedQuodom> {
   ) {
     keywordsToSearch = ['gaseosa', 'cerveza', 'agua', 'fernet', 'jugo', 'soda', 'bebida', 'cola'];
     categoryLabel = 'Bebidas';
-  } else if (
-    /\bconstruc/i.test(promptLower) ||
-    promptLower.includes('cemento') ||
-    promptLower.includes('arena') ||
-    promptLower.includes('cal') ||
-    promptLower.includes('ladrillo') ||
-    promptLower.includes('ladrillos') ||
-    promptLower.includes('hierro') ||
-    promptLower.includes('viga') ||
-    promptLower.includes('obra')
-  ) {
-    keywordsToSearch = ['cemento', 'arena', 'cal', 'ladrillo', 'hierro', 'viga', 'piedra', 'adhesivo', 'cerecita', 'mezcla'];
-    categoryLabel = 'Construcción';
   } else {
     // General keyword extraction
     const stopWords = new Set([
