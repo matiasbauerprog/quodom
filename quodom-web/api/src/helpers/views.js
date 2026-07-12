@@ -41,7 +41,7 @@ async function createViews(sequelize) {
         CREATE VIEW v_InfoCompradors AS
         SELECT q.id AS idquodom,
                COALESCE(u.nombre, '') || ' ' || COALESCE(u.apellido, '') AS NombreComprador,
-               COALESCE(u.codArea, '') || u.telefono AS telefono,
+               COALESCE(u.codArea, '') || COALESCE(u.telefono, '') AS telefono,
                u.email,
                COALESCE(d.calle, '') || ' ' || COALESCE(d.numero, '') AS Direccion,
                d.provincia AS Provincia,
