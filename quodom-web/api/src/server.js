@@ -28,7 +28,7 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('*', (req, res) => {
+app.all('*', (req, res) => {
   res.status(404).json({ res: false, message: 'Route-not-found' });
 });
 
