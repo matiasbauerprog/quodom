@@ -1,19 +1,37 @@
 const express = require('express');
 const router = express.Router();
+const Joi = require('joi');
 const auth = require('../middleware/auth');
 const Controler = require('../controllers/user_direcciones.controller');
+const validateRequest = require('../middleware/validate-request');
 
 router.get('/direcciondefault', auth.verifyToken(), getDireccionDefault);
 router.get('/:id', auth.verifyToken(), getById);
-router.post('/create', auth.verifyToken(), create);
+router.post('/create', auth.verifyToken(), direccionSchema, create);
 router.put('/prin/:id', auth.verifyToken(), updatePrincipal);
-router.put('/:id', auth.verifyToken(), update);
+router.put('/:id', auth.verifyToken(), direccionSchema, update);
 router.delete('/:id', auth.verifyToken(), _delete);
 
 module.exports = router;
 
+function direccionSchema(req, res, next) {
+  const schema = Joi.object({
+    alias: Joi.string(),
+    calle: Joi.string(),
+    numero: Joi.string(),
+    piso: Joi.string().empty(''),
+    cp: Joi.string(),
+    localidad: Joi.string(),
+    direccion: Joi.string().empty(''),
+    observaciones: Joi.string().empty(''),
+    idprovincia: Joi.number().integer(),
+    default: Joi.boolean()
+  });
+  validateRequest(req, next, schema);
+}
+
 function getById(req, res, next) {
-  Controler.getById(req.params.id)
+  Controler.getById(req.params.id, req.user.id)
     .then(data => res.json(data))
     .catch(next);
 }

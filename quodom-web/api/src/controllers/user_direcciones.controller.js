@@ -16,8 +16,12 @@ async function getDireccionDefault(userId) {
     });
 }
 
-async function getById(id) {
-    return await getDirecciones(id);
+async function getById(id, userId) {
+    const direcciones = await getDirecciones(id);
+    if (direcciones.userid !== userId) {
+        throw 'La dirección no pertenece a el usuario.';
+    }
+    return direcciones;
 }
 
 async function create(params, userId) {
