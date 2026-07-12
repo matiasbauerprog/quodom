@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//f/backup/Command Soluciones/Quodom/**)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run seed:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run test:*)",
+      "Bash(node:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)"
+    ]
+  }
+}
