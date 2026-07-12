@@ -49,6 +49,12 @@ describe('catalogo', () => {
     expect(res.body[0].nombre).toBe('Latex interior 20L');
   });
 
+  it('GET /busqueda without b returns empty array', async () => {
+    const res = await request(app).get('/busqueda');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
   it('GET /hist_busquedas requires auth', async () => {
     const res = await request(app).get('/hist_busquedas');
     expect(res.status).toBe(401);
