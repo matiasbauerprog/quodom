@@ -18,6 +18,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // api routes (added task by task)
+app.use('/users', require('./routes/users.routes'));
 
 app.get('/', (req, res) => {
   res.json({
