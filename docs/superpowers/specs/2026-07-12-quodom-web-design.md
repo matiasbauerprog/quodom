@@ -13,6 +13,8 @@ Crear una webapp de Quodom partiendo de la estructura del proyecto original (`AP
 
 El flujo del comprador termina en la **exportación del Quodom por WhatsApp**.
 
+Además del armado manual, la webapp suma un **Modo IA**: un chat junto al buscador que arma el presupuesto a partir de una conversación (ver sección 7).
+
 ## 2. Arquitectura y estructura de carpetas
 
 Nueva carpeta `quodom-web/` en la raíz del repo, espejando la estructura original:
@@ -103,7 +105,7 @@ En `users` se eliminan los campos propios del vendedor (datos bancarios, tipo de
 ### 4.3 Navegación guest (sin login)
 
 - **Público:** landing, catálogo, búsqueda, y **armar un Quodom** (crear, agregar/quitar productos, cantidades) con la barra flotante (`BarraQuodomInferior`) visible.
-- **Requiere login:** cerrar/enviar el Quodom por WhatsApp, Mis Quodoms, perfil, direcciones, notificaciones, historial de búsquedas.
+- **Requiere login:** cerrar/enviar el Quodom por WhatsApp, Mis Quodoms, perfil, direcciones, notificaciones, historial de búsquedas y el **Modo IA**.
 - El Quodom de invitado vive en `localStorage` (nombre + líneas con `productId` y cantidad). No toca el backend.
 - Al tocar "Enviar por WhatsApp" sin sesión → redirección a login/registro con mensaje "Creá tu cuenta para enviar tu Quodom".
 - Tras login/registro exitoso, el Quodom de `localStorage` se **migra automáticamente al backend** (se crea con sus líneas a nombre del usuario) y el flujo de envío continúa donde quedó. Si el usuario ya tenía Quodoms, el de invitado se agrega como uno más.
@@ -135,9 +137,43 @@ En el detalle del Quodom, el botón que antes iniciaba la cotización pasa a ser
 
 - **API:** tests de integración contra una base SQLite real de test (sin mocks de base), cubriendo auth, catálogo, quodoms y el endpoint de WhatsApp.
 - **Seeding:** verificación automática post-seed (62 subcategorías, 644 productos).
-- **Frontend:** verificación manual en navegador de los flujos clave (guest arma Quodom → registro → migración → envío WhatsApp). Tests unitarios solo para lógica no trivial (migración del Quodom de invitado, armado del mensaje de WhatsApp).
+- **IA:** tests del endpoint de chat con el proveedor Gemini simulado (sin llamadas reales), cubriendo validación de `productId` contra el catálogo, límites de uso y formato de respuesta.
+- **Frontend:** verificación manual en navegador de los flujos clave (guest arma Quodom → registro → migración → envío WhatsApp; chat IA → propuesta → confirmación). Tests unitarios solo para lógica no trivial (migración del Quodom de invitado, armado del mensaje de WhatsApp).
 
-## 7. Harness de Claude Code
+## 7. Modo IA — chat para armar el presupuesto
+
+### 7.1 UI
+
+- Junto al buscador hay un botón **"Modo IA"** con la identidad visual de Quodom. Al activarlo, la barra de búsqueda se transforma en un chat.
+- Requiere login: si no hay sesión, el botón redirige a login/registro con mensaje contextual ("Ingresá para usar el asistente").
+- Chat **multi-turno**: la IA puede repreguntar (ej. "¿paredes y techo?", "¿la superficie está pintada?") antes de proponer.
+- Cuando tiene suficiente información, la IA muestra una **propuesta editable dentro del chat**: lista de productos reales del catálogo con cantidades; el usuario puede quitar items o ajustar cantidades. Al confirmar, se agregan al Quodom activo (o se crea uno si no hay).
+
+### 7.2 Backend
+
+- Nuevos `ia.controller.js` + `ia.route.js`, protegidos por JWT.
+- `POST /api/ia/chat`: recibe el historial de la conversación y llama a **Gemini** (clave en variable de entorno; el frontend nunca la ve) con salida JSON estructurada.
+- La respuesta es siempre uno de dos tipos:
+  - `{ type: "question", text }` — repregunta de la IA.
+  - `{ type: "proposal", items: [{ productId, quantity, reason }] }` — propuesta de presupuesto.
+- El system prompt incluye el catálogo relevante (subcategorías + productos filtrados por la intención detectada) para que la IA solo proponga **IDs reales**. El backend valida cada `productId` contra la base antes de responder y descarta alucinaciones.
+
+### 7.3 Límites anti-abuso
+
+Configurables por variables de entorno; valores iniciales generosos:
+
+| Límite | Valor inicial |
+|---|---|
+| Mensajes de IA por usuario por día | 50 |
+| Turnos máximos por conversación | 20 |
+| Largo máximo del mensaje del usuario | 500 caracteres |
+| Rate limit por usuario | 10 mensajes/minuto |
+
+- El consumo se registra en una tabla `ia_usage` (userId, fecha, contador).
+- Al superar el límite diario, el chat responde amablemente que se alcanzó el límite del día y sugiere seguir con el buscador manual.
+- Todos los límites se aplican en el backend (no se pueden saltear desde el cliente).
+
+## 8. Harness de Claude Code
 
 1. **Nuevo `CLAUDE.md` raíz** (reemplaza al actual, que describe la deprecada `quodom-new/`):
    - Proyecto activo: `quodom-web/`. `API`/`APP` (carpeta padre) son referencia de solo lectura. `quodom-new/` deprecada.
@@ -149,10 +185,10 @@ En el detalle del Quodom, el botón que antes iniciaba la cotización pasa a ser
 3. **`.claude/settings.json` commiteado** con allowlist de permisos: `npm run dev/test/seed/build` dentro de `quodom-web`, `node`, `npx tsc --noEmit`, lecturas del proyecto y carpetas de referencia. Se configura con la skill `update-config`.
 4. **Flujo de trabajo:** specs en `docs/superpowers/specs/` → plan (writing-plans) → ejecución por tareas con commits chicos y verificación antes de marcar completado.
 
-## 8. Fuera de alcance
+## 9. Fuera de alcance
 
 - Lógica de vendedores en cualquier forma (incluido backoffice de cotización manual).
 - Pasarelas de pago.
 - Push notifications nativas.
-- Generación de Quodoms por IA (existía solo en la deprecada quodom-new; no forma parte de este alcance).
+- Modo IA para invitados (requiere login).
 - Modificaciones a las carpetas originales `API` y `APP`.
