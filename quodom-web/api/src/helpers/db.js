@@ -15,23 +15,20 @@ const sequelize = new Sequelize({
     dialect: 'sqlite',
     storage,
     logging: false,
-    acquire: 30000,
-    idle: 30000,
     retry: { max: 5 },
     pool: { min: 0, max: 1 }
 });
-
-// Enable WAL mode for SQLite to support concurrent reads/writes
-if (storage !== ':memory:') {
-    sequelize.query('PRAGMA journal_mode = WAL;').catch(() => {});
-    sequelize.query('PRAGMA busy_timeout = 30000;').catch(() => {});
-}
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 db.ready = initialize();
 
 async function initialize() {
+    if (storage !== ':memory:') {
+        await sequelize.query('PRAGMA journal_mode = WAL;');
+        await sequelize.query('PRAGMA busy_timeout = 30000;');
+    }
+
     db.User = require('../models/users.model')(sequelize);
     db.Category = require('../models/categorias.model')(sequelize);
     db.Products = require('../models/productos.model')(sequelize);
