@@ -2,7 +2,8 @@ const path = require('path');
 const { Sequelize } = require('sequelize');
 const { createViews } = require('./views');
 
-module.exports = db = {};
+const db = {};
+module.exports = db;
 
 const storage = process.env.DB_STORAGE === ':memory:'
     ? ':memory:'
@@ -10,7 +11,21 @@ const storage = process.env.DB_STORAGE === ':memory:'
         ? path.resolve(process.env.DB_STORAGE)
         : path.join(__dirname, '../../quodom.sqlite'));
 
-const sequelize = new Sequelize({ dialect: 'sqlite', storage, logging: false });
+const sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage,
+    logging: false,
+    acquire: 30000,
+    idle: 30000,
+    retry: { max: 5 },
+    pool: { min: 0, max: 1 }
+});
+
+// Enable WAL mode for SQLite to support concurrent reads/writes
+if (storage !== ':memory:') {
+    sequelize.query('PRAGMA journal_mode = WAL;').catch(() => {});
+    sequelize.query('PRAGMA busy_timeout = 30000;').catch(() => {});
+}
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
