@@ -12,8 +12,12 @@ module.exports = {
     getQuodomCreados
 };
 
-async function getById(id) {
-    return await getQuodom(id);
+async function getById(id, userId) {
+    const quodom = await getQuodom(id);
+    if (quodom.createdBy !== userId) {
+        throw 'El Id Quodom no pertenece a el usuario.';
+    }
+    return quodom;
 }
 
 async function getMyQuodoms(userId) {

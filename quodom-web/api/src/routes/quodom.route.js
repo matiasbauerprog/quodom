@@ -11,7 +11,7 @@ router.get('/porccompletado/:id', auth.verifyToken(), getPorcById);
 router.get('/:id', auth.verifyToken(), getById);
 router.post('/create', auth.verifyToken(), createSchema, create);
 router.post('/getLastQuodom/', auth.verifyToken(), getLastQuodomOrCreate);
-router.put('/:id', auth.verifyToken(), update);
+router.put('/:id', auth.verifyToken(), updateSchema, update);
 router.delete('/:id', auth.verifyToken(), _delete);
 
 module.exports = router;
@@ -19,6 +19,14 @@ module.exports = router;
 function createSchema(req, res, next) {
   const schema = Joi.object({
     descripcion: Joi.string().required(),
+    iddireccion: Joi.number().integer().empty(null)
+  });
+  validateRequest(req, next, schema);
+}
+
+function updateSchema(req, res, next) {
+  const schema = Joi.object({
+    descripcion: Joi.string(),
     iddireccion: Joi.number().integer().empty(null)
   });
   validateRequest(req, next, schema);
@@ -43,7 +51,7 @@ function getPorcById(req, res, next) {
 }
 
 function getById(req, res, next) {
-  Controler.getById(req.params.id)
+  Controler.getById(req.params.id, req.user.id)
     .then(data => res.json(data))
     .catch(next);
 }

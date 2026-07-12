@@ -108,6 +108,24 @@ describe('quodom', () => {
     expect(res.body.data.id).toBe(idquodom);
   });
 
+  it('GET /quodom/:id of another user fails', async () => {
+    const res = await request(app).get('/quodom/' + idquodom)
+      .set('Authorization', 'Bearer ' + otherToken);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
+  });
+
+  it('PUT /quodom/:id strips protected fields like estado and nro', async () => {
+    const res = await request(app).put('/quodom/' + idquodom)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Pintura Dpto 2', estado: 'ENVIADO', nro: 'HACK' });
+    expect(res.status).toBe(200);
+    const q = await db.Quodom.findByPk(idquodom);
+    expect(q.descripcion).toBe('Pintura Dpto 2');
+    expect(q.estado).toBe('CREADO');
+    expect(q.nro).toBe('QD-1');
+  });
+
   it('DELETE /quodom/:id destroys a CREADO quodom and its lines', async () => {
     const res = await request(app).delete('/quodom/' + idquodom)
       .set('Authorization', 'Bearer ' + token);
