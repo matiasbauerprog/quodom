@@ -55,4 +55,30 @@ describe('notificaciones', () => {
       .set('Authorization', 'Bearer ' + token);
     expect(count.body).toBe(0);
   });
+
+  it('PUT /oper_notificaciones/:id strips protected fields', async () => {
+    const res = await request(app).put('/oper_notificaciones/' + idnotif)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ leida: 1, userId: 9999, titulo: 'HACK', tiponotificacion: 'FORJADA' });
+    expect(res.status).toBe(200);
+
+    const list = await request(app).get('/oper_notificaciones')
+      .set('Authorization', 'Bearer ' + token);
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0].titulo).toBe('Quodom enviado');
+    expect(list.body[0].tiponotificacion).toBe('QUODOMENVIADO');
+  });
+
+  it('PUT /oper_notificaciones/:id of another user fails', async () => {
+    await request(app).post('/users/signup').send({
+      username: 'beto', email: 'beto@test.com', nombre: 'Beto', password: 'secreto123',
+      codArea: '11', telefono: '44443333'
+    });
+    const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
+    const res = await request(app).put('/oper_notificaciones/' + idnotif)
+      .set('Authorization', 'Bearer ' + login2.body.token)
+      .send({ leida: 1 });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('La notificación no pertenece a el usuario.');
+  });
 });

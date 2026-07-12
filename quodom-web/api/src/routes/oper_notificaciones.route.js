@@ -2,12 +2,21 @@
 const router = express.Router();
 const auth = require('../middleware/auth');
 const Controler = require('../controllers/oper_notificaciones.controller');
+const Joi = require('joi');
+const validateRequest = require('../middleware/validate-request');
 
 router.get('/', auth.verifyToken(), getAll);
 router.get('/count', auth.verifyToken(), getCount);
-router.put('/:id', auth.verifyToken(), update);
+router.put('/:id', auth.verifyToken(), updateSchema, update);
 
 module.exports = router;
+
+function updateSchema(req, res, next) {
+  const schema = Joi.object({
+    leida: Joi.number().integer()
+  });
+  validateRequest(req, next, schema);
+}
 
 function getAll(req, res, next) {
   Controler.getAll(req.user.id)
