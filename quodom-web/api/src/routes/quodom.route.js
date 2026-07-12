@@ -8,6 +8,7 @@ const validateRequest = require('../middleware/validate-request');
 router.get('/getQuodomCreados', auth.verifyToken(), getQuodomCreados);
 router.get('/misQuodom/', auth.verifyToken(), getMyQuodoms);
 router.get('/porccompletado/:id', auth.verifyToken(), getPorcById);
+router.get('/whatsapp/:id', auth.verifyToken(), whatsappLink);
 router.get('/:id', auth.verifyToken(), getById);
 router.post('/create', auth.verifyToken(), createSchema, create);
 router.post('/getLastQuodom/', auth.verifyToken(), getLastQuodomOrCreate);
@@ -77,5 +78,11 @@ function getLastQuodomOrCreate(req, res, next) {
 function getQuodomCreados(req, res, next) {
   Controler.getQuodomCreados(req.user.id)
     .then((data) => res.json({ res: (data.length !== 0 ? true : false), data }))
+    .catch(next);
+}
+
+function whatsappLink(req, res, next) {
+  Controler.whatsappLink(req.params.id, req.user.id)
+    .then(link => res.json({ res: true, link }))
     .catch(next);
 }
