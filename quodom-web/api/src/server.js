@@ -19,6 +19,10 @@ if (process.env.NODE_ENV !== 'test') {
 
 // api routes (added task by task)
 app.use('/users', require('./routes/users.routes'));
+app.use('/categorias', require('./routes/categorias.route'));
+app.use('/productos', require('./routes/productos.route'));
+app.use('/busqueda', require('./routes/busqueda.route'));
+app.use('/hist_busquedas', require('./routes/hist_busquedas.route'));
 
 app.get('/', (req, res) => {
   res.json({
