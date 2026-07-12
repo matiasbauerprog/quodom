@@ -23,6 +23,8 @@ app.use('/categorias', require('./routes/categorias.route'));
 app.use('/productos', require('./routes/productos.route'));
 app.use('/busqueda', require('./routes/busqueda.route'));
 app.use('/hist_busquedas', require('./routes/hist_busquedas.route'));
+app.use('/quodom', require('./routes/quodom.route'));
+app.use('/quodom_lines', require('./routes/quodom_lines.route'));
 
 app.get('/', (req, res) => {
   res.json({
