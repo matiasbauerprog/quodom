@@ -9,10 +9,19 @@ router.get('/lines/:id', auth.verifyToken(), getById);
 router.get('/atributos', auth.verifyToken(), getAtributos);
 router.get('/:idquodom', auth.verifyToken(), getAllbyIdQuodom);
 router.post('/add', auth.verifyToken(), addSchema, add);
-router.put('/:id', auth.verifyToken(), update);
+router.put('/:id', auth.verifyToken(), updateSchema, update);
 router.delete('/:id', auth.verifyToken(), _delete);
 
 module.exports = router;
+
+function updateSchema(req, res, next) {
+  const schema = Joi.object({
+    cantidad: Joi.number().integer(),
+    atributo1: Joi.string().empty(''),
+    atributo2: Joi.string().empty('')
+  });
+  validateRequest(req, next, schema);
+}
 
 function addSchema(req, res, next) {
   const schema = Joi.object({
@@ -45,7 +54,7 @@ function getAtributos(req, res, next) {
 }
 
 function getById(req, res, next) {
-  Controler.getById(req.params.id)
+  Controler.getById(req.params.id, req.user.id)
     .then(data => res.json({
       idproducto: data.idproducto,
       detalleProducto: data.detalleProducto,

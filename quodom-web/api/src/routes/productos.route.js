@@ -16,7 +16,7 @@ function getByCategoria(req, res, next) {
 }
 
 function getProductsByCatQuodom(req, res, next) {
-  Controler.getProductsByCatQuodom(req.params.idquodom, req.params.idcategoria)
+  Controler.getProductsByCatQuodom(req.params.idquodom, req.params.idcategoria, req.user.id)
     .then(datas => res.json(datas))
     .catch(next);
 }

@@ -20,11 +20,33 @@ router.post('/signup', signupSchema, register);
 router.post('/reset', resetSchema, resetPass);
 router.post('/reenviar', resetSchema, reenviar);
 router.post('/changePass', changePassSchema, cambiarPass);
-router.put('/', auth.verifyToken(), update);
-router.put('/cambiarFoto/:id', auth.verifyToken(), updateFoto);
+router.put('/', auth.verifyToken(), updateSchema, update);
+router.put('/cambiarFoto/:id', auth.verifyToken(), fotoSchema, updateFoto);
 router.delete('/:id', auth.isAdmin(), _delete);
 
 module.exports = router;
+
+function updateSchema(req, res, next) {
+  const schema = Joi.object({
+    username: Joi.string(),
+    email: Joi.string().email(),
+    nombre: Joi.string(),
+    apellido: Joi.string(),
+    dni: Joi.string().empty(''),
+    codArea: Joi.string(),
+    telefono: Joi.string(),
+    password: Joi.string().min(6)
+  });
+  validateRequest(req, next, schema);
+}
+
+function fotoSchema(req, res, next) {
+  const schema = Joi.object({
+    foto: Joi.string().empty(''),
+    refreshFoto: Joi.string()
+  });
+  validateRequest(req, next, schema);
+}
 
 function signinSchema(req, res, next) {
   const schema = Joi.object({
@@ -114,15 +136,19 @@ function getCurrentFoto(req, res, next) {
 }
 
 function getById(req, res, next) {
-  Controler.getById(req.params.id)
-    .then(user => res.json({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      nombre: user.nombre,
-      apellido: user.apellido
-    }))
-    .catch(next);
+  if (req.user.id == req.params.id) {
+    Controler.getById(req.params.id)
+      .then(user => res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        nombre: user.nombre,
+        apellido: user.apellido
+      }))
+      .catch(next);
+  } else {
+    res.status(401).json({ res: false, message: 'Error de Id.' });
+  }
 }
 
 function getUserDirecciones(req, res, next) {

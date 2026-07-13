@@ -19,7 +19,12 @@ async function getByCat(categoria) {
 
 // For the open-quodom view: each product of the subcategory plus an
 // "existe" flag telling whether it is already in the quodom's lines.
-async function getProductsByCatQuodom(idquodom, id) {
+async function getProductsByCatQuodom(idquodom, id, userId) {
+    const quodom = await db.Quodom.findByPk(idquodom);
+    if (!quodom) throw 'Err. Id Quodom no encontrado.';
+    if (quodom.createdBy !== userId) {
+        throw 'El Id Quodom no pertenece a el usuario.';
+    }
     return await db.sequelize.query(
         `SELECT p.id, p.imagen, p.refreshImagen, p.nombreproducto,
                 COALESCE((SELECT 1 FROM quodom_lines ql

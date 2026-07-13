@@ -29,8 +29,12 @@ async function getAtributos(idproducto, nombreatributo) {
     });
 }
 
-async function getById(id) {
-    return await getQuodom_lines(id);
+async function getById(id, userId) {
+    const ql = await getQuodom_lines(id);
+    if (ql.createdBy !== userId) {
+        throw 'El Id Quodom no pertenece a el usuario.';
+    }
+    return ql;
 }
 
 async function add(params, userId) {

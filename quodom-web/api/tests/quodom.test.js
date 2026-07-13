@@ -126,6 +126,32 @@ describe('quodom', () => {
     expect(q.nro).toBe('QD-1');
   });
 
+  it('PUT /quodom_lines/:id strips mass-assignment fields', async () => {
+    const res = await request(app).put('/quodom_lines/' + idline)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ cantidad: 3, idquodom: 'other', createdBy: 'hacked', nombreCategoria: 'HACK' });
+    expect(res.status).toBe(200);
+    const lines = await request(app).get('/quodom_lines/' + idquodom)
+      .set('Authorization', 'Bearer ' + token);
+    expect(lines.body[0].idquodom).toBe(idquodom);
+    expect(lines.body[0].cantidad).toBe(3);
+    expect(lines.body[0].nombreCategoria).toBe('Latex');
+  });
+
+  it('GET /quodom_lines/lines/:id with other user token returns 400', async () => {
+    const res = await request(app).get('/quodom_lines/lines/' + idline)
+      .set('Authorization', 'Bearer ' + otherToken);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
+  });
+
+  it('GET /productos/categoriaQ/:idquodom/:idcategoria with other user token returns 400', async () => {
+    const res = await request(app).get('/productos/categoriaQ/' + idquodom + '/35')
+      .set('Authorization', 'Bearer ' + otherToken);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
+  });
+
   it('DELETE /quodom/:id destroys a CREADO quodom and its lines', async () => {
     const res = await request(app).delete('/quodom/' + idquodom)
       .set('Authorization', 'Bearer ' + token);
