@@ -13,6 +13,9 @@ import { ProductosPorCategoria } from '../screens/Home/ProductosPorCategoria';
 import { BusquedaScreen } from '../screens/Home/BusquedaScreen';
 import { DetalleQuodom } from '../screens/Quodom/DetalleQuodom';
 import { ListaMisQuodoms } from '../screens/MisQuodoms/ListaMisQuodoms';
+import { ListaDirecciones } from '../screens/Direcciones/ListaDirecciones';
+import { AgregarDireccion } from '../screens/Direcciones/AgregarDireccion';
+import { ModificarDireccion } from '../screens/Direcciones/ModificarDireccion';
 
 function Placeholder({ title }: { title: string }) {
   return <div className="container"><h1>{title}</h1></div>;
@@ -35,7 +38,9 @@ const router = createBrowserRouter([
       { path: '/quodom', element: <DetalleQuodom /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
       { path: '/perfil', element: <ProtectedRoute><Placeholder title="Perfil" /></ProtectedRoute> },
-      { path: '/direcciones', element: <ProtectedRoute><Placeholder title="Direcciones" /></ProtectedRoute> },
+      { path: '/direcciones', element: <ProtectedRoute><ListaDirecciones /></ProtectedRoute> },
+      { path: '/direcciones/nuevo', element: <ProtectedRoute><AgregarDireccion /></ProtectedRoute> },
+      { path: '/direcciones/:id', element: <ProtectedRoute><ModificarDireccion /></ProtectedRoute> },
       { path: '/notificaciones', element: <ProtectedRoute><Placeholder title="Notificaciones" /></ProtectedRoute> }
     ]
   }
