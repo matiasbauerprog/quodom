@@ -1,0 +1,2 @@
+.error-state { text-align: center; padding: var(--sp-6) var(--sp-4); color: var(--color-error); }
+.error-state p { margin-bottom: var(--sp-3); }

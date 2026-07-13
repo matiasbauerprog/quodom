@@ -1,0 +1,3 @@
+.empty-state { text-align: center; padding: var(--sp-6) var(--sp-4); color: var(--color-texto); }
+.empty-state h3 { margin-bottom: var(--sp-2); }
+.empty-state p { color: var(--color-texto-muted); margin-bottom: var(--sp-4); }
