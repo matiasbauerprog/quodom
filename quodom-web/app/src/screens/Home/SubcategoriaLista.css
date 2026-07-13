@@ -1,0 +1,5 @@
+.subcat { padding: var(--sp-4) 0 var(--sp-7); }
+.subcat-grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(2, 1fr); }
+.subcat-card { min-height: 88px; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--color-acento); font-weight: 500; }
+@media (min-width: 601px) { .subcat-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1025px) { .subcat-grid { grid-template-columns: repeat(5, 1fr); } }

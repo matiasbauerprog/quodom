@@ -7,6 +7,9 @@ import { CuentaCreada } from '../screens/Auth/CuentaCreada';
 import { ForgotPassword } from '../screens/Auth/ForgotPassword';
 import { ResetPassword } from '../screens/Auth/ResetPassword';
 import { ValidarEmail } from '../screens/Auth/ValidarEmail';
+import { SitioInicial } from '../screens/Home/SitioInicial';
+import { SubcategoriaLista } from '../screens/Home/SubcategoriaLista';
+import { ProductosPorCategoria } from '../screens/Home/ProductosPorCategoria';
 
 function Placeholder({ title }: { title: string }) {
   return <div className="container"><h1>{title}</h1></div>;
@@ -22,9 +25,9 @@ const router = createBrowserRouter([
   {
     element: <Layout><Outlet /></Layout>,
     children: [
-      { path: '/', element: <Placeholder title="Inicio" /> },
-      { path: '/categoria/:id', element: <Placeholder title="Subcategorías" /> },
-      { path: '/subcategoria/:id', element: <Placeholder title="Productos" /> },
+      { path: '/', element: <SitioInicial /> },
+      { path: '/categoria/:id', element: <SubcategoriaLista /> },
+      { path: '/subcategoria/:id', element: <ProductosPorCategoria /> },
       { path: '/busqueda', element: <Placeholder title="Buscar" /> },
       { path: '/quodom', element: <Placeholder title="Mi Quodom" /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><Placeholder title="Mis Quodoms" /></ProtectedRoute> },

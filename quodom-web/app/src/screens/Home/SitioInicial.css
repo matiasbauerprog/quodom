@@ -1,0 +1,7 @@
+.home-inicial { padding: var(--sp-4) 0 var(--sp-7); }
+.cat-grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(2, 1fr); }
+.cat-card { display: flex; align-items: center; justify-content: center; min-height: 120px; text-align: center; }
+.cat-card-name { font-family: var(--font-prompt); font-weight: 500; font-size: 18px; color: var(--color-acento); }
+
+@media (min-width: 601px) and (max-width: 1024px) { .cat-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1025px) { .cat-grid { grid-template-columns: repeat(4, 1fr); } .cat-card { min-height: 160px; } }
