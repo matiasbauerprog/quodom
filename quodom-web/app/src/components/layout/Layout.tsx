@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { AppBar } from './AppBar';
 import { Drawer } from './Drawer';
+import { BarraQuodomInferior } from './BarraQuodomInferior';
 import './Layout.css';
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -12,6 +13,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="layout-main">
         <AppBar onOpenDrawer={() => setDrawerOpen(true)} />
         <main>{children}</main>
+        <BarraQuodomInferior />
       </div>
     </div>
   );
