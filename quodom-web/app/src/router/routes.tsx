@@ -1,18 +1,24 @@
 import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
+import { SignIn } from '../screens/Auth/SignIn';
+import { SignUp } from '../screens/Auth/SignUp';
+import { CuentaCreada } from '../screens/Auth/CuentaCreada';
+import { ForgotPassword } from '../screens/Auth/ForgotPassword';
+import { ResetPassword } from '../screens/Auth/ResetPassword';
+import { ValidarEmail } from '../screens/Auth/ValidarEmail';
 
 function Placeholder({ title }: { title: string }) {
   return <div className="container"><h1>{title}</h1></div>;
 }
 
 const router = createBrowserRouter([
-  { path: '/login', element: <Placeholder title="Ingresar" /> },
-  { path: '/registro', element: <Placeholder title="Crear cuenta" /> },
-  { path: '/cuenta-creada', element: <Placeholder title="Cuenta creada" /> },
-  { path: '/recuperar', element: <Placeholder title="Recuperar contraseña" /> },
-  { path: '/reset/:token', element: <Placeholder title="Nueva contraseña" /> },
-  { path: '/validar-email/:token', element: <Placeholder title="Validar email" /> },
+  { path: '/login', element: <SignIn /> },
+  { path: '/registro', element: <SignUp /> },
+  { path: '/cuenta-creada', element: <CuentaCreada /> },
+  { path: '/recuperar', element: <ForgotPassword /> },
+  { path: '/reset/:token', element: <ResetPassword /> },
+  { path: '/validar-email/:token', element: <ValidarEmail /> },
   {
     element: <Layout><Outlet /></Layout>,
     children: [
