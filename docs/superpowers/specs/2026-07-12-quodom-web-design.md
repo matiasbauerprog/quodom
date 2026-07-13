@@ -79,7 +79,7 @@ En `users` se eliminan los campos propios del vendedor (datos bancarios, tipo de
 ### 3.3 Adaptaciones técnicas
 
 1. **Vistas SQL:** las vistas que sobreviven (`v_Busqueda`, `v_Quodoms`, `v_Quodoms_Lines`, `v_InfoCompradors`, `v_ResumenCompras`) se recrean con sintaxis compatible SQLite o se convierten en queries de Sequelize dentro del controller. Se decide vista por vista al portarlas.
-2. **Seeding:** script Node en `seed/` que lee `Documentacion 2.0/Categorias/Migracion.xlsx` (62 subcategorías, 644 productos con sus IDs reales) y puebla la base. Se corre con `npm run seed`.
+2. **Seeding:** script Node en `seed/` que lee `Documentacion 2.0/Categorias/Migracion.xlsx` (8 rubros + 50 subcategorías, 644 productos con sus IDs reales) y puebla la base. Se corre con `npm run seed`. (Corrección durante ejecución: el spec decía 62 subcategorías, pero el Excel real contiene 50.)
 3. **Exportación WhatsApp:** `GET /api/quodom/:id/whatsapp` genera el texto del mensaje (listado de productos con cantidades + datos de contacto del comprador) y devuelve el link `https://wa.me/?text={mensaje_codificado}` para que el frontend redirija.
 
 ## 4. Frontend
@@ -136,7 +136,7 @@ En el detalle del Quodom, el botón que antes iniciaba la cotización pasa a ser
 ## 6. Testing
 
 - **API:** tests de integración contra una base SQLite real de test (sin mocks de base), cubriendo auth, catálogo, quodoms y el endpoint de WhatsApp.
-- **Seeding:** verificación automática post-seed (62 subcategorías, 644 productos).
+- **Seeding:** verificación automática post-seed (50 subcategorías, 644 productos).
 - **IA:** tests del endpoint de chat con el proveedor Gemini simulado (sin llamadas reales), cubriendo validación de `productId` contra el catálogo, límites de uso y formato de respuesta.
 - **Frontend:** verificación manual en navegador de los flujos clave (guest arma Quodom → registro → migración → envío WhatsApp; chat IA → propuesta → confirmación). Tests unitarios solo para lógica no trivial (migración del Quodom de invitado, armado del mensaje de WhatsApp).
 

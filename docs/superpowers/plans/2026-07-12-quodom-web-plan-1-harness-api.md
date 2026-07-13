@@ -42,7 +42,7 @@ Transformación de Quodom 1.0 (React Native + API MySQL) en una webapp, **sin us
 ## 2. Arquitectura
 - `quodom-web/api/`: Express + Sequelize + **SQLite**, en JavaScript, espejo 1:1 de la estructura original (`controllers/`, `models/`, `routes/`, `helpers/`, `middleware/`). Config por variables de entorno (`.env`, nunca commitear secretos).
 - `quodom-web/app/`: React + Vite + **TypeScript**, CSS plano, espejo de las screens/navegación de la APP original.
-- La base se puebla con `npm run seed` leyendo `Documentacion 2.0/Categorias/Migracion.xlsx` (62 subcategorías, 644 productos, IDs reales).
+- La base se puebla con `npm run seed` leyendo `Documentacion 2.0/Categorias/Migracion.xlsx` (8 rubros + 50 subcategorías, 644 productos, IDs reales).
 
 ## 3. Reglas de producto
 - No existe lógica de vendedores (cotizaciones, ofertas, zonas, rubros, calificaciones, bancos) ni de pagos.
@@ -711,9 +711,9 @@ async function main() {
     const subcats = await db.Category.count({ where: { idcategoriapadre: { [db.Sequelize.Op.ne]: 0 } } });
     const totalProds = await db.Products.count();
     console.log(`Seeded: ${cats} categories (${subcats} subcategories), ${totalProds} products, ${attrs} attribute rows, ${PROVINCIAS.length} provinces.`);
-    if (subcats !== 62) throw new Error(`Expected 62 subcategories, got ${subcats}`);
+    if (subcats !== 50) throw new Error(`Expected 50 subcategories, got ${subcats}`);
     if (totalProds !== 644) throw new Error(`Expected 644 products, got ${totalProds}`);
-    console.log('Seed verification OK (62 subcategories, 644 products).');
+    console.log('Seed verification OK (50 subcategories, 644 products).');
 }
 
 main()
@@ -726,7 +726,7 @@ main()
 ```bash
 cd quodom-web/api && npm run seed
 ```
-Expected: `Seed verification OK (62 subcategories, 644 products).` y exit code 0. Si los conteos difieren, investigar el Excel (filas inactivas o vacías) ANTES de ajustar los números esperados — los valores 62/644 vienen del spec.
+Expected: `Seed verification OK (50 subcategories, 644 products).` y exit code 0. Nota: el spec original decía 62 subcategorías, pero el Excel real (fuente de verdad) contiene 8 rubros + 50 subcategorías; verificado contra `Migracion.xlsx` durante la ejecución.
 
 - [ ] **Step 3: Verificar que la base es consultable**
 
@@ -739,7 +739,7 @@ Expected: imprime los conteos reales (>0).
 
 ```bash
 git add quodom-web/api/src/seed
-git commit -m "feat: add Excel-based seed script with 62-subcategory/644-product verification"
+git commit -m "feat: add Excel-based seed script with 50-subcategory/644-product verification"
 ```
 
 ---
@@ -3119,7 +3119,7 @@ Express + Sequelize 6 + SQLite, JavaScript (CommonJS). Port 1:1 de la API origin
 
 ## Comandos
 - `npm install` — instalar dependencias
-- `npm run seed` — poblar `quodom.sqlite` desde `Documentacion 2.0/Categorias/Migracion.xlsx` (verifica 62 subcategorías / 644 productos)
+- `npm run seed` — poblar `quodom.sqlite` desde `Documentacion 2.0/Categorias/Migracion.xlsx` (verifica 50 subcategorías / 644 productos)
 - `npm run dev` — servidor en `http://localhost:3999` (nodemon)
 - `npm test` — Jest + Supertest contra SQLite en memoria (`--runInBand`; cada archivo de test tiene su propia DB)
 
@@ -3142,7 +3142,7 @@ Express + Sequelize 6 + SQLite, JavaScript (CommonJS). Port 1:1 de la API origin
 ```bash
 cd quodom-web/api && npm test && npm run seed
 ```
-Expected: toda la suite PASS y `Seed verification OK (62 subcategories, 644 products).`
+Expected: toda la suite PASS y `Seed verification OK (50 subcategories, 644 products).`
 
 - [ ] **Step 3: Levantar el server y probar a mano**
 
