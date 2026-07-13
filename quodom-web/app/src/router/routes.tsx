@@ -12,6 +12,7 @@ import { SubcategoriaLista } from '../screens/Home/SubcategoriaLista';
 import { ProductosPorCategoria } from '../screens/Home/ProductosPorCategoria';
 import { BusquedaScreen } from '../screens/Home/BusquedaScreen';
 import { DetalleQuodom } from '../screens/Quodom/DetalleQuodom';
+import { ListaMisQuodoms } from '../screens/MisQuodoms/ListaMisQuodoms';
 
 function Placeholder({ title }: { title: string }) {
   return <div className="container"><h1>{title}</h1></div>;
@@ -32,7 +33,7 @@ const router = createBrowserRouter([
       { path: '/subcategoria/:id', element: <ProductosPorCategoria /> },
       { path: '/busqueda', element: <BusquedaScreen /> },
       { path: '/quodom', element: <DetalleQuodom /> },
-      { path: '/mis-quodoms', element: <ProtectedRoute><Placeholder title="Mis Quodoms" /></ProtectedRoute> },
+      { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
       { path: '/perfil', element: <ProtectedRoute><Placeholder title="Perfil" /></ProtectedRoute> },
       { path: '/direcciones', element: <ProtectedRoute><Placeholder title="Direcciones" /></ProtectedRoute> },
       { path: '/notificaciones', element: <ProtectedRoute><Placeholder title="Notificaciones" /></ProtectedRoute> }
