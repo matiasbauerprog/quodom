@@ -1,0 +1,7 @@
+.busqueda { padding: var(--sp-4) 0 var(--sp-7); }
+.busqueda-form { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.busqueda-form .input { flex: 1; }
+.busqueda-empty { text-align: center; color: var(--color-texto-muted); padding: var(--sp-6) 0; }
+.busqueda-list { display: grid; gap: var(--sp-2); }
+.busqueda-hist-title { margin-top: var(--sp-5); }
+.busqueda-hist { display: flex; flex-wrap: wrap; gap: var(--sp-2); }

@@ -10,6 +10,7 @@ import { ValidarEmail } from '../screens/Auth/ValidarEmail';
 import { SitioInicial } from '../screens/Home/SitioInicial';
 import { SubcategoriaLista } from '../screens/Home/SubcategoriaLista';
 import { ProductosPorCategoria } from '../screens/Home/ProductosPorCategoria';
+import { BusquedaScreen } from '../screens/Home/BusquedaScreen';
 
 function Placeholder({ title }: { title: string }) {
   return <div className="container"><h1>{title}</h1></div>;
@@ -28,7 +29,7 @@ const router = createBrowserRouter([
       { path: '/', element: <SitioInicial /> },
       { path: '/categoria/:id', element: <SubcategoriaLista /> },
       { path: '/subcategoria/:id', element: <ProductosPorCategoria /> },
-      { path: '/busqueda', element: <Placeholder title="Buscar" /> },
+      { path: '/busqueda', element: <BusquedaScreen /> },
       { path: '/quodom', element: <Placeholder title="Mi Quodom" /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><Placeholder title="Mis Quodoms" /></ProtectedRoute> },
       { path: '/perfil', element: <ProtectedRoute><Placeholder title="Perfil" /></ProtectedRoute> },
