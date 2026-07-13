@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Jaldi:wght@400;700&family=Work+Sans:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: var(--font-work);
+  font-size: var(--fs-body);
+  color: var(--color-texto);
+  line-height: 1.4;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-prompt); font-weight: 500; margin: 0 0 var(--sp-3) 0; }
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
+p { margin: 0 0 var(--sp-3) 0; }
