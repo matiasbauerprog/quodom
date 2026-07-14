@@ -16,6 +16,9 @@ import { ListaMisQuodoms } from '../screens/MisQuodoms/ListaMisQuodoms';
 import { ListaDirecciones } from '../screens/Direcciones/ListaDirecciones';
 import { AgregarDireccion } from '../screens/Direcciones/AgregarDireccion';
 import { ModificarDireccion } from '../screens/Direcciones/ModificarDireccion';
+import { ProfileScreen } from '../screens/Profile/ProfileScreen';
+import { DetalleUsuario } from '../screens/Profile/DetalleUsuario';
+import { CambiarPass } from '../screens/Profile/CambiarPass';
 
 function Placeholder({ title }: { title: string }) {
   return <div className="container"><h1>{title}</h1></div>;
@@ -37,7 +40,9 @@ const router = createBrowserRouter([
       { path: '/busqueda', element: <BusquedaScreen /> },
       { path: '/quodom', element: <DetalleQuodom /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
-      { path: '/perfil', element: <ProtectedRoute><Placeholder title="Perfil" /></ProtectedRoute> },
+      { path: '/perfil', element: <ProtectedRoute><ProfileScreen /></ProtectedRoute> },
+      { path: '/perfil/datos', element: <ProtectedRoute><DetalleUsuario /></ProtectedRoute> },
+      { path: '/perfil/cambiar-pass', element: <ProtectedRoute><CambiarPass /></ProtectedRoute> },
       { path: '/direcciones', element: <ProtectedRoute><ListaDirecciones /></ProtectedRoute> },
       { path: '/direcciones/nuevo', element: <ProtectedRoute><AgregarDireccion /></ProtectedRoute> },
       { path: '/direcciones/:id', element: <ProtectedRoute><ModificarDireccion /></ProtectedRoute> },
