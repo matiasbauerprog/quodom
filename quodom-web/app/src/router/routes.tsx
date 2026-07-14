@@ -19,10 +19,7 @@ import { ModificarDireccion } from '../screens/Direcciones/ModificarDireccion';
 import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import { DetalleUsuario } from '../screens/Profile/DetalleUsuario';
 import { CambiarPass } from '../screens/Profile/CambiarPass';
-
-function Placeholder({ title }: { title: string }) {
-  return <div className="container"><h1>{title}</h1></div>;
-}
+import { ListaNotificaciones } from '../screens/Notificaciones/ListaNotificaciones';
 
 const router = createBrowserRouter([
   { path: '/login', element: <SignIn /> },
@@ -46,7 +43,7 @@ const router = createBrowserRouter([
       { path: '/direcciones', element: <ProtectedRoute><ListaDirecciones /></ProtectedRoute> },
       { path: '/direcciones/nuevo', element: <ProtectedRoute><AgregarDireccion /></ProtectedRoute> },
       { path: '/direcciones/:id', element: <ProtectedRoute><ModificarDireccion /></ProtectedRoute> },
-      { path: '/notificaciones', element: <ProtectedRoute><Placeholder title="Notificaciones" /></ProtectedRoute> }
+      { path: '/notificaciones', element: <ProtectedRoute><ListaNotificaciones /></ProtectedRoute> }
     ]
   }
 ]);
