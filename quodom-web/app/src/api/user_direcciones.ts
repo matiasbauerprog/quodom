@@ -20,7 +20,7 @@ export const userDirecciones = {
   default: () =>
     apiFetch<Direccion | null>('/user_direcciones/direcciondefault'),
   create: (body: DireccionInput) =>
-    apiFetch<{ res: boolean; id: number }>('/user_direcciones/create', { method: 'POST', body }),
+    apiFetch<{ res: boolean; message: string }>('/user_direcciones/create', { method: 'POST', body }),
   update: (id: number, body: DireccionInput) =>
     apiFetch<unknown>('/user_direcciones/' + id, { method: 'PUT', body }),
   setPrincipal: (id: number) =>

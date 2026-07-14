@@ -99,8 +99,8 @@ export function DetalleQuodom() {
         atributo1: l.atributo1, atributo2: l.atributo2,
         nombreAtributo1: l.nombreAtributo1, nombreAtributo2: l.nombreAtributo2,
         idproducto: l.idproducto,
-        onCantidad: (c: number) => { updateGuestLineCantidad(idx, c); setNonce(n => n + 1); },
-        onRemove: () => { removeGuestLine(idx); setNonce(n => n + 1); },
+        onCantidad: (c: number) => { updateGuestLineCantidad(idx, c); setNonce(n => n + 1); window.dispatchEvent(new Event('quodom:changed')); },
+        onRemove: () => { removeGuestLine(idx); setNonce(n => n + 1); window.dispatchEvent(new Event('quodom:changed')); },
         onAttr: (slot: 1 | 2, valor: string) => { updateGuestLineAtributos(idx, slot === 1 ? { atributo1: valor } : { atributo2: valor }); setNonce(n => n + 1); }
       }))
     : (server?.lines ?? []).map(l => ({
