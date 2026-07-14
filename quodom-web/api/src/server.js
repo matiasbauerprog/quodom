@@ -1,5 +1,6 @@
 require('rootpath')();
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const app = express();
 
@@ -11,11 +12,16 @@ const pkg = require('../package.json');
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(cors());
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 if (process.env.NODE_ENV !== 'test') {
   const morgan = require('morgan');
   app.use(morgan('dev'));
 }
+
+app.use('/img', express.static(path.join(__dirname, '..', 'uploads'), {
+  fallthrough: true,
+  maxAge: '1h'
+}));
 
 // api routes (added task by task)
 app.use('/users', require('./routes/users.routes'));
