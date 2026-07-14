@@ -6,6 +6,7 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { AppBarBack } from '../../components/layout/AppBarBack';
+import { ProductImage } from '../../components/ProductImage';
 import { addGuestLine } from '../../guest/guestQuodom';
 import { DetalleProducto } from './DetalleProducto';
 import './ProductosPorCategoria.css';
@@ -44,6 +45,7 @@ export function ProductosPorCategoria() {
             {prods.map(p => (
               <li key={p.id} className="prod-item card hoja">
                 <button className="prod-info" onClick={() => setSelected(p)}>
+                  <ProductImage idproducto={p.id} alt={p.nombreproducto} size="sm" />
                   <span className="prod-name">{p.nombreproducto}</span>
                 </button>
                 <button className="btn btn-exito prod-add" aria-label={'Agregar ' + p.nombreproducto} onClick={() => agregar(p)}>+</button>

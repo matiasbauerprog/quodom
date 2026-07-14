@@ -1,7 +1,7 @@
 .prods { padding: var(--sp-4) 0 var(--sp-7); }
 .prod-list { display: grid; gap: var(--sp-2); }
 .prod-item { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); }
-.prod-info { flex: 1; text-align: left; padding: var(--sp-2) 0; }
+.prod-info { flex: 1; display: flex; align-items: center; gap: var(--sp-3); text-align: left; padding: var(--sp-2) 0; }
 .prod-name { display: block; font-family: var(--font-prompt); color: var(--color-acento); font-weight: 500; }
 .prod-add { width: 44px; height: 44px; font-size: 20px; padding: 0; }
 .prods-empty { text-align: center; color: var(--color-texto-muted); padding: var(--sp-6) 0; }

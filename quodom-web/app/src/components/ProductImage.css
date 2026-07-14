@@ -1,0 +1,22 @@
+.prod-img {
+  display: block;
+  object-fit: contain;
+  background: #fff;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+  flex-shrink: 0;
+}
+.prod-img-sm { width: 56px; height: 56px; }
+.prod-img-md { width: 88px; height: 88px; }
+.prod-img-lg { width: 100%; height: auto; max-height: 240px; }
+.prod-img-fallback {
+  background: linear-gradient(135deg, rgba(112,111,154,.08) 0%, rgba(112,111,154,.16) 100%);
+  position: relative;
+}
+.prod-img-fallback::after {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  border: 2px dashed rgba(112,111,154,.4);
+  border-radius: 4px;
+}

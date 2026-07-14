@@ -13,6 +13,7 @@ import { AppBarBack } from '../../components/layout/AppBarBack';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { SelectorAtributo } from './SelectorAtributo';
+import { ProductImage } from '../../components/ProductImage';
 import { openWhatsappLink } from '../../utils/whatsapp';
 import { migrateGuestQuodom } from '../../guest/migrateGuestQuodom';
 import './DetalleQuodom.css';
@@ -132,6 +133,7 @@ export function DetalleQuodom() {
           {lines.map(l => (
             <li key={l.key} className="dq-line card hoja">
               <div className="dq-line-head">
+                <ProductImage idproducto={l.idproducto} alt={l.nombreProducto} size="sm" />
                 <span className="dq-line-name">{l.nombreProducto}</span>
                 <button className="dq-line-remove" aria-label="Quitar" onClick={l.onRemove}>×</button>
               </div>

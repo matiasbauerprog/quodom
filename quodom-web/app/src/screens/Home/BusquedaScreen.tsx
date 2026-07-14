@@ -6,6 +6,7 @@ import { ApiError } from '../../api/client';
 import { addGuestLine } from '../../guest/guestQuodom';
 import { useAuth } from '../../auth/AuthContext';
 import { Loader } from '../../components/Loader';
+import { ProductImage } from '../../components/ProductImage';
 import './BusquedaScreen.css';
 
 export function BusquedaScreen() {
@@ -60,6 +61,7 @@ export function BusquedaScreen() {
             <ul className="busqueda-list">
               {results.map(r => (
                 <li key={r.id} className="prod-item card hoja">
+                  <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
                   <span className="prod-name">{r.nombre}</span>
                   <button className="btn btn-exito prod-add" aria-label={'Agregar ' + r.nombre} onClick={() => agregar(r)}>+</button>
                 </li>
