@@ -6,6 +6,7 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { AppBarBack } from '../../components/layout/AppBarBack';
+import { RubroIcon } from '../../components/icons/RubroIcon';
 import './SubcategoriaLista.css';
 
 export function SubcategoriaLista() {
@@ -32,6 +33,7 @@ export function SubcategoriaLista() {
           <div className="subcat-grid">
             {subs.map(s => (
               <Link key={s.id} to={'/subcategoria/' + s.id} className="subcat-card card hoja">
+                <RubroIcon id={idPadre} size={36} />
                 <span>{s.nombrecategoria}</span>
               </Link>
             ))}

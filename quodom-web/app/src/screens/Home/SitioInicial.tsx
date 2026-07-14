@@ -5,6 +5,7 @@ import type { Category } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
+import { RubroIcon } from '../../components/icons/RubroIcon';
 import './SitioInicial.css';
 
 export function SitioInicial() {
@@ -30,6 +31,7 @@ export function SitioInicial() {
       <div className="cat-grid">
         {cats.map(c => (
           <Link key={c.id} to={'/categoria/' + c.id} className="cat-card card hoja">
+            <RubroIcon id={c.id} size={56} />
             <span className="cat-card-name">{c.nombrecategoria}</span>
           </Link>
         ))}
