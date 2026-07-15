@@ -1,4 +1,4 @@
-.prods {
+.container.prods {
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -1,4 +1,4 @@
-.home-inicial {
+.container.home-inicial {
   display: flex;
   flex-direction: column;
   align-items: center;
