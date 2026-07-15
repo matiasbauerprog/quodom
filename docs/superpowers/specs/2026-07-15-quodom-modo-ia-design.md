@@ -185,7 +185,7 @@ Además, dos respuestas **200 orgánicas** (no son errores técnicos, son repreg
 
 ### 6.1 Backend — `quodom-web/api/tests/ia.test.js`
 
-- `helpers/gemini.js` se **mockea** con `vi.fn()` en cada test. Cero llamadas reales, cero costo, determinísticos.
+- `helpers/gemini.js` se **mockea** con `jest.mock()` en cada archivo de test. Cero llamadas reales, cero costo, determinísticos.
 - Casos cubiertos:
   - 200 devuelve `type: "question"` cuando Gemini responde question.
   - 200 devuelve `type: "proposal"` con items válidos.
