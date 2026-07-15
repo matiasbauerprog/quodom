@@ -32,9 +32,9 @@ export function SubcategoriaLista() {
         {subs && (
           <div className="subcat-grid">
             {subs.map(s => (
-              <Link key={s.id} to={'/subcategoria/' + s.id} className="subcat-card card hoja">
-                <RubroIcon id={idPadre} size={36} />
-                <span>{s.nombrecategoria}</span>
+              <Link key={s.id} to={'/subcategoria/' + s.id} className="subcat-card">
+                <RubroIcon id={idPadre} size={56} />
+                <span className="subcat-card-name">{s.nombrecategoria}</span>
               </Link>
             ))}
           </div>

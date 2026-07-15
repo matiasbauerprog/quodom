@@ -43,12 +43,12 @@ export function ProductosPorCategoria() {
         {prods && prods.length > 0 && (
           <ul className="prod-list">
             {prods.map(p => (
-              <li key={p.id} className="prod-item card hoja">
+              <li key={p.id} className="prod-item">
                 <button className="prod-info" onClick={() => setSelected(p)}>
-                  <ProductImage idproducto={p.id} alt={p.nombreproducto} size="sm" />
+                  <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
                   <span className="prod-name">{p.nombreproducto}</span>
                 </button>
-                <button className="btn btn-exito prod-add" aria-label={'Agregar ' + p.nombreproducto} onClick={() => agregar(p)}>+</button>
+                <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} onClick={() => agregar(p)}>+</button>
               </li>
             ))}
           </ul>
