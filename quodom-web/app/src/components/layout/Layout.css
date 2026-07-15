@@ -1,5 +1,6 @@
 .layout { min-height: 100vh; }
 .layout-main { display: flex; flex-direction: column; min-height: 100vh; }
+
 @media (min-width: 1025px) {
-  .layout { display: grid; grid-template-columns: 260px 1fr; }
+  .layout { display: grid; grid-template-columns: 70% 30%; }
 }
