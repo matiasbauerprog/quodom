@@ -1,10 +1,8 @@
 .prods {
-  min-height: calc(100vh - 56px);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: var(--sp-5) 0;
+  padding: var(--sp-7) 0 var(--sp-7) 0;
 }
 .prod-list { display: grid; gap: var(--sp-2); width: 100%; max-width: 960px; }
 .prod-item { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); }
