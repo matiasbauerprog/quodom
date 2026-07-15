@@ -1,6 +1,12 @@
 const db = require('../helpers/db');
 const { callGemini } = require('../helpers/gemini');
 
+// Argentina is UTC-3 year-round. Use local date so the daily counter resets at
+// local midnight, not at 21:00 local (UTC midnight).
+function todayArgentina() {
+  return new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 const INTENT_SCHEMA = {
   type: 'object',
   properties: {
@@ -48,7 +54,10 @@ async function chat(userId, messages) {
     rubro: rubroById.get(s.idcategoriapadre) || ''
   }));
 
-  const lastUser = messages[messages.length - 1];
+  const intentContents = messages.slice(-3).map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.text }]
+  }));
 
   const intent = await callGemini({
     model,
@@ -57,7 +66,7 @@ async function chat(userId, messages) {
       'y una lista de subcategorías con su rubro padre. Devolvé un JSON con los IDs de subcategorías ' +
       'relevantes al mensaje. Si ninguna aplica, devolvé un array vacío. ' +
       'Subcategorías disponibles: ' + JSON.stringify(subcatList),
-    contents: [{ role: 'user', parts: [{ text: lastUser.text }] }],
+    contents: intentContents,
     responseSchema: INTENT_SCHEMA
   });
 
@@ -126,7 +135,7 @@ async function chat(userId, messages) {
 }
 
 async function incrementDaily(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayArgentina();
   const [row, created] = await db.ia_usage.findOrCreate({
     where: { iduser: userId, fecha: today },
     defaults: { iduser: userId, fecha: today, contador: 1 }
@@ -139,7 +148,7 @@ async function incrementDaily(userId) {
 }
 
 async function getDailyCount(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayArgentina();
   const row = await db.ia_usage.findOne({ where: { iduser: userId, fecha: today } });
   return row ? row.contador : 0;
 }
