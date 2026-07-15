@@ -3,9 +3,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   padding: var(--sp-5) 0;
 }
-.prod-list { display: grid; gap: var(--sp-2); }
+.prod-list { display: grid; gap: var(--sp-2); width: 100%; max-width: 960px; }
 .prod-item { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); }
 .prod-info { flex: 1; display: flex; align-items: center; gap: var(--sp-3); text-align: left; padding: var(--sp-2) 0; }
 .prod-name { display: block; font-family: var(--font-prompt); color: var(--color-acento); font-weight: 500; }
