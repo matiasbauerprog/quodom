@@ -14,6 +14,4 @@
 .barra-quodom-label { flex: 1; font-family: var(--font-prompt); font-weight: 500; }
 .barra-quodom-arrow { font-size: 22px; }
 
-@media (min-width: 1025px) {
-  .barra-quodom { left: 260px; }
-}
+@media (min-width: 1025px) { .barra-quodom { right: 320px; } }

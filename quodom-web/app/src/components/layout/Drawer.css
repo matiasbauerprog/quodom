@@ -15,8 +15,3 @@
 .drawer-nav a { padding: var(--sp-3) var(--sp-4); color: var(--color-texto); }
 .drawer-nav a.active { background: rgba(112,111,154,.1); color: var(--color-acento); font-weight: 500; }
 .drawer-footer { padding: var(--sp-4); border-top: 1px solid rgba(0,0,0,.06); }
-
-@media (min-width: 1025px) {
-  .drawer-backdrop { display: none; }
-  .drawer { position: sticky; transform: none; box-shadow: none; border-right: 1px solid rgba(0,0,0,.06); }
-}

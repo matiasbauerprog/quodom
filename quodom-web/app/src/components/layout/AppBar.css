@@ -8,10 +8,6 @@
 }
 .appbar-hamburger { width: 40px; height: 40px; display: inline-flex; flex-direction: column; justify-content: center; gap: 4px; align-items: center; }
 .appbar-hamburger span { display: block; width: 22px; height: 2px; background: var(--color-texto); border-radius: 2px; }
-.appbar-brand { flex: 1; font-family: var(--font-prompt); font-weight: 600; font-size: 20px; color: var(--color-acento); }
+.appbar-brand { flex: 1; font-family: var(--font-prompt); font-weight: 600; font-size: 20px; color: var(--color-acento); text-align: center; }
 .appbar-actions { display: inline-flex; gap: var(--sp-2); }
 .appbar-bell { color: var(--color-texto); padding: var(--sp-2); }
-
-@media (min-width: 1025px) {
-  .appbar-hamburger { display: none; }
-}
