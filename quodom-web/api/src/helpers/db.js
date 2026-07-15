@@ -41,6 +41,7 @@ async function initialize() {
     db.hist_busquedas = require('../models/hist_busquedas.model')(sequelize);
     db.oper_notificaciones = require('../models/oper_notificaciones.model')(sequelize);
     db.series = require('../models/series.model')(sequelize);
+    db.ia_usage = require('../models/ia_usage.model')(sequelize);
 
     // View-backed models: NOT synced (created as SQL views below)
     db.v_Busqueda = require('../models/v_Busqueda.model')(sequelize);
@@ -50,7 +51,7 @@ async function initialize() {
 
     const tableModels = [db.User, db.Category, db.Products, db.productos_atributos,
         db.Quodom, db.Quodom_Lines, db.user_direcciones, db.provincia, db.localidad,
-        db.hist_busquedas, db.oper_notificaciones, db.series];
+        db.hist_busquedas, db.oper_notificaciones, db.series, db.ia_usage];
 
     for (const model of tableModels) {
         await model.sync();
