@@ -152,6 +152,40 @@ describe('quodom', () => {
     expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
   });
 
+  it('POST /quodom/repetir/:id copies descripcion, iddireccion and all lines into a new quodom', async () => {
+    const res = await request(app).post('/quodom/repetir/' + idquodom)
+      .set('Authorization', 'Bearer ' + token);
+    expect(res.status).toBe(200);
+    expect(res.body.res).toBe(true);
+    const nuevoId = res.body.idquodom;
+    expect(nuevoId).not.toBe(idquodom);
+
+    const nuevo = await db.Quodom.findByPk(nuevoId);
+    const source = await db.Quodom.findByPk(idquodom);
+    expect(nuevo.descripcion).toBe(source.descripcion);
+    expect(nuevo.iddireccion).toBe(source.iddireccion);
+    expect(nuevo.estado).toBe('CREADO');
+    expect(nuevo.nro).not.toBe(source.nro);
+
+    const nuevasLines = await db.Quodom_Lines.findAll({ where: { idquodom: nuevoId } });
+    const originalLines = await db.Quodom_Lines.findAll({ where: { idquodom: idquodom } });
+    expect(nuevasLines).toHaveLength(originalLines.length);
+    expect(nuevasLines[0].idproducto).toBe(originalLines[0].idproducto);
+    expect(nuevasLines[0].cantidad).toBe(originalLines[0].cantidad);
+    expect(nuevasLines[0].nombreProducto).toBe(originalLines[0].nombreProducto);
+    expect(nuevasLines[0].atributo1).toBe(originalLines[0].atributo1);
+
+    await db.Quodom_Lines.destroy({ where: { idquodom: nuevoId } });
+    await db.Quodom.destroy({ where: { id: nuevoId } });
+  });
+
+  it('POST /quodom/repetir/:id of another user fails', async () => {
+    const res = await request(app).post('/quodom/repetir/' + idquodom)
+      .set('Authorization', 'Bearer ' + otherToken);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
+  });
+
   it('DELETE /quodom/:id destroys a CREADO quodom and its lines', async () => {
     const res = await request(app).delete('/quodom/' + idquodom)
       .set('Authorization', 'Bearer ' + token);
