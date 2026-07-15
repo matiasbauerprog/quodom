@@ -6,7 +6,7 @@ async function callGemini({ model, systemPrompt, contents, responseSchema }) {
   }
 
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-    + encodeURIComponent(model) + ':generateContent?key=' + process.env.GEMINI_API_KEY;
+    + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(process.env.GEMINI_API_KEY);
 
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -33,7 +33,9 @@ async function callGemini({ model, systemPrompt, contents, responseSchema }) {
       }
       const json = await res.json();
       const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (typeof text !== 'string') throw new Error('gemini: no text in response');
+      if (typeof text !== 'string' || text.trim() === '') {
+        throw new Error('gemini: empty or missing text in response (candidates: ' + (json?.candidates?.length ?? 0) + ')');
+      }
       try {
         return JSON.parse(text);
       } catch (e) {
@@ -47,10 +49,14 @@ async function callGemini({ model, systemPrompt, contents, responseSchema }) {
   try {
     return await doFetch();
   } catch (e) {
-    if (String(e.message).startsWith('gemini: HTTP 5') || e.name === 'AbortError') {
+    const isRetryable = String(e.message).startsWith('gemini: HTTP 5') || e.name === 'AbortError';
+    if (!isRetryable) throw e;
+    try {
       return await doFetch();
+    } catch (retryErr) {
+      if (retryErr.name === 'AbortError') throw new Error('gemini: timeout after retry');
+      throw retryErr;
     }
-    throw e;
   }
 }
 
