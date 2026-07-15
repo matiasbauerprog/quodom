@@ -32,29 +32,5 @@
   .mq-sidebar-empty p { margin: 0 0 var(--sp-2) 0; font-size: var(--fs-small); }
   .mq-sidebar-empty .btn { margin-top: var(--sp-3); background: #fff; color: var(--color-acento); }
   .mq-sidebar-list { display: flex; flex-direction: column; gap: var(--sp-3); }
-  .mq-sidebar-item {
-    background: rgba(255,255,255,0.08);
-    border-radius: var(--radius-input);
-    border-top-left-radius: var(--radius-hoja-tl);
-    border-bottom-right-radius: var(--radius-hoja-br);
-    width: 100%;
-  }
-  .mq-sidebar-link {
-    display: block;
-    padding: var(--sp-3) var(--sp-4);
-    color: #fff;
-  }
-  .mq-sidebar-item-head {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: var(--sp-2);
-  }
-  .mq-sidebar-nro { font-family: var(--font-prompt); font-weight: 600; font-size: 14px; }
-  .mq-sidebar-badge {
-    padding: 2px 8px; border-radius: 999px;
-    font-size: 10px; font-weight: 600;
-    background: rgba(255,255,255,0.2);
-  }
-  .mq-sidebar-badge-enviado { background: rgba(45,171,102,0.7); }
-  .mq-sidebar-desc { font-size: var(--fs-small); font-weight: 500; margin-bottom: var(--sp-1); }
-  .mq-sidebar-meta { font-size: var(--fs-tiny); color: rgba(255,255,255,0.7); }
+  .mq-sidebar-item { width: 100%; }
 }

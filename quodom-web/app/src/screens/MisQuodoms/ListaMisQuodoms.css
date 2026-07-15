@@ -1,11 +1,4 @@
 .mq { padding: var(--sp-4) 0 var(--sp-7); }
-.mq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
+.mq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
 .mq-list { display: grid; gap: var(--sp-3); }
-.mq-link { display: flex; gap: var(--sp-3); padding: var(--sp-3); }
-.mq-nro { min-width: 72px; font-family: var(--font-prompt); font-weight: 600; color: var(--color-acento); font-size: 20px; }
-.mq-body { flex: 1; }
-.mq-desc { font-weight: 500; color: var(--color-texto); }
-.mq-meta { display: flex; gap: var(--sp-3); font-size: var(--fs-small); color: var(--color-texto-muted); margin-top: var(--sp-1); flex-wrap: wrap; }
-.mq-estado { padding: 2px 8px; border-radius: 999px; font-weight: 500; font-size: var(--fs-tiny); }
-.mq-estado-creado { background: rgba(112,111,154,.15); color: var(--color-acento); }
-.mq-estado-enviado { background: rgba(45,171,102,.15); color: var(--color-exito); }
+.mq-item { width: 100%; }

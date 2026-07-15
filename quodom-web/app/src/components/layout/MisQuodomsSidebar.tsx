@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
+import { QuodomCard } from '../QuodomCard';
 import './MisQuodomsSidebar.css';
 
 export function MisQuodomsSidebar() {
   const { user } = useAuth();
   const [list, setList] = useState<Quodom[] | null>(null);
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     if (!user) { setList([]); return; }
@@ -16,7 +18,9 @@ export function MisQuodomsSidebar() {
       .then(d => { if (alive) setList(d); })
       .catch(() => { if (alive) setList([]); });
     return () => { alive = false; };
-  }, [user]);
+  }, [user, nonce]);
+
+  const refresh = useCallback(() => setNonce(n => n + 1), []);
 
   return (
     <aside className="mq-sidebar" aria-label="Mis Quodoms">
@@ -37,14 +41,7 @@ export function MisQuodomsSidebar() {
         <ul className="mq-sidebar-list">
           {list.map(q => (
             <li key={q.id} className="mq-sidebar-item">
-              <Link to={'/quodom?id=' + encodeURIComponent(q.id)} className="mq-sidebar-link">
-                <div className="mq-sidebar-item-head">
-                  <span className="mq-sidebar-nro">{q.nro}</span>
-                  <span className={'mq-sidebar-badge mq-sidebar-badge-' + q.estado.toLowerCase()}>{q.estado}</span>
-                </div>
-                <div className="mq-sidebar-desc">{q.descripcion}</div>
-                <div className="mq-sidebar-meta">{q.cantproductos ?? 0} productos · {q.porccompletado ?? 0}% completo</div>
-              </Link>
+              <QuodomCard quodom={q} variant="sidebar" onChange={refresh} />
             </li>
           ))}
         </ul>

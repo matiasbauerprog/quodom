@@ -12,5 +12,7 @@ export const quodom = {
   eliminar: (id: string) =>
     apiFetch<{ res: boolean }>('/quodom/' + encodeURIComponent(id), { method: 'DELETE' }),
   whatsapp: (id: string) =>
-    apiFetch<{ res: boolean; link: string }>('/quodom/whatsapp/' + encodeURIComponent(id))
+    apiFetch<{ res: boolean; link: string }>('/quodom/whatsapp/' + encodeURIComponent(id)),
+  repetir: (id: string) =>
+    apiFetch<{ res: boolean; idquodom: string }>('/quodom/repetir/' + encodeURIComponent(id), { method: 'POST' })
 };
