@@ -14,7 +14,9 @@ function fakeReqRes(userId) {
 }
 
 describe('rateLimit middleware', () => {
-  beforeEach(() => { rateLimit._reset(); });
+  let originalNow;
+  beforeEach(() => { originalNow = Date.now; rateLimit._reset(); });
+  afterEach(() => { Date.now = originalNow; });
 
   it('allows requests under the limit', () => {
     const mw = rateLimit.perUserPerMinute(3);
@@ -50,7 +52,6 @@ describe('rateLimit middleware', () => {
   });
 
   it('forgets timestamps older than the window', () => {
-    const originalNow = Date.now;
     Date.now = jest.fn(() => 1_000_000);
     const mw = rateLimit.perUserPerMinute(1);
     const c1 = fakeReqRes(1);
@@ -61,7 +62,5 @@ describe('rateLimit middleware', () => {
     const c2 = fakeReqRes(1);
     mw(c2.req, c2.res, () => { c2.nextCalled = true; });
     expect(c2.nextCalled).toBe(true);
-
-    Date.now = originalNow;
   });
 });
