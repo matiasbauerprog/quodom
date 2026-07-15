@@ -1,13 +1,26 @@
 .appbar {
-  display: flex; align-items: center; gap: var(--sp-3);
+  display: flex;
+  align-items: center;
   padding: 0 var(--sp-4);
   height: 56px;
-  background: var(--color-navbar);
-  box-shadow: 0 1px 2px rgba(0,0,0,.08);
-  position: sticky; top: 0; z-index: 20;
+  background: transparent;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
-.appbar-hamburger { width: 40px; height: 40px; display: inline-flex; flex-direction: column; justify-content: center; gap: 4px; align-items: center; }
-.appbar-hamburger span { display: block; width: 22px; height: 2px; background: var(--color-texto); border-radius: 2px; }
-.appbar-brand { flex: 1; font-family: var(--font-prompt); font-weight: 600; font-size: 20px; color: var(--color-acento); text-align: center; }
-.appbar-actions { display: inline-flex; gap: var(--sp-2); }
-.appbar-bell { color: var(--color-texto); padding: var(--sp-2); }
+.appbar-hamburger {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  align-items: center;
+}
+.appbar-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--color-texto);
+  border-radius: 2px;
+}
