@@ -47,7 +47,11 @@ async function chat(req, res, next) {
       return res.status(500).json({ res: false, error: 'ia_unavailable', message: 'El asistente no está disponible por ahora. Probá de nuevo en un momento.' });
     }
 
-    await Controler.incrementDaily(req.user.id);
+    try {
+      await Controler.incrementDaily(req.user.id);
+    } catch (e) {
+      console.error('ia: incrementDaily failed for user ' + req.user.id + ':', e && e.message);
+    }
     return res.json(reply);
   } catch (e) {
     next(e);
