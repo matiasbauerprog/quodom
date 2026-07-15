@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { busqueda } from '../../api/busqueda';
 import { historial } from '../../api/hist_busquedas';
 import type { BusquedaResult } from '../../api/types';
@@ -11,7 +12,9 @@ import './BusquedaScreen.css';
 
 export function BusquedaScreen() {
   const { user } = useAuth();
-  const [q, setQ] = useState('');
+  const [sp, setSp] = useSearchParams();
+  const initial = sp.get('q') ?? '';
+  const [q, setQ] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<BusquedaResult[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -24,10 +27,7 @@ export function BusquedaScreen() {
       .catch(() => {});
   }, [user]);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const term = q.trim();
-    if (term.length < 2) return;
+  const runSearch = useCallback(async (term: string) => {
     setErr(null); setBusy(true);
     try {
       const r = await busqueda.buscar(term);
@@ -36,6 +36,19 @@ export function BusquedaScreen() {
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'Error de búsqueda.');
     } finally { setBusy(false); }
+  }, [user]);
+
+  useEffect(() => {
+    const term = (sp.get('q') ?? '').trim();
+    if (term.length >= 2) { setQ(term); runSearch(term); }
+  }, [sp, runSearch]);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const term = q.trim();
+    if (term.length < 2) return;
+    setSp({ q: term }, { replace: true });
+    runSearch(term);
   }
 
   function agregar(r: BusquedaResult) {
