@@ -8,6 +8,8 @@
     "dev": "nodemon src/server.js",
     "seed": "node src/seed/seed.js",
     "import-images": "node src/seed/import-images.js",
+    "report-missing-images": "node src/seed/report-missing-images.js",
+    "add-image": "node src/seed/add-image.js",
     "test": "jest --runInBand"
   },
   "dependencies": {
