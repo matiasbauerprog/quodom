@@ -1,0 +1,2 @@
+.detalle-usuario { padding: var(--sp-4) 0 var(--sp-7); }
+.detalle-usuario .grid-2 { display: grid; grid-template-columns: 1fr 2fr; gap: var(--sp-3); }

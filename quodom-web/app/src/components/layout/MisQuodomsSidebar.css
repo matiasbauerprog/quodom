@@ -1,0 +1,36 @@
+.mq-sidebar {
+  display: none;
+}
+
+@media (min-width: 1025px) {
+  .mq-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-5) var(--sp-4);
+    background: var(--color-acento);
+    color: #fff;
+    min-height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .mq-sidebar-title {
+    text-align: center;
+    font-family: var(--font-prompt);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #fff;
+    margin: 0 0 var(--sp-4) 0;
+  }
+  .mq-sidebar-empty {
+    text-align: center;
+    padding: var(--sp-4) var(--sp-3);
+    border: 2px dashed rgba(255,255,255,0.35);
+    border-radius: var(--radius-input);
+    color: rgba(255,255,255,0.9);
+  }
+  .mq-sidebar-empty p { margin: 0 0 var(--sp-2) 0; font-size: var(--fs-small); }
+  .mq-sidebar-empty .btn { margin-top: var(--sp-3); background: #fff; color: var(--color-acento); }
+  .mq-sidebar-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .mq-sidebar-item { width: 100%; }
+}

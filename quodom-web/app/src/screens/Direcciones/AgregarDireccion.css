@@ -1,0 +1,3 @@
+.dir-form { padding: var(--sp-4) 0 var(--sp-7); }
+.dir-form .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sp-3); }
+.dir-form .check { display: flex; align-items: center; gap: var(--sp-2); margin: var(--sp-3) 0; }

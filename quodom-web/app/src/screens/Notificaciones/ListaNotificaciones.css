@@ -1,0 +1,7 @@
+.notif { padding: var(--sp-4) 0 var(--sp-7); }
+.notif-list { display: grid; gap: var(--sp-3); }
+.notif-item { cursor: pointer; }
+.notif-title { font-family: var(--font-prompt); font-weight: 500; color: var(--color-acento); margin-bottom: var(--sp-1); }
+.notif-text { color: var(--color-texto); margin-bottom: var(--sp-2); }
+.notif-date { font-size: var(--fs-tiny); color: var(--color-texto-muted); }
+.notif-leida { opacity: .6; }

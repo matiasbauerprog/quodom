@@ -1,0 +1,13 @@
+.detalle-quodom { padding: var(--sp-4) 0 calc(var(--sp-7) + 60px); }
+.dq-empty { text-align: center; color: var(--color-texto-muted); padding: var(--sp-6) 0; }
+.dq-lines { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.dq-line { display: grid; gap: var(--sp-2); }
+.dq-line-head { display: flex; align-items: center; gap: var(--sp-3); }
+.dq-line-name { flex: 1; font-family: var(--font-prompt); font-weight: 500; color: var(--color-acento); }
+.dq-line-remove { width: 32px; height: 32px; color: var(--color-texto-muted); font-size: 24px; }
+.dq-line-qty { display: flex; align-items: center; gap: var(--sp-2); }
+.dq-qty-btn { width: 40px; height: 40px; padding: 0; }
+.dq-qty-input { width: 72px; text-align: center; }
+.dq-attr { display: block; text-align: left; padding: var(--sp-2) var(--sp-3); background: rgba(112,111,154,.08); border-radius: var(--radius-input); color: var(--color-acento); }
+.dq-attr strong { color: var(--color-texto); }
+.dq-send { margin-top: var(--sp-4); }

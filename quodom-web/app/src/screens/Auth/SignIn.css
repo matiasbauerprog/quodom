@@ -1,0 +1,7 @@
+.auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--sp-4); background: var(--color-fondo); }
+.auth-card { width: 100%; max-width: 420px; }
+.auth-card h1 { text-align: center; margin-bottom: var(--sp-5); }
+.auth-error { color: var(--color-error); font-size: var(--fs-small); margin: 0 0 var(--sp-3) 0; }
+.auth-links { text-align: center; margin-top: var(--sp-4); font-size: var(--fs-small); color: var(--color-texto-muted); display: flex; gap: var(--sp-3); justify-content: center; }
+.auth-links a { color: var(--color-acento); }
+.phone-row { display: grid; grid-template-columns: 1fr 2fr; gap: var(--sp-3); }

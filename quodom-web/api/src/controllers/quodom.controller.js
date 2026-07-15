@@ -10,7 +10,8 @@ module.exports = {
     delete: _delete,
     getLastQuodomOrCreate,
     getQuodomCreados,
-    whatsappLink
+    whatsappLink,
+    repetir
 };
 
 async function getById(id, userId) {
@@ -163,6 +164,35 @@ async function whatsappLink(id, userId) {
     }
 
     return 'https://wa.me/?text=' + encodeURIComponent(msg);
+}
+
+async function repetir(id, userId) {
+    const source = await getQuodom(id);
+    if (source.createdBy !== userId) {
+        throw 'El Id Quodom no pertenece a el usuario.';
+    }
+
+    const lines = await db.Quodom_Lines.findAll({ where: { idquodom: id } });
+    if (lines.length === 0) {
+        throw 'El Quodom no tiene productos para repetir.';
+    }
+
+    const nuevoId = await create({
+        descripcion: source.descripcion,
+        iddireccion: source.iddireccion
+    }, userId);
+
+    for (const l of lines) {
+        const raw = l.get();
+        delete raw.id;
+        delete raw.createdAt;
+        delete raw.updatedAt;
+        raw.idquodom = nuevoId;
+        raw.createdBy = userId;
+        await db.Quodom_Lines.create(raw);
+    }
+
+    return nuevoId;
 }
 
 // helpers

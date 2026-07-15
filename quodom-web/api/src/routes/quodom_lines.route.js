@@ -6,7 +6,7 @@ const Controler = require('../controllers/quodom_lines.controller');
 const validateRequest = require('../middleware/validate-request');
 
 router.get('/lines/:id', auth.verifyToken(), getById);
-router.get('/atributos', auth.verifyToken(), getAtributos);
+router.get('/atributos', getAtributos);
 router.get('/:idquodom', auth.verifyToken(), getAllbyIdQuodom);
 router.post('/add', auth.verifyToken(), addSchema, add);
 router.put('/:id', auth.verifyToken(), updateSchema, update);

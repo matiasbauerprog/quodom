@@ -11,6 +11,7 @@ router.get('/porccompletado/:id', auth.verifyToken(), getPorcById);
 router.get('/whatsapp/:id', auth.verifyToken(), whatsappLink);
 router.get('/:id', auth.verifyToken(), getById);
 router.post('/create', auth.verifyToken(), createSchema, create);
+router.post('/repetir/:id', auth.verifyToken(), repetir);
 router.post('/getLastQuodom/', auth.verifyToken(), getLastQuodomOrCreate);
 router.put('/:id', auth.verifyToken(), updateSchema, update);
 router.delete('/:id', auth.verifyToken(), _delete);
@@ -84,5 +85,11 @@ function getQuodomCreados(req, res, next) {
 function whatsappLink(req, res, next) {
   Controler.whatsappLink(req.params.id, req.user.id)
     .then(link => res.json({ res: true, link }))
+    .catch(next);
+}
+
+function repetir(req, res, next) {
+  Controler.repetir(req.params.id, req.user.id)
+    .then(idquodom => res.json({ res: true, idquodom }))
     .catch(next);
 }

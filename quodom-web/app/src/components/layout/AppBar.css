@@ -1,0 +1,26 @@
+.appbar {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-4);
+  height: 56px;
+  background: transparent;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.appbar-hamburger {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  align-items: center;
+}
+.appbar-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--color-texto);
+  border-radius: 2px;
+}

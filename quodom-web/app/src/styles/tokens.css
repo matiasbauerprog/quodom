@@ -1,0 +1,35 @@
+:root {
+  --color-fondo: #F6EE5D;
+  --color-acento: #706F9A;
+  --color-exito: #2DAB66;
+  --color-error: #D9534F;
+  --color-texto: #45444C;
+  --color-texto-muted: #898989;
+  --color-tarjeta: #FFFFFF;
+  --color-navbar: #F9F9F9;
+
+  --font-prompt: 'Prompt', system-ui, sans-serif;
+  --font-jaldi: 'Jaldi', Georgia, serif;
+  --font-work: 'Work Sans', system-ui, sans-serif;
+  --font-mont: 'Montserrat', system-ui, sans-serif;
+
+  --fs-h1: 44px;
+  --fs-h2: 32px;
+  --fs-h3: 24px;
+  --fs-body: 16px;
+  --fs-small: 14px;
+  --fs-tiny: 12px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --radius-hoja-tl: 8px;
+  --radius-hoja-br: 8px;
+  --radius-input: 6px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+}
