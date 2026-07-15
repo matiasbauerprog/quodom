@@ -6,6 +6,7 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { RubroIcon } from '../../components/icons/RubroIcon';
+import { MasBuscados } from './MasBuscados';
 import './SitioInicial.css';
 
 export function SitioInicial() {
@@ -52,6 +53,7 @@ export function SitioInicial() {
           ))}
         </div>
       )}
+      <MasBuscados />
     </section>
   );
 }
