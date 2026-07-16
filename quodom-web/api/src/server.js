@@ -49,6 +49,7 @@ app.use('/user_direcciones', require('./routes/user_direcciones.route'));
 app.use('/provincias', require('./routes/provincias.route'));
 app.use('/localidades', require('./routes/localidades.route'));
 app.use('/oper_notificaciones', require('./routes/oper_notificaciones.route'));
+app.use('/api/ia', require('./routes/ia.route'));
 
 app.get('/', (req, res) => {
   res.json({

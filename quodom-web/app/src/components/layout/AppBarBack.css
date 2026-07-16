@@ -7,3 +7,4 @@
 }
 .appbar-back-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--color-texto); }
 .appbar-back-title { margin: 0; font-family: var(--font-prompt); font-weight: 500; font-size: 18px; }
+.appbar-back-right { margin-left: auto; display: flex; align-items: center; }

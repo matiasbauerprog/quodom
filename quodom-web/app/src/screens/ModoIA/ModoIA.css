@@ -1,0 +1,67 @@
+.mia {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 96px 16px;
+}
+.mia-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-3);
+}
+.mia-msg {
+  max-width: 82%;
+  padding: 10px 12px;
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background: var(--color-tarjeta);
+  color: var(--color-texto);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.mia-msg p { margin: 0; white-space: pre-wrap; }
+.mia-msg-user {
+  align-self: flex-end;
+  background: var(--color-acento);
+  color: #fff;
+}
+.mia-msg-assistant { align-self: flex-start; }
+.mia-typing { align-self: flex-start; color: var(--color-texto); opacity: 0.7; font-style: italic; }
+
+.mia-inputbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  background: var(--color-fondo);
+}
+.mia-input { flex: 1; }
+.mia-send { flex: 0 0 auto; }
+
+.mia-reset {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.mia-proposal {
+  align-self: stretch;
+  background: var(--color-tarjeta);
+  padding: 12px;
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mia-proposal-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.mia-proposal-item { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.mia-proposal-item:last-child { border-bottom: none; }
+.mia-proposal-name { display: flex; flex-direction: column; gap: 2px; }
+.mia-proposal-motivo { font-size: 12px; color: rgba(0,0,0,0.6); }
+.mia-proposal-qty { display: flex; align-items: center; gap: 4px; }
+.mia-proposal-qty button { width: 28px; height: 28px; }
+.mia-proposal-qty input { width: 48px; text-align: center; }
+.mia-proposal-remove { color: #b00; }
