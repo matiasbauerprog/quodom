@@ -44,6 +44,7 @@ async function chat(req, res, next) {
     try {
       reply = await Controler.chat(req.user.id, messages);
     } catch (e) {
+      console.error('ia: chat failed for user ' + req.user.id + ':', e && e.stack ? e.stack : e);
       return res.status(500).json({ res: false, error: 'ia_unavailable', message: 'El asistente no está disponible por ahora. Probá de nuevo en un momento.' });
     }
 

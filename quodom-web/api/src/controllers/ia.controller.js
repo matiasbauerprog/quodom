@@ -37,7 +37,7 @@ const CHAT_SCHEMA = {
 };
 
 async function chat(userId, messages) {
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
   const subcats = await db.Category.findAll({
     where: { idcategoriapadre: { [db.Sequelize.Op.gt]: 0 }, activa: true },
