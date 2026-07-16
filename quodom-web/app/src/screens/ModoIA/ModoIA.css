@@ -1,0 +1,51 @@
+.mia {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 56px);
+  padding: 12px 16px 0 16px;
+}
+.mia-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-3);
+}
+.mia-msg {
+  max-width: 82%;
+  padding: 10px 12px;
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background: var(--color-tarjeta);
+  color: var(--color-texto);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.mia-msg p { margin: 0; white-space: pre-wrap; }
+.mia-msg-user {
+  align-self: flex-end;
+  background: var(--color-acento);
+  color: #fff;
+}
+.mia-msg-assistant { align-self: flex-start; }
+.mia-typing { align-self: flex-start; color: var(--color-texto); opacity: 0.7; font-style: italic; }
+
+.mia-inputbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 12px 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--color-fondo);
+}
+.mia-input { flex: 1; }
+.mia-send { flex: 0 0 auto; }
+
+.mia-reset {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+}

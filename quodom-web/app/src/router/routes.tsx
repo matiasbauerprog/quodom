@@ -20,6 +20,7 @@ import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import { DetalleUsuario } from '../screens/Profile/DetalleUsuario';
 import { CambiarPass } from '../screens/Profile/CambiarPass';
 import { ListaNotificaciones } from '../screens/Notificaciones/ListaNotificaciones';
+import { ModoIA } from '../screens/ModoIA/ModoIA';
 
 const router = createBrowserRouter([
   { path: '/login', element: <SignIn /> },
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
       { path: '/categoria/:id', element: <SubcategoriaLista /> },
       { path: '/subcategoria/:id', element: <ProductosPorCategoria /> },
       { path: '/busqueda', element: <BusquedaScreen /> },
+      { path: '/modo-ia', element: <ProtectedRoute><ModoIA /></ProtectedRoute> },
       { path: '/quodom', element: <DetalleQuodom /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
       { path: '/perfil', element: <ProtectedRoute><ProfileScreen /></ProtectedRoute> },
