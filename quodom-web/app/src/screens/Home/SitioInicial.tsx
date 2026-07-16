@@ -47,16 +47,16 @@ export function SitioInicial() {
   return (
     <section className="container home-inicial">
       <h1 className="home-wordmark">QUODOM</h1>
-      <button type="button" className="btn home-modo-ia" onClick={goModoIA}>
-        <span aria-hidden="true">🤖</span>
-        <span>Modo IA — armá tu Quodom conversando</span>
-      </button>
       <form className="home-search" onSubmit={onSearch}>
         <span className="home-search-icon" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
         </span>
-        <input className="input home-search-input" type="search" placeholder="¿Qué necesitás?" value={q} onChange={e => setQ(e.target.value)} />
+        <input className="input home-search-input" type="text" placeholder="¿Qué necesitás?" value={q} onChange={e => setQ(e.target.value)} />
       </form>
+      <button type="button" className="btn home-modo-ia" onClick={goModoIA}>
+        <span aria-hidden="true">🤖</span>
+        <span>Modo IA — armá tu Quodom conversando</span>
+      </button>
       {!cats ? <Loader /> : (
         <div className="cat-grid">
           {cats.map(c => (
