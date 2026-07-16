@@ -1,12 +1,9 @@
 .mia {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 56px);
-  padding: 12px 16px 0 16px;
+  padding: 12px 16px 96px 16px;
 }
 .mia-messages {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
@@ -33,9 +30,7 @@
 .mia-inputbar {
   display: flex;
   gap: 8px;
-  padding: 8px 0 12px 0;
-  position: sticky;
-  bottom: 0;
+  padding: 8px 0;
   background: var(--color-fondo);
 }
 .mia-input { flex: 1; }
