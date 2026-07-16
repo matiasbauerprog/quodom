@@ -54,8 +54,7 @@ export function SitioInicial() {
         <input className="input home-search-input" type="text" placeholder="¿Qué necesitás?" value={q} onChange={e => setQ(e.target.value)} />
       </form>
       <button type="button" className="btn home-modo-ia" onClick={goModoIA}>
-        <span aria-hidden="true">🤖</span>
-        <span>Modo IA — armá tu Quodom conversando</span>
+        Modo IA — armá tu Quodom conversando
       </button>
       {!cats ? <Loader /> : (
         <div className="cat-grid">

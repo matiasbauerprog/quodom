@@ -17,13 +17,17 @@
 }
 .home-search { position: relative; width: 100%; max-width: 640px; }
 .home-search-icon {
-  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
   color: var(--color-texto-muted); pointer-events: none;
   display: inline-flex;
+  z-index: 1;
 }
-.home-search-input {
-  height: 52px; padding-left: 44px; padding-right: var(--sp-4);
-  background: #fff; border-radius: 999px;
+.home-inicial .home-search .home-search-input {
+  height: 52px;
+  padding-left: 56px;
+  padding-right: var(--sp-4);
+  background: #fff;
+  border-radius: 999px;
   box-shadow: var(--shadow-card);
 }
 
