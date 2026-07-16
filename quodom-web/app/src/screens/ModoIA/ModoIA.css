@@ -49,3 +49,24 @@
   cursor: pointer;
   padding: 4px 8px;
 }
+
+.mia-proposal {
+  align-self: stretch;
+  background: var(--color-tarjeta);
+  padding: 12px;
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mia-proposal-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.mia-proposal-item { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.mia-proposal-item:last-child { border-bottom: none; }
+.mia-proposal-name { display: flex; flex-direction: column; gap: 2px; }
+.mia-proposal-motivo { font-size: 12px; color: rgba(0,0,0,0.6); }
+.mia-proposal-qty { display: flex; align-items: center; gap: 4px; }
+.mia-proposal-qty button { width: 28px; height: 28px; }
+.mia-proposal-qty input { width: 48px; text-align: center; }
+.mia-proposal-remove { color: #b00; }

@@ -1,19 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppBarBack } from '../../components/layout/AppBarBack';
-import { iaApi, type IaMessage, type IaResponse } from '../../api/ia';
+import { iaApi, type IaMessage, type IaProposalItem } from '../../api/ia';
+import { quodom as quodomApi } from '../../api/quodom';
+import { quodomLines } from '../../api/quodom_lines';
 import { ApiError } from '../../api/client';
 import { MensajeChat } from './MensajeChat';
+import { PropuestaEditable } from './PropuestaEditable';
 import './ModoIA.css';
 
 const WELCOME = 'Hola. Contame tu proyecto y armo el presupuesto.';
 
-type UiMessage = { role: 'user' | 'assistant'; text: string };
+type UiMessage =
+  | { role: 'user'; text: string }
+  | { role: 'assistant'; text: string; proposal?: IaProposalItem[] };
 
 export function ModoIA() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<UiMessage[]>([{ role: 'assistant', text: WELCOME }]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [_lastProposal, setLastProposal] = useState<IaResponse | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, busy]);
@@ -22,7 +29,6 @@ export function ModoIA() {
     if (!confirm('¿Empezar una nueva conversación?')) return;
     setMessages([{ role: 'assistant', text: WELCOME }]);
     setInput('');
-    setLastProposal(null);
   }
 
   async function send() {
@@ -39,8 +45,7 @@ export function ModoIA() {
         .map(m => ({ role: m.role, text: m.text }));
       const reply = await iaApi.chat(history);
       if (reply.type === 'proposal') {
-        setLastProposal(reply);
-        setMessages(m => [...m, { role: 'assistant', text: reply.text }]);
+        setMessages(m => [...m, { role: 'assistant', text: reply.text, proposal: reply.items }]);
       } else {
         setMessages(m => [...m, { role: 'assistant', text: reply.text }]);
       }
@@ -56,6 +61,31 @@ export function ModoIA() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
+  async function confirmProposal(items: IaProposalItem[]) {
+    setConfirming(true);
+    try {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const descripcion = 'Presupuesto IA — ' + now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
+        + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+      const created = await quodomApi.create({ descripcion });
+      for (const it of items) {
+        await quodomLines.add({
+          idquodom: created.idquodom,
+          idproducto: it.idproducto,
+          cantidad: it.cantidad,
+          nombreProducto: it.nombreProducto
+        });
+      }
+      navigate('/quodom?id=' + encodeURIComponent(created.idquodom));
+    } catch (e) {
+      const msg = e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo crear el Quodom.';
+      setMessages(m => [...m, { role: 'assistant', text: msg }]);
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   return (
     <>
       <AppBarBack title="Modo IA" rightSlot={
@@ -63,7 +93,14 @@ export function ModoIA() {
       } />
       <section className="container mia">
         <div className="mia-messages">
-          {messages.map((m, i) => (<MensajeChat key={i} role={m.role} text={m.text} />))}
+          {messages.map((m, i) => (
+            <div key={i}>
+              <MensajeChat role={m.role} text={m.text} />
+              {'proposal' in m && m.proposal && (
+                <PropuestaEditable items={m.proposal} onConfirm={confirmProposal} busy={confirming} />
+              )}
+            </div>
+          ))}
           {busy && <p className="mia-typing">Pensando…</p>}
           <div ref={bottomRef} />
         </div>
@@ -75,12 +112,12 @@ export function ModoIA() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             maxLength={500}
-            disabled={busy}
+            disabled={busy || confirming}
           />
           <button
             className="btn btn-exito mia-send"
             onClick={send}
-            disabled={busy || input.trim().length < 2}
+            disabled={busy || confirming || input.trim().length < 2}
           >
             {busy ? '…' : 'Enviar'}
           </button>
