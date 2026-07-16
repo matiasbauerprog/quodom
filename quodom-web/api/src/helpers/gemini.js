@@ -1,4 +1,4 @@
-const TIMEOUT_MS = 15000;
+const TIMEOUT_MS = 30000;
 
 async function callGemini({ model, systemPrompt, contents, responseSchema }) {
   if (!process.env.GEMINI_API_KEY) {
@@ -51,6 +51,7 @@ async function callGemini({ model, systemPrompt, contents, responseSchema }) {
   } catch (e) {
     const isRetryable = String(e.message).startsWith('gemini: HTTP 5') || e.name === 'AbortError';
     if (!isRetryable) throw e;
+    console.warn('gemini: first attempt failed (' + (e.name === 'AbortError' ? 'timeout' : e.message) + '), retrying...');
     try {
       return await doFetch();
     } catch (retryErr) {
