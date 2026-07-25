@@ -1,12 +1,13 @@
 :root {
-  --color-fondo: #F6EE5D;
-  --color-acento: #706F9A;
+  --color-fondo: #F1F1F1;
+  --color-acento: #E63946;
   --color-exito: #2DAB66;
   --color-error: #D9534F;
-  --color-texto: #45444C;
+  --color-texto: #1A1A1A;
   --color-texto-muted: #898989;
   --color-tarjeta: #FFFFFF;
   --color-navbar: #F9F9F9;
+  --color-panel-oscuro: #1E1E2A;
 
   --font-prompt: 'Prompt', system-ui, sans-serif;
   --font-jaldi: 'Jaldi', Georgia, serif;

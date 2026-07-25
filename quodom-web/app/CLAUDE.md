@@ -26,7 +26,7 @@ React 18 + Vite + TypeScript + plain CSS. 1:1 visual clone of the original React
 2. **Tablet: `@media (min-width: 601px) and (max-width: 1024px)`** — ampliá grillas a 3–4 columnas, aumentá padding lateral (`.container` va a 720px máx).
 3. **Desktop: `@media (min-width: 1025px)`** — el drawer se vuelve persistente (grid `260px 1fr` en `.layout`), `.container` a 1120px máx, más columnas en grillas de productos/categorías.
 
-Reglas duras: nunca fijes anchos en píxeles a nivel de página; usá `.container` + porcentajes/grid. La forma de hoja (`border-top-left-radius: 8px; border-bottom-right-radius: 8px`) va en tarjetas, imágenes y botones grandes (clase `.hoja`, ya aplicada por `.card` y `.btn`). Paleta: `--color-fondo #F6EE5D`, `--color-acento #706F9A`, `--color-exito #2DAB66`, `--color-texto #45444C`, `--color-tarjeta #FFFFFF`.
+Reglas duras: nunca fijes anchos en píxeles a nivel de página; usá `.container` + porcentajes/grid. La forma de hoja (`border-top-left-radius: 8px; border-bottom-right-radius: 8px`) va en tarjetas, imágenes y botones grandes (clase `.hoja`, ya aplicada por `.card` y `.btn`). Paleta: `--color-fondo #F1F1F1`, `--color-acento #E63946`, `--color-exito #2DAB66`, `--color-texto #1A1A1A`, `--color-tarjeta #FFFFFF`, `--color-panel-oscuro #1E1E2A` (para sidebars, drawer header y barra inferior).
 
 Fuentes: Prompt para títulos y botones (`--font-prompt`), Work Sans para texto (`--font-work`), Jaldi/Montserrat disponibles por si algún componente puntual lo necesita.
 

@@ -10,10 +10,18 @@
   font-family: var(--font-prompt);
   font-weight: 700;
   font-size: 48px;
-  color: var(--color-acento);
+  color: var(--color-texto);
   letter-spacing: 0.02em;
   margin: 0;
   text-align: center;
+}
+.home-wordmark::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--color-acento);
+  margin: 6px auto 0 auto;
 }
 .home-search { position: relative; width: 100%; max-width: 640px; }
 .home-search-icon {
@@ -44,20 +52,31 @@
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
-  padding: var(--sp-3);
+  padding: var(--sp-4) var(--sp-3);
   text-align: center;
-  background: transparent;
-  box-shadow: none;
-  border-radius: 0;
-  transition: transform .15s ease;
+  background: var(--color-tarjeta);
+  box-shadow: var(--shadow-card);
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+  transition: transform .15s ease, box-shadow .15s ease;
 }
-.cat-card:hover { transform: translateY(-2px); }
+.cat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.10); }
 .cat-card-name {
   font-family: var(--font-work);
-  font-weight: 400;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 13px;
   color: var(--color-texto);
   line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cat-card-name::after {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--color-acento);
+  margin: 6px auto 0 auto;
 }
 
 @media (min-width: 601px) {
