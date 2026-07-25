@@ -4,7 +4,7 @@
   "description": "Backend for Quodom 3.0",
   "main": "dist/src/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npx prisma generate && npx prisma db push --accept-data-loss && npx prisma db seed && tsc",
     "start": "node dist/src/index.js",
     "dev": "ts-node src/index.ts",
     "prisma:generate": "prisma generate",
