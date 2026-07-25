@@ -4,6 +4,7 @@
   "description": "Quodom Web API - Express + Sequelize + SQLite (no vendors, no payments)",
   "license": "MIT",
   "scripts": {
+    "build": "echo 'No build required for Node.js API'",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/seed/seed.js",
