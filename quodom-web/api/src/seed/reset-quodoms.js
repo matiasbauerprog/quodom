@@ -5,7 +5,7 @@
 require('dotenv').config();
 const db = require('../helpers/db');
 
-(async () => {
+async function main() {
     await db.ready;
     const qi = db.sequelize.getQueryInterface();
 
@@ -20,4 +20,8 @@ const db = require('../helpers/db');
     console.log('quodom tables recreated. quodom_headers columns:', cols.map(c => c.name).join(', '));
 
     await db.sequelize.close();
-})();
+}
+
+main()
+    .then(() => process.exit(0))
+    .catch(err => { console.error('Reset-quodoms failed:', err); process.exit(1); });
