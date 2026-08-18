@@ -34,13 +34,14 @@ function ZigZag() {
   );
 }
 
-export function QuodomCard({ quodom, variant = 'sidebar', onChange }: { quodom: Quodom; variant?: Variant; onChange?: () => void }) {
+export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange }: { quodom: Quodom; variant?: Variant; rubroLabel?: string; onChange?: () => void }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const info = estadoInfo(quodom);
   const fechaDisplay = quodom.estado === 'ENVIADO' ? formatDate(quodom.fechaenvio) : formatDate(quodom.createdAt);
+  const nombre = quodom.descripcion || quodom.nro;
 
   async function openDetail() { navigate('/quodom?id=' + encodeURIComponent(quodom.id)); }
 
@@ -86,8 +87,9 @@ export function QuodomCard({ quodom, variant = 'sidebar', onChange }: { quodom: 
       )}
 
       <div className="qc-left">
+        {rubroLabel && <div className="qc-rubro">{rubroLabel}</div>}
         <div className="qc-fecha">{fechaDisplay}</div>
-        <div className="qc-nombre">{quodom.descripcion || quodom.nro}</div>
+        {nombre !== rubroLabel && <div className="qc-nombre">{nombre}</div>}
       </div>
 
       <div className="qc-zigzag-wrap"><ZigZag /></div>

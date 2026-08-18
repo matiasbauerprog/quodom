@@ -44,6 +44,15 @@
 .qc-menu-danger { color: var(--color-error); }
 
 .qc-left { min-width: 0; }
+.qc-rubro {
+  font-family: var(--font-work);
+  font-size: var(--fs-tiny);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-acento);
+  margin-bottom: var(--sp-1);
+}
 .qc-fecha { font-size: var(--fs-tiny); opacity: 0.75; margin-bottom: var(--sp-1); }
 .qc-nombre {
   font-family: var(--font-prompt);

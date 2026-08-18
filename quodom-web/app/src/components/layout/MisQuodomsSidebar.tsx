@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
 import { QuodomCard } from '../QuodomCard';
+import { nombreRubro } from '../../quodom/rubros';
 import './MisQuodomsSidebar.css';
 
 const MAX_ULTIMOS = 5;
@@ -12,20 +13,30 @@ export function MisQuodomsSidebar() {
   const { user } = useAuth();
   const [list, setList] = useState<Quodom[] | null>(null);
   const [nonce, setNonce] = useState(0);
+  // Guards against `quodom:changed` firing repeatedly in quick succession:
+  // only the response for the most recently started request is applied, so
+  // an earlier request resolving after a later one can't overwrite it with
+  // stale data.
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (!user) { setList([]); return; }
     let alive = true;
-    quodomApi.misQuodom()
-      .then(d => { if (alive) setList(d); })
-      .catch(() => { if (alive) setList([]); });
-    return () => { alive = false; };
+    const cargar = () => {
+      const requestId = ++requestIdRef.current;
+      quodomApi.misQuodom()
+        .then(d => { if (alive && requestId === requestIdRef.current) setList(d); })
+        .catch(() => { if (alive && requestId === requestIdRef.current) setList([]); });
+    };
+    cargar();
+    window.addEventListener('quodom:changed', cargar);
+    return () => { alive = false; window.removeEventListener('quodom:changed', cargar); };
   }, [user, nonce]);
 
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
-  const activo = list ? list.find(q => q.estado === 'CREADO') : null;
-  const otros = list ? list.filter(q => !activo || q.id !== activo.id).slice(0, MAX_ULTIMOS) : [];
+  const activos = list ? list.filter(q => q.estado === 'CREADO') : [];
+  const enviados = list ? list.filter(q => q.estado === 'ENVIADO').slice(0, MAX_ULTIMOS) : [];
 
   return (
     <aside className="mq-sidebar" aria-label="Mis Quodoms">
@@ -47,18 +58,29 @@ export function MisQuodomsSidebar() {
 
       {user && list && list.length > 0 && (
         <>
-          {activo && (
+          {activos.length > 0 && (
             <section className="mq-sidebar-section">
-              <h3 className="mq-sidebar-section-title">Quodom activo</h3>
-              <QuodomCard quodom={activo} variant="sidebar" onChange={refresh} />
+              <h3 className="mq-sidebar-section-title">Quodoms activos</h3>
+              <ul className="mq-sidebar-list">
+                {activos.map(q => (
+                  <li key={q.id} className="mq-sidebar-item">
+                    <QuodomCard
+                      quodom={q}
+                      variant="sidebar"
+                      rubroLabel={q.nombrerubro || nombreRubro(q.idrubro)}
+                      onChange={refresh}
+                    />
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 
-          {otros.length > 0 && (
+          {enviados.length > 0 && (
             <section className="mq-sidebar-section">
               <h3 className="mq-sidebar-section-title">Últimos Quodoms</h3>
               <ul className="mq-sidebar-list">
-                {otros.map(q => (
+                {enviados.map(q => (
                   <li key={q.id} className="mq-sidebar-item">
                     <QuodomCard quodom={q} variant="sidebar" onChange={refresh} />
                   </li>
