@@ -4,7 +4,7 @@ import { busqueda } from '../../api/busqueda';
 import { historial } from '../../api/hist_busquedas';
 import type { BusquedaResult } from '../../api/types';
 import { ApiError } from '../../api/client';
-import { addGuestLine } from '../../guest/guestQuodom';
+import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { useAuth } from '../../auth/AuthContext';
 import { Loader } from '../../components/Loader';
 import { ProductImage } from '../../components/ProductImage';
@@ -19,6 +19,7 @@ export function BusquedaScreen() {
   const [results, setResults] = useState<BusquedaResult[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [hist, setHist] = useState<string[]>([]);
+  const { agregar: agregarLinea, agregando, error: errAgregar } = useAgregarProducto();
 
   useEffect(() => {
     if (!user) return;
@@ -52,8 +53,7 @@ export function BusquedaScreen() {
   }
 
   function agregar(r: BusquedaResult) {
-    addGuestLine({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 });
-    window.dispatchEvent(new Event('quodom:changed'));
+    agregarLinea({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 });
   }
 
   return (
@@ -65,6 +65,7 @@ export function BusquedaScreen() {
       </form>
 
       {err && <p className="auth-error">{err}</p>}
+      {errAgregar && <p className="auth-error" role="alert">{errAgregar}</p>}
       {busy && <Loader />}
 
       {!busy && results && (
@@ -76,7 +77,7 @@ export function BusquedaScreen() {
                 <li key={r.id} className="prod-item card hoja">
                   <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
                   <span className="prod-name">{r.nombre}</span>
-                  <button className="btn btn-exito prod-add" aria-label={'Agregar ' + r.nombre} onClick={() => agregar(r)}>+</button>
+                  <button className="btn btn-exito prod-add" aria-label={'Agregar ' + r.nombre} disabled={agregando} onClick={() => agregar(r)}>+</button>
                 </li>
               ))}
             </ul>

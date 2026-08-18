@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { productos } from '../../api/productos';
 import type { Product } from '../../api/types';
 import { ProductImage } from '../../components/ProductImage';
-import { addGuestLine } from '../../guest/guestQuodom';
+import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import './MasBuscados.css';
 
 const POPULAR_IDS = [1, 20, 60, 137, 191, 447];
@@ -11,6 +11,7 @@ export function MasBuscados() {
   const [items, setItems] = useState<Product[]>([]);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(0);
+  const { agregar: agregarLinea, agregando, error: errAgregar } = useAgregarProducto();
 
   useEffect(() => {
     let alive = true;
@@ -35,8 +36,8 @@ export function MasBuscados() {
   }, [items.length]);
 
   function agregar(p: Product) {
-    addGuestLine({ idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined });
-    window.dispatchEvent(new Event('quodom:changed'));
+    if (agregando) return;
+    agregarLinea({ idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined });
   }
 
   if (items.length === 0) return null;
@@ -48,6 +49,7 @@ export function MasBuscados() {
         <span className="mb-heading-text">Mas buscados</span>
         <span className="mb-heading-line" aria-hidden="true" />
       </div>
+      {errAgregar && <p className="mb-add-error" role="alert">{errAgregar}</p>}
       <div className="mb-track" ref={trackRef}>
         {items.map(p => (
           <article key={p.id} className="mb-card card hoja" onClick={() => agregar(p)} role="button" tabIndex={0}>

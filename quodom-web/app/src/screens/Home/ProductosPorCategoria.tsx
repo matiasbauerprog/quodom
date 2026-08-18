@@ -7,7 +7,7 @@ import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { AppBarBack } from '../../components/layout/AppBarBack';
 import { ProductImage } from '../../components/ProductImage';
-import { addGuestLine } from '../../guest/guestQuodom';
+import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { DetalleProducto } from './DetalleProducto';
 import './ProductosPorCategoria.css';
 
@@ -18,6 +18,7 @@ export function ProductosPorCategoria() {
   const [err, setErr] = useState<string | null>(null);
   const [selected, setSelected] = useState<Product | null>(null);
   const [nonce, setNonce] = useState(0);
+  const { agregar: agregarLinea, agregando, error: errAgregar } = useAgregarProducto();
 
   useEffect(() => {
     let alive = true;
@@ -29,8 +30,7 @@ export function ProductosPorCategoria() {
   }, [idCat, nonce]);
 
   function agregar(p: Product) {
-    addGuestLine({ idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined });
-    window.dispatchEvent(new Event('quodom:changed'));
+    agregarLinea({ idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined });
   }
 
   return (
@@ -38,6 +38,7 @@ export function ProductosPorCategoria() {
       <AppBarBack title="Productos" />
       <section className="container prods">
         {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
+        {errAgregar && <p className="prods-add-error" role="alert">{errAgregar}</p>}
         {!err && !prods && <Loader />}
         {prods && prods.length === 0 && <p className="prods-empty">No hay productos en esta subcategoría.</p>}
         {prods && prods.length > 0 && (
@@ -48,7 +49,7 @@ export function ProductosPorCategoria() {
                   <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
                   <span className="prod-name">{p.nombreproducto}</span>
                 </button>
-                <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} onClick={() => agregar(p)}>+</button>
+                <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} disabled={agregando} onClick={() => agregar(p)}>+</button>
               </li>
             ))}
           </ul>

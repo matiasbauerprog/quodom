@@ -7,6 +7,11 @@ export const quodom = {
   porcCompletado: (id: string) => apiFetch<{ porccompletado: number; cantproductos: number }>('/quodom/porccompletado/' + encodeURIComponent(id)),
   create: (body: { descripcion: string; iddireccion?: number | null }) =>
     apiFetch<{ res: boolean; idquodom: string }>('/quodom/create', { method: 'POST', body }),
+  // Newest Quodom still in 'CREADO', or a fresh one when there is none: the
+  // "Quodom activo" a logged-in user keeps adding products to.
+  getLastOrCreate: (descripcion = 'Mi Quodom') =>
+    apiFetch<{ res: boolean; data: Quodom }>('/quodom/getLastQuodom/', { method: 'POST', body: { descripcion } })
+      .then(r => r.data),
   update: (id: string, body: { descripcion?: string; iddireccion?: number | null }) =>
     apiFetch<Quodom>('/quodom/' + encodeURIComponent(id), { method: 'PUT', body }),
   eliminar: (id: string) =>

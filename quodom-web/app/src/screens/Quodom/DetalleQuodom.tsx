@@ -36,6 +36,21 @@ export function DetalleQuodom() {
 
   const guest = useMemo(() => getGuestQuodom(), [nonce]);
 
+  // A logged-in user's Quodom lives on the server. Reaching /quodom without an
+  // id means "show me my Quodom", so send them to the active one — unless there
+  // are still guest lines pending, which must not be dropped.
+  useEffect(() => {
+    if (mode !== 'guest' || !user || guest.lines.length > 0) return;
+    let alive = true;
+    quodomApi.misQuodom()
+      .then(lista => {
+        const activo = lista.find(q => q.estado === 'CREADO');
+        if (alive && activo) navigate('/quodom?id=' + encodeURIComponent(activo.id), { replace: true });
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [mode, user, guest.lines.length, navigate]);
+
   useEffect(() => {
     if (mode === 'guest') { setDescripcion(guest.descripcion); return; }
     let alive = true;
