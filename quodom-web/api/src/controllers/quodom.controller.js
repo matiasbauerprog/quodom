@@ -9,7 +9,7 @@ module.exports = {
     create,
     update,
     delete: _delete,
-    getLastQuodomOrCreate,
+    getActivoPorRubro,
     getQuodomCreados,
     whatsappLink,
     repetir
@@ -91,23 +91,16 @@ async function _delete(id, userId) {
     return true;
 }
 
-async function getLastQuodomOrCreate(params, userId) {
-    const quodomHeader = await db.v_Quodoms.findOne({
-        where: { createdBy: userId, estado: 'CREADO' },
+// The open ('CREADO') quodom of a rubro, or null. Deliberately does NOT create:
+// creating a quodom now needs the user to confirm, so it cannot be a side effect
+// of a lookup.
+async function getActivoPorRubro(userId, idrubro) {
+    const quodom = await db.v_Quodoms.findOne({
+        where: { createdBy: userId, estado: 'CREADO', idrubro: idrubro },
         attributes: { exclude: ['createdBy', 'updatedAt'] },
         order: [['createdAt', 'DESC']]
     });
-
-    if (quodomHeader === null) {
-        // Original crashed here when there was no default address (dire.id on
-        // null); create() already resolves the default address itself.
-        const id = await create(params, userId);
-        return await db.v_Quodoms.findOne({
-            where: { id: id },
-            attributes: { exclude: ['createdBy', 'updatedAt'] }
-        });
-    }
-    return quodomHeader;
+    return quodom || null;
 }
 
 async function getQuodomCreados(userId) {

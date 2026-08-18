@@ -9,10 +9,10 @@ router.get('/getQuodomCreados', auth.verifyToken(), getQuodomCreados);
 router.get('/misQuodom/', auth.verifyToken(), getMyQuodoms);
 router.get('/porccompletado/:id', auth.verifyToken(), getPorcById);
 router.get('/whatsapp/:id', auth.verifyToken(), whatsappLink);
+router.get('/activo/:idrubro', auth.verifyToken(), getActivo);
 router.get('/:id', auth.verifyToken(), getById);
 router.post('/create', auth.verifyToken(), createSchema, create);
 router.post('/repetir/:id', auth.verifyToken(), repetir);
-router.post('/getLastQuodom/', auth.verifyToken(), getLastQuodomOrCreate);
 router.put('/:id', auth.verifyToken(), updateSchema, update);
 router.delete('/:id', auth.verifyToken(), _delete);
 
@@ -71,8 +71,8 @@ function _delete(req, res, next) {
     .catch(next);
 }
 
-function getLastQuodomOrCreate(req, res, next) {
-  Controler.getLastQuodomOrCreate(req.body, req.user.id)
+function getActivo(req, res, next) {
+  Controler.getActivoPorRubro(req.user.id, parseInt(req.params.idrubro, 10))
     .then((data) => res.json({ res: true, data }))
     .catch(next);
 }

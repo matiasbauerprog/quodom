@@ -100,10 +100,9 @@ describe('quodom', () => {
     expect(res.body.cantproductos).toBe(1);
   });
 
-  it('POST /quodom/getLastQuodom returns the open quodom (no crash without default address)', async () => {
-    const res = await request(app).post('/quodom/getLastQuodom/')
-      .set('Authorization', 'Bearer ' + token)
-      .send({ descripcion: 'Mi Quodom' });
+  it('GET /quodom/activo/:idrubro returns the open quodom of that rubro', async () => {
+    const res = await request(app).get('/quodom/activo/5')
+      .set('Authorization', 'Bearer ' + token);
     expect(res.status).toBe(200);
     expect(res.body.res).toBe(true);
     expect(res.body.data.id).toBe(idquodom);

@@ -136,3 +136,44 @@ describe('add line enforces the quodom rubro', () => {
     expect(await db.Quodom_Lines.count({ where: { idquodom: idquodomBebidas } })).toBe(antes);
   });
 });
+
+describe('GET /quodom/activo/:idrubro', () => {
+  let token;
+  let userId;
+
+  beforeAll(async () => {
+    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    token = login.body.token;
+    userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    await db.Quodom.destroy({ where: { createdBy: userId } });
+  });
+
+  it('returns null and creates nothing when there is no open quodom of that rubro', async () => {
+    const antes = await db.Quodom.count();
+
+    const res = await request(app).get('/quodom/activo/7')
+      .set('Authorization', 'Bearer ' + token);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeNull();
+    expect(await db.Quodom.count()).toBe(antes);
+  });
+
+  it('returns the open quodom of that rubro with its nombrerubro', async () => {
+    const creado = await request(app).post('/quodom/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Bebidas', idrubro: 7 });
+
+    const res = await request(app).get('/quodom/activo/7')
+      .set('Authorization', 'Bearer ' + token);
+
+    expect(res.body.data.id).toBe(creado.body.idquodom);
+    expect(res.body.data.nombrerubro).toBe('Bebidas');
+  });
+
+  it('ignores quodoms of other rubros and other users', async () => {
+    const res = await request(app).get('/quodom/activo/4')
+      .set('Authorization', 'Bearer ' + token);
+    expect(res.body.data).toBeNull();
+  });
+});
