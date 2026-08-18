@@ -4,7 +4,8 @@ async function createViews(sequelize) {
     await sequelize.query('DROP VIEW IF EXISTS v_Busquedas');
     await sequelize.query(`
         CREATE VIEW v_Busquedas AS
-        SELECT p.id, p.nombreproducto AS nombre, p.descripcion, p.imagen, p.refreshImagen
+        SELECT p.id, p.nombreproducto AS nombre, p.descripcion, p.imagen, p.refreshImagen,
+               p.categoriaPadre
         FROM productos p`);
 
     await sequelize.query('DROP VIEW IF EXISTS v_Quodoms');

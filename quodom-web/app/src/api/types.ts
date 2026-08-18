@@ -50,6 +50,8 @@ export type Quodom = {
   nro: string;
   createdBy: string;
   iddireccion: number | null;
+  idrubro: number;
+  nombrerubro?: string;
   cantproductos?: number;
   porccompletado?: number;
   fechaenvio?: string | null;
@@ -104,4 +106,4 @@ export type Notificacion = {
   leida: number | boolean;
 };
 
-export type BusquedaResult = { id: number; nombre: string; descripcion?: string | null; imagen: string | null; refreshImagen: string | null };
+export type BusquedaResult = { id: number; nombre: string; descripcion?: string | null; imagen: string | null; refreshImagen: string | null; categoriaPadre: number };
