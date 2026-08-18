@@ -13,13 +13,21 @@ export type GuestLine = {
 export type GuestCart = { descripcion: string; lines: GuestLine[] };
 export type GuestQuodoms = Record<number, GuestCart>;
 
+function esClaveDeRubro(key: string): boolean {
+  // Only clean non-negative integer strings ("0", "4", "12") are valid rubro
+  // keys. Object.keys always yields strings, so this also rejects anything a
+  // hand-edited or future-format payload might sneak in ("foo", "4.5", "-1").
+  return /^(0|[1-9]\d*)$/.test(key);
+}
+
 function esMapaDeCarritos(parsed: unknown): parsed is GuestQuodoms {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
   // The legacy shape was a single cart: { descripcion, lines }. Anything with a
   // top-level `lines` is that old payload and gets discarded.
   if ('lines' in (parsed as Record<string, unknown>)) return false;
-  return Object.values(parsed as Record<string, unknown>).every(
-    v => !!v && typeof v === 'object' && Array.isArray((v as GuestCart).lines)
+  const entries = Object.entries(parsed as Record<string, unknown>);
+  return entries.every(
+    ([k, v]) => esClaveDeRubro(k) && !!v && typeof v === 'object' && Array.isArray((v as GuestCart).lines)
   );
 }
 

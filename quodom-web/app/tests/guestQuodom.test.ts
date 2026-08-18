@@ -26,6 +26,14 @@ describe('guest carts by rubro', () => {
     expect(getGuestCart(7).lines[0].cantidad).toBe(4);
   });
 
+  it('keeps separate lines when attributes differ', () => {
+    addGuestLine(7, { ...GASEOSA, atributo1: 'Rojo' });
+    addGuestLine(7, { ...GASEOSA, atributo1: 'Azul' });
+    expect(getGuestCart(7).lines).toHaveLength(2);
+    expect(getGuestCart(7).lines[0].atributo1).toBe('Rojo');
+    expect(getGuestCart(7).lines[1].atributo1).toBe('Azul');
+  });
+
   it('counts lines per rubro and in total', () => {
     addGuestLine(7, GASEOSA);
     addGuestLine(4, CEMENTO);
@@ -49,5 +57,12 @@ describe('guest carts by rubro', () => {
   it('discards a legacy single-cart payload instead of crashing', () => {
     localStorage.setItem('quodom.guest', JSON.stringify({ descripcion: 'viejo', lines: [GASEOSA] }));
     expect(getGuestQuodoms()).toEqual({});
+  });
+
+  it('discards a map with a non-numeric key instead of crashing', () => {
+    localStorage.setItem('quodom.guest', JSON.stringify({ foo: { descripcion: '', lines: [] } }));
+    expect(getGuestQuodoms()).toEqual({});
+    expect(() => guestRubrosConLineas()).not.toThrow();
+    expect(guestRubrosConLineas()).toEqual([]);
   });
 });
