@@ -1,76 +1,53 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  getGuestQuodom, setGuestDescripcion, addGuestLine,
-  updateGuestLineCantidad, updateGuestLineAtributos,
-  removeGuestLine, clearGuestQuodom, guestLineCount
+  addGuestLine, getGuestCart, getGuestQuodoms, clearGuestQuodoms,
+  guestLineCount, guestRubrosConLineas, removeGuestLine, updateGuestLineCantidad
 } from '../src/guest/guestQuodom';
 
-describe('guestQuodom', () => {
-  beforeEach(() => localStorage.clear());
+const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 1 };
+const CEMENTO = { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 2 };
 
-  it('starts empty and returns a fresh quodom', () => {
-    const q = getGuestQuodom();
-    expect(q.lines).toEqual([]);
-    expect(q.descripcion).toBe('');
+describe('guest carts by rubro', () => {
+  beforeEach(() => clearGuestQuodoms());
+
+  it('keeps two rubros side by side without mixing them', () => {
+    addGuestLine(7, GASEOSA);
+    addGuestLine(4, CEMENTO);
+
+    expect(getGuestCart(7).lines).toEqual([GASEOSA]);
+    expect(getGuestCart(4).lines).toEqual([CEMENTO]);
+    expect(guestRubrosConLineas().sort()).toEqual([4, 7]);
   });
 
-  it('adds lines and counts them', () => {
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex 20L', cantidad: 2, nombreAtributo1: 'Color' });
-    addGuestLine({ idproducto: 101, nombreProducto: 'Rodillo', cantidad: 1 });
+  it('sums the quantity when the same product is added twice to a rubro', () => {
+    addGuestLine(7, GASEOSA);
+    addGuestLine(7, { ...GASEOSA, cantidad: 3 });
+    expect(getGuestCart(7).lines).toHaveLength(1);
+    expect(getGuestCart(7).lines[0].cantidad).toBe(4);
+  });
+
+  it('counts lines per rubro and in total', () => {
+    addGuestLine(7, GASEOSA);
+    addGuestLine(4, CEMENTO);
+    expect(guestLineCount(7)).toBe(1);
     expect(guestLineCount()).toBe(2);
-    expect(getGuestQuodom().lines).toHaveLength(2);
   });
 
-  it('merges same-product lines by summing cantidad when attributes match', () => {
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex', cantidad: 2 });
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex', cantidad: 3 });
-    const q = getGuestQuodom();
-    expect(q.lines).toHaveLength(1);
-    expect(q.lines[0].cantidad).toBe(5);
+  it('drops a rubro from the map once its last line is removed', () => {
+    addGuestLine(7, GASEOSA);
+    removeGuestLine(7, 0);
+    expect(guestRubrosConLineas()).toEqual([]);
+    expect(getGuestQuodoms()[7]).toBeUndefined();
   });
 
-  it('keeps separate lines when attributes differ', () => {
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex', cantidad: 1, atributo1: 'Rojo' });
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex', cantidad: 1, atributo1: 'Azul' });
-    expect(getGuestQuodom().lines).toHaveLength(2);
+  it('removes the line when the quantity drops to zero', () => {
+    addGuestLine(4, CEMENTO);
+    updateGuestLineCantidad(4, 0, 0);
+    expect(getGuestCart(4).lines).toEqual([]);
   });
 
-  it('updates a line cantidad', () => {
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex', cantidad: 1 });
-    updateGuestLineCantidad(0, 7);
-    expect(getGuestQuodom().lines[0].cantidad).toBe(7);
-  });
-
-  it('removes a line when cantidad drops to 0', () => {
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex', cantidad: 3 });
-    updateGuestLineCantidad(0, 0);
-    expect(getGuestQuodom().lines).toEqual([]);
-  });
-
-  it('updates attributes without duplicating', () => {
-    addGuestLine({ idproducto: 100, nombreProducto: 'Latex', cantidad: 1 });
-    updateGuestLineAtributos(0, { atributo1: 'Rojo' });
-    expect(getGuestQuodom().lines[0].atributo1).toBe('Rojo');
-  });
-
-  it('removes a line by index', () => {
-    addGuestLine({ idproducto: 100, nombreProducto: 'A', cantidad: 1 });
-    addGuestLine({ idproducto: 101, nombreProducto: 'B', cantidad: 1 });
-    removeGuestLine(0);
-    const q = getGuestQuodom();
-    expect(q.lines).toHaveLength(1);
-    expect(q.lines[0].idproducto).toBe(101);
-  });
-
-  it('sets descripcion', () => {
-    setGuestDescripcion('Pintura living');
-    expect(getGuestQuodom().descripcion).toBe('Pintura living');
-  });
-
-  it('clears everything', () => {
-    setGuestDescripcion('X');
-    addGuestLine({ idproducto: 1, nombreProducto: 'a', cantidad: 1 });
-    clearGuestQuodom();
-    expect(getGuestQuodom()).toEqual({ descripcion: '', lines: [] });
+  it('discards a legacy single-cart payload instead of crashing', () => {
+    localStorage.setItem('quodom.guest', JSON.stringify({ descripcion: 'viejo', lines: [GASEOSA] }));
+    expect(getGuestQuodoms()).toEqual({});
   });
 });
