@@ -26,7 +26,7 @@ beforeAll(async () => {
 
   const q = await request(app).post('/quodom/create')
     .set('Authorization', 'Bearer ' + token)
-    .send({ descripcion: 'Pintura Dpto' });
+    .send({ descripcion: 'Pintura Dpto', idrubro: 5 });
   idquodom = q.body.idquodom;
 });
 

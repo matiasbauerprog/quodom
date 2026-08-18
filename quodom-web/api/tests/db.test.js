@@ -26,7 +26,7 @@ describe('database initialization', () => {
   });
 
   it('computes cantproductos and porccompletado in v_Quodoms', async () => {
-    const q = await db.Quodom.create({ descripcion: 'Test', createdBy: 'u1', estado: 'CREADO', nro: 'QD-1' });
+    const q = await db.Quodom.create({ descripcion: 'Test', createdBy: 'u1', estado: 'CREADO', nro: 'QD-1', idrubro: 5 });
     await db.Quodom_Lines.create({ idquodom: q.id, idproducto: 1, cantidad: 2, nombreAtributo1: 'Color', atributo1: null, createdBy: 'u1' });
     await db.Quodom_Lines.create({ idquodom: q.id, idproducto: 2, cantidad: 1, nombreAtributo1: 'Color', atributo1: 'Blanco', createdBy: 'u1' });
     const vq = await db.v_Quodoms.findOne({ where: { id: q.id } });

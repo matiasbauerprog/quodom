@@ -21,6 +21,7 @@ module.exports = router;
 function createSchema(req, res, next) {
   const schema = Joi.object({
     descripcion: Joi.string().required(),
+    idrubro: Joi.number().integer().required(),
     iddireccion: Joi.number().integer().empty(null)
   });
   validateRequest(req, next, schema);

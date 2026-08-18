@@ -1,5 +1,6 @@
 const db = require('../helpers/db');
 const serie = require('../helpers/series');
+const { httpError } = require('../helpers/http-error');
 
 module.exports = {
     getById,
@@ -38,6 +39,16 @@ async function getPorcById(userId, id) {
 }
 
 async function create(params, userId) {
+    const abierto = await db.Quodom.findOne({
+        where: { createdBy: userId, idrubro: params.idrubro, estado: 'CREADO' }
+    });
+    if (abierto) {
+        const rubro = await db.Category.findByPk(params.idrubro);
+        throw httpError(409, 'rubro_duplicado',
+            'Ya tenés un Quodom abierto de ' + (rubro ? rubro.nombrecategoria : 'ese rubro') + '.',
+            { idquodom: abierto.id });
+    }
+
     if (!params.iddireccion) {
         const direccionDefault = await getDireccionDefault(userId);
         params.iddireccion = direccionDefault ? direccionDefault.id : null;
@@ -179,6 +190,7 @@ async function repetir(id, userId) {
 
     const nuevoId = await create({
         descripcion: source.descripcion,
+        idrubro: source.idrubro,
         iddireccion: source.iddireccion
     }, userId);
 

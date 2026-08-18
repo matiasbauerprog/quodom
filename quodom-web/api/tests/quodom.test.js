@@ -6,6 +6,7 @@ let token;
 let otherToken;
 let idquodom;
 let idline;
+let nuevoId;
 
 beforeAll(async () => {
   await db.ready;
@@ -36,7 +37,7 @@ describe('quodom', () => {
   it('POST /quodom/create creates a quodom with serie number', async () => {
     const res = await request(app).post('/quodom/create')
       .set('Authorization', 'Bearer ' + token)
-      .send({ descripcion: 'Pintura Dpto' });
+      .send({ descripcion: 'Pintura Dpto', idrubro: 5 });
     expect(res.status).toBe(200);
     expect(res.body.res).toBe(true);
     idquodom = res.body.idquodom;
@@ -153,17 +154,24 @@ describe('quodom', () => {
   });
 
   it('POST /quodom/repetir/:id copies descripcion, iddireccion and all lines into a new quodom', async () => {
+    // repetir on an already-open (CREADO) quodom of the same rubro would collide with
+    // the one-open-quodom-per-rubro rule, so mark the source ENVIADO first, matching
+    // how repetir is actually used (repeat something you already sent).
+    const source = await db.Quodom.findByPk(idquodom);
+    source.estado = 'ENVIADO';
+    await source.save();
+
     const res = await request(app).post('/quodom/repetir/' + idquodom)
       .set('Authorization', 'Bearer ' + token);
     expect(res.status).toBe(200);
     expect(res.body.res).toBe(true);
-    const nuevoId = res.body.idquodom;
+    nuevoId = res.body.idquodom;
     expect(nuevoId).not.toBe(idquodom);
 
     const nuevo = await db.Quodom.findByPk(nuevoId);
-    const source = await db.Quodom.findByPk(idquodom);
     expect(nuevo.descripcion).toBe(source.descripcion);
     expect(nuevo.iddireccion).toBe(source.iddireccion);
+    expect(nuevo.idrubro).toBe(source.idrubro);
     expect(nuevo.estado).toBe('CREADO');
     expect(nuevo.nro).not.toBe(source.nro);
 
@@ -174,9 +182,6 @@ describe('quodom', () => {
     expect(nuevasLines[0].cantidad).toBe(originalLines[0].cantidad);
     expect(nuevasLines[0].nombreProducto).toBe(originalLines[0].nombreProducto);
     expect(nuevasLines[0].atributo1).toBe(originalLines[0].atributo1);
-
-    await db.Quodom_Lines.destroy({ where: { idquodom: nuevoId } });
-    await db.Quodom.destroy({ where: { id: nuevoId } });
   });
 
   it('POST /quodom/repetir/:id of another user fails', async () => {
@@ -187,10 +192,10 @@ describe('quodom', () => {
   });
 
   it('DELETE /quodom/:id destroys a CREADO quodom and its lines', async () => {
-    const res = await request(app).delete('/quodom/' + idquodom)
+    const res = await request(app).delete('/quodom/' + nuevoId)
       .set('Authorization', 'Bearer ' + token);
     expect(res.status).toBe(200);
-    expect(await db.Quodom.findByPk(idquodom)).toBeNull();
-    expect(await db.Quodom_Lines.count({ where: { idquodom: idquodom } })).toBe(0);
+    expect(await db.Quodom.findByPk(nuevoId)).toBeNull();
+    expect(await db.Quodom_Lines.count({ where: { idquodom: nuevoId } })).toBe(0);
   });
 });
