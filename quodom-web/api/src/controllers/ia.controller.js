@@ -38,6 +38,9 @@ const CHAT_SCHEMA = {
 
 async function chat(userId, messages) {
   const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  // The intent step is plain classification: run it on a lighter model so a chat
+  // turn only puts one request on the (often congested) main model.
+  const intentModel = process.env.GEMINI_MODEL_INTENT || 'gemini-flash-lite-latest';
 
   const subcats = await db.Category.findAll({
     where: { idcategoriapadre: { [db.Sequelize.Op.gt]: 0 }, activa: true },
@@ -60,7 +63,7 @@ async function chat(userId, messages) {
   }));
 
   const intent = await callGemini({
-    model,
+    model: intentModel,
     systemPrompt:
       'Sos un clasificador. Recibís el mensaje de un usuario que quiere armar un presupuesto de compra ' +
       'y una lista de subcategorías con su rubro padre. Devolvé un JSON con los IDs de subcategorías ' +

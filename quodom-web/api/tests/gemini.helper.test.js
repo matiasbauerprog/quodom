@@ -3,8 +3,13 @@ const { callGemini } = require('../src/helpers/gemini');
 describe('gemini helper', () => {
   const originalFetch = global.fetch;
   const originalKey = process.env.GEMINI_API_KEY;
+  beforeEach(() => {
+    // Most cases exercise a single model; the fallback chain has its own test.
+    process.env.GEMINI_MODEL_FALLBACKS = '';
+  });
   afterEach(() => {
     global.fetch = originalFetch;
+    delete process.env.GEMINI_MODEL_FALLBACKS;
     if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = originalKey;
   });
@@ -102,7 +107,7 @@ describe('gemini helper', () => {
     // Both time out:
     global.fetch = jest.fn().mockRejectedValue(abortErr);
     await expect(callGemini({ model: 'gemini-2.5-flash', systemPrompt: 's', contents: [], responseSchema: {} }))
-      .rejects.toThrow('gemini: timeout after retry');
+      .rejects.toThrow(/gemini: timeout after \d+ attempt/);
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
@@ -114,5 +119,68 @@ describe('gemini helper', () => {
     });
     await expect(callGemini({ model: 'gemini-2.5-flash', systemPrompt: 's', contents: [], responseSchema: {} }))
       .rejects.toThrow(/empty or missing text/);
+  });
+
+  it('falls back to the next model when the primary is overloaded (503)', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    process.env.GEMINI_MODEL_FALLBACKS = 'gemini-2.5-flash';
+    process.env.GEMINI_ATTEMPTS_PER_MODEL = '1';
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503, text: async () => 'high demand' })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] })
+      });
+
+    const out = await callGemini({ model: 'gemini-3.7-flash', systemPrompt: 's', contents: [], responseSchema: {} });
+
+    expect(out).toEqual({ ok: true });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch.mock.calls[0][0]).toContain('gemini-3.7-flash');
+    expect(global.fetch.mock.calls[1][0]).toContain('gemini-2.5-flash');
+    delete process.env.GEMINI_ATTEMPTS_PER_MODEL;
+  });
+
+  it('does not retry the same model on 429 but does try the next one', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    process.env.GEMINI_MODEL_FALLBACKS = 'gemini-2.5-flash';
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, text: async () => 'quota' })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] })
+      });
+
+    const out = await callGemini({ model: 'gemini-3.7-flash', systemPrompt: 's', contents: [], responseSchema: {} });
+
+    expect(out).toEqual({ ok: true });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch.mock.calls[1][0]).toContain('gemini-2.5-flash');
+  });
+
+  it('skips to the next model when one is retired (404) instead of failing', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    process.env.GEMINI_MODEL_FALLBACKS = 'gemini-3.5-flash';
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: false, status: 404, text: async () => 'no longer available' })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] })
+      });
+
+    const out = await callGemini({ model: 'gemini-2.5-flash', systemPrompt: 's', contents: [], responseSchema: {} });
+
+    expect(out).toEqual({ ok: true });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch.mock.calls[1][0]).toContain('gemini-3.5-flash');
+  });
+
+  it('does not retry on a non-retryable 4xx', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400, text: async () => 'bad request' });
+
+    await expect(callGemini({ model: 'gemini-2.5-flash', systemPrompt: 's', contents: [], responseSchema: {} }))
+      .rejects.toThrow(/HTTP 400/);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });

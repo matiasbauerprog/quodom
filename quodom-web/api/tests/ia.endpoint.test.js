@@ -126,11 +126,45 @@ describe('POST /api/ia/chat', () => {
     expect(res.body.error).toBe('limit_exceeded');
   });
 
-  it('returns 500 ia_unavailable when gemini throws and does NOT increment counter', async () => {
+  it('returns 503 ia_busy when gemini is overloaded and does NOT increment counter', async () => {
     process.env.IA_MAX_DAILY_MESSAGES = '999';
     process.env.IA_RATE_LIMIT_PER_MINUTE = '999';
     rateLimit._reset();
-    callGemini.mockRejectedValueOnce(new Error('gemini: HTTP 500 boom'));
+    callGemini.mockRejectedValueOnce(new Error('gemini: HTTP 503 high demand'));
+
+    const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;
+    const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await db.ia_usage.destroy({ where: { iduser: userId, fecha: today } });
+
+    const res = await request(app).post('/api/ia/chat')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ messages: [{ role: 'user', text: 'x' }] });
+    expect(res.status).toBe(503);
+    expect(res.body.error).toBe('ia_busy');
+    expect(res.headers['retry-after']).toBe('30');
+
+    const row = await db.ia_usage.findOne({ where: { iduser: userId, fecha: today } });
+    expect(row).toBeNull();
+  });
+
+  it('returns 429 ia_quota when gemini reports the quota is exhausted', async () => {
+    process.env.IA_MAX_DAILY_MESSAGES = '999';
+    process.env.IA_RATE_LIMIT_PER_MINUTE = '999';
+    rateLimit._reset();
+    callGemini.mockRejectedValueOnce(new Error('gemini: HTTP 429 quota'));
+
+    const res = await request(app).post('/api/ia/chat')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ messages: [{ role: 'user', text: 'x' }] });
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe('ia_quota');
+  });
+
+  it('returns 500 ia_unavailable on a non-transient gemini failure and does NOT increment counter', async () => {
+    process.env.IA_MAX_DAILY_MESSAGES = '999';
+    process.env.IA_RATE_LIMIT_PER_MINUTE = '999';
+    rateLimit._reset();
+    callGemini.mockRejectedValueOnce(new Error('gemini: could not parse JSON response: nope'));
 
     const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;
     const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
