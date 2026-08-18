@@ -1,0 +1,21 @@
+.dcr-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(30, 30, 42, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--sp-4);
+}
+.dcr { background: var(--color-tarjeta); max-width: 460px; width: 100%; padding: var(--sp-4); }
+.dcr-titulo { font-size: var(--fs-h2); margin: 0 0 var(--sp-3) 0; color: var(--color-acento); }
+.dcr-texto { margin: 0 0 var(--sp-4) 0; color: var(--color-texto); }
+.dcr-acciones { display: flex; flex-direction: column; gap: var(--sp-3); }
+/* Reemplazar is irreversible: outlined in the danger color, never the filled
+   default, so it is never the easiest button to hit by accident. */
+.dcr-acciones .btn-peligro {
+  background: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+@media (min-width: 601px) {
+  .dcr-acciones { flex-direction: row; justify-content: flex-end; flex-wrap: wrap; }
+}

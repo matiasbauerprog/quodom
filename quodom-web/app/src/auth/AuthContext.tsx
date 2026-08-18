@@ -3,12 +3,11 @@ import type { ReactNode } from 'react';
 import { users } from '../api/users';
 import { clearToken, getToken, setToken } from '../api/client';
 import type { User } from '../api/types';
-import { migrateGuestQuodom } from '../guest/migrateGuestQuodom';
 
 type AuthState = {
   user: User | null;
   loading: boolean;
-  signin: (username: string, password: string) => Promise<string | null>;
+  signin: (username: string, password: string) => Promise<void>;
   signup: (body: Parameters<typeof users.signup>[0]) => Promise<{ res: boolean; message: string; id?: string }>;
   signout: () => void;
   refresh: () => Promise<void>;
@@ -39,8 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const u = await users.signin({ username, password });
     if (u.token) setToken(u.token);
     setUser(u);
-    const migratedId = await migrateGuestQuodom().catch(() => null);
-    return migratedId;
   }, []);
 
   const signup = useCallback(async (body: Parameters<typeof users.signup>[0]) => {
