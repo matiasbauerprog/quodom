@@ -5,6 +5,10 @@ function errorHandler(err, req, res, next) {
     console.log('ERROR LOG: ' + err);
 
     switch (true) {
+        case err !== null && typeof err === 'object' && Number.isInteger(err.status):
+            const { status, ...body } = err;
+            return res.status(status).json({ res: false, ...body });
+
         case typeof err === 'string':
             //SL Errors comunes not found
             const is404 = err.toLowerCase().endsWith('not found');
