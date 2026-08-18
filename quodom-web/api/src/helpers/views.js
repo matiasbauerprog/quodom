@@ -11,6 +11,8 @@ async function createViews(sequelize) {
     await sequelize.query(`
         CREATE VIEW v_Quodoms AS
         SELECT q.id, q.descripcion, q.createdBy, q.estado, q.nro, q.iddireccion,
+               q.idrubro,
+               (SELECT c.nombrecategoria FROM categorias c WHERE c.id = q.idrubro) AS nombrerubro,
                q.fechaenvio, q.fechavencimientoenvio, q.fechavencimientoaceptacion,
                q.createdAt, q.updatedAt,
                (SELECT COUNT(*) FROM quodom_lines ql WHERE ql.idquodom = q.id) AS cantproductos,

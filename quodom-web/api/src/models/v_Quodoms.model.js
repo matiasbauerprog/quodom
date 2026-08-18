@@ -9,6 +9,8 @@ function model(sequelize) {
         createdBy: { type: DataTypes.STRING, allowNull: false },
         fechavencimientoenvio: { type: DataTypes.DATE, allowNull: true },
         estado: { type: DataTypes.STRING, allowNull: false },
+        idrubro: { type: DataTypes.INTEGER, allowNull: true },
+        nombrerubro: { type: DataTypes.STRING, allowNull: true },
         porccompletado: { type: DataTypes.DECIMAL, allowNull: true },
         cantproductos: { type: DataTypes.INTEGER, allowNull: true },
         diasparavencimientoenvio: { type: DataTypes.INTEGER, allowNull: true },

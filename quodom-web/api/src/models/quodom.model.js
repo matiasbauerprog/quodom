@@ -12,6 +12,7 @@ function model(sequelize) {
             primaryKey: true
         },
         descripcion: { type: DataTypes.STRING, allowNull: false },
+        idrubro: { type: DataTypes.INTEGER, allowNull: false },
         createdBy: { type: DataTypes.STRING, allowNull: false },
         fechavencimientoenvio: { type: DataTypes.DATE, allowNull: true },
         estado: { type: DataTypes.STRING, allowNull: false },
