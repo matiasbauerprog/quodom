@@ -3,6 +3,8 @@ import { productos } from '../../api/productos';
 import type { Product } from '../../api/types';
 import { ProductImage } from '../../components/ProductImage';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
+import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { nombreRubro } from '../../quodom/rubros';
 import './MasBuscados.css';
 
 const POPULAR_IDS = [1, 20, 60, 137, 191, 447];
@@ -11,7 +13,7 @@ export function MasBuscados() {
   const [items, setItems] = useState<Product[]>([]);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(0);
-  const { agregar: agregarLinea, agregando, error: errAgregar } = useAgregarProducto();
+  const { agregar: agregarLinea, agregando, error: errAgregar, pendiente, confirmar, cancelar } = useAgregarProducto();
 
   useEffect(() => {
     let alive = true;
@@ -37,37 +39,50 @@ export function MasBuscados() {
 
   function agregar(p: Product) {
     if (agregando) return;
-    agregarLinea({ idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined });
+    agregarLinea(
+      { idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined },
+      p.categoriaPadre
+    );
   }
 
   if (items.length === 0) return null;
 
   return (
-    <section className="mb-section" aria-label="Mas buscados">
-      <div className="mb-heading">
-        <span className="mb-heading-line" aria-hidden="true" />
-        <span className="mb-heading-text">Mas buscados</span>
-        <span className="mb-heading-line" aria-hidden="true" />
-      </div>
-      {errAgregar && <p className="mb-add-error" role="alert">{errAgregar}</p>}
-      <div className="mb-track" ref={trackRef}>
-        {items.map(p => (
-          <article key={p.id} className="mb-card card hoja" onClick={() => agregar(p)} role="button" tabIndex={0}>
-            <div className="mb-card-img">
-              <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
-            </div>
-            <div className="mb-card-text">
-              <div className="mb-card-title">{p.nombreproducto}</div>
-              {p.descripcion && <div className="mb-card-subtitle">{p.descripcion}</div>}
-            </div>
-          </article>
-        ))}
-      </div>
-      <div className="mb-dots" aria-hidden="true">
-        {Array.from({ length: Math.max(1, Math.ceil(items.length / 3)) }).map((_, i) => (
-          <span key={i} className={'mb-dot' + (i === Math.floor(page / 3) ? ' mb-dot-active' : '')} />
-        ))}
-      </div>
-    </section>
+    <>
+      <section className="mb-section" aria-label="Mas buscados">
+        <div className="mb-heading">
+          <span className="mb-heading-line" aria-hidden="true" />
+          <span className="mb-heading-text">Mas buscados</span>
+          <span className="mb-heading-line" aria-hidden="true" />
+        </div>
+        {errAgregar && <p className="mb-add-error" role="alert">{errAgregar}</p>}
+        <div className="mb-track" ref={trackRef}>
+          {items.map(p => (
+            <article key={p.id} className="mb-card card hoja" onClick={() => agregar(p)} role="button" tabIndex={0}>
+              <div className="mb-card-img">
+                <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
+              </div>
+              <div className="mb-card-text">
+                <div className="mb-card-title">{p.nombreproducto}</div>
+                {p.descripcion && <div className="mb-card-subtitle">{p.descripcion}</div>}
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="mb-dots" aria-hidden="true">
+          {Array.from({ length: Math.max(1, Math.ceil(items.length / 3)) }).map((_, i) => (
+            <span key={i} className={'mb-dot' + (i === Math.floor(page / 3) ? ' mb-dot-active' : '')} />
+          ))}
+        </div>
+      </section>
+      {pendiente && (
+        <DialogoNuevoRubro
+          nombreRubro={nombreRubro(pendiente.idrubro)}
+          onConfirmar={confirmar}
+          onCancelar={cancelar}
+          ocupado={agregando}
+        />
+      )}
+    </>
   );
 }

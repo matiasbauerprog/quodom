@@ -5,6 +5,8 @@ import { historial } from '../../api/hist_busquedas';
 import type { BusquedaResult } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
+import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { nombreRubro } from '../../quodom/rubros';
 import { useAuth } from '../../auth/AuthContext';
 import { Loader } from '../../components/Loader';
 import { ProductImage } from '../../components/ProductImage';
@@ -19,7 +21,7 @@ export function BusquedaScreen() {
   const [results, setResults] = useState<BusquedaResult[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [hist, setHist] = useState<string[]>([]);
-  const { agregar: agregarLinea, agregando, error: errAgregar } = useAgregarProducto();
+  const { agregar: agregarLinea, agregando, error: errAgregar, pendiente, confirmar, cancelar } = useAgregarProducto();
 
   useEffect(() => {
     if (!user) return;
@@ -53,7 +55,7 @@ export function BusquedaScreen() {
   }
 
   function agregar(r: BusquedaResult) {
-    agregarLinea({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 });
+    agregarLinea({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 }, r.categoriaPadre);
   }
 
   return (
@@ -93,6 +95,15 @@ export function BusquedaScreen() {
             ))}
           </ul>
         </>
+      )}
+
+      {pendiente && (
+        <DialogoNuevoRubro
+          nombreRubro={nombreRubro(pendiente.idrubro)}
+          onConfirmar={confirmar}
+          onCancelar={cancelar}
+          ocupado={agregando}
+        />
       )}
     </section>
   );

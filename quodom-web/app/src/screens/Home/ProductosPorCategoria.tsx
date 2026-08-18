@@ -8,6 +8,8 @@ import { ErrorState } from '../../components/ErrorState';
 import { AppBarBack } from '../../components/layout/AppBarBack';
 import { ProductImage } from '../../components/ProductImage';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
+import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { nombreRubro } from '../../quodom/rubros';
 import { DetalleProducto } from './DetalleProducto';
 import './ProductosPorCategoria.css';
 
@@ -18,7 +20,7 @@ export function ProductosPorCategoria() {
   const [err, setErr] = useState<string | null>(null);
   const [selected, setSelected] = useState<Product | null>(null);
   const [nonce, setNonce] = useState(0);
-  const { agregar: agregarLinea, agregando, error: errAgregar } = useAgregarProducto();
+  const { agregar: agregarLinea, agregando, error: errAgregar, pendiente, confirmar, cancelar } = useAgregarProducto();
 
   useEffect(() => {
     let alive = true;
@@ -30,7 +32,10 @@ export function ProductosPorCategoria() {
   }, [idCat, nonce]);
 
   function agregar(p: Product) {
-    agregarLinea({ idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined });
+    agregarLinea(
+      { idproducto: p.id, nombreProducto: p.nombreproducto, cantidad: 1, nombreAtributo1: p.atributo1 ?? undefined, nombreAtributo2: p.atributo2 ?? undefined },
+      p.categoriaPadre
+    );
   }
 
   return (
@@ -55,6 +60,14 @@ export function ProductosPorCategoria() {
           </ul>
         )}
         {selected && <DetalleProducto product={selected} onClose={() => setSelected(null)} onAdd={() => { agregar(selected); setSelected(null); }} />}
+        {pendiente && (
+          <DialogoNuevoRubro
+            nombreRubro={nombreRubro(pendiente.idrubro)}
+            onConfirmar={confirmar}
+            onCancelar={cancelar}
+            ocupado={agregando}
+          />
+        )}
       </section>
     </>
   );
