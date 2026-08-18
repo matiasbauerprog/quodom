@@ -4,6 +4,7 @@ const Joi = require('joi');
 const auth = require('../middleware/auth');
 const Controler = require('../controllers/quodom.controller');
 const validateRequest = require('../middleware/validate-request');
+const { httpError } = require('../helpers/http-error');
 
 router.get('/getQuodomCreados', auth.verifyToken(), getQuodomCreados);
 router.get('/misQuodom/', auth.verifyToken(), getMyQuodoms);
@@ -72,7 +73,11 @@ function _delete(req, res, next) {
 }
 
 function getActivo(req, res, next) {
-  Controler.getActivoPorRubro(req.user.id, parseInt(req.params.idrubro, 10))
+  const idrubro = parseInt(req.params.idrubro, 10);
+  if (!Number.isInteger(idrubro) || idrubro <= 0) {
+    return next(httpError(400, 'idrubro_invalido', 'El rubro indicado no es válido.'));
+  }
+  Controler.getActivoPorRubro(req.user.id, idrubro)
     .then((data) => res.json({ res: true, data }))
     .catch(next);
 }

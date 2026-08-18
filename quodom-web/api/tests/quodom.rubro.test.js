@@ -176,4 +176,15 @@ describe('GET /quodom/activo/:idrubro', () => {
       .set('Authorization', 'Bearer ' + token);
     expect(res.body.data).toBeNull();
   });
+
+  it('rejects a non-numeric idrubro with 400 and creates nothing', async () => {
+    const antes = await db.Quodom.count();
+
+    const res = await request(app).get('/quodom/activo/abc')
+      .set('Authorization', 'Bearer ' + token);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('idrubro_invalido');
+    expect(await db.Quodom.count()).toBe(antes);
+  });
 });
