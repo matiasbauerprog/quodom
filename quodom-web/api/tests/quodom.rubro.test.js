@@ -177,10 +177,10 @@ describe('GET /quodom/activo/:idrubro', () => {
     expect(res.body.data).toBeNull();
   });
 
-  it('rejects a non-numeric idrubro with 400 and creates nothing', async () => {
+  it.each(['abc', '7abc', '0'])('rejects an invalid idrubro (%s) with 400 and creates nothing', async (idrubro) => {
     const antes = await db.Quodom.count();
 
-    const res = await request(app).get('/quodom/activo/abc')
+    const res = await request(app).get('/quodom/activo/' + idrubro)
       .set('Authorization', 'Bearer ' + token);
 
     expect(res.status).toBe(400);

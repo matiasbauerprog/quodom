@@ -74,7 +74,7 @@ function _delete(req, res, next) {
 
 function getActivo(req, res, next) {
   const idrubro = parseInt(req.params.idrubro, 10);
-  if (!Number.isInteger(idrubro) || idrubro <= 0) {
+  if (!/^\d+$/.test(req.params.idrubro) || idrubro <= 0) {
     return next(httpError(400, 'idrubro_invalido', 'El rubro indicado no es válido.'));
   }
   Controler.getActivoPorRubro(req.user.id, idrubro)
