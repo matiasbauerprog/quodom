@@ -37,4 +37,19 @@ describe('http errors with an explicit status', () => {
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ res: false, message: 'Error en el servidor.' });
   });
+
+  it('still handles express-jwt UnauthorizedError with its own messages, not the status branch', () => {
+    const err = new Error('jwt expired');
+    err.name = 'UnauthorizedError';
+    err.status = 401;
+    err.code = 'invalid_token';
+    err.inner = { name: 'TokenExpiredError', expiredAt: '2026-01-01T00:00:00.000Z' };
+
+    const res = fakeRes();
+    errorHandler(err, {}, res, () => {});
+
+    expect(res.statusCode).toBe(401);
+    expect(res.payload).toEqual({ res: false, message: 'Token expirado.', exp: true });
+    expect(res.payload.inner).toBeUndefined();
+  });
 });

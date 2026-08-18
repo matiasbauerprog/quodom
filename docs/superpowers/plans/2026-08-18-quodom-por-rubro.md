@@ -103,7 +103,7 @@ module.exports = { httpError };
 
 - [ ] **Step 4: Teach the error handler about it**
 
-En `quodom-web/api/src/middleware/error-handler.js`, agregar el case **antes** del case de string:
+En `quodom-web/api/src/middleware/error-handler.js`, agregar el case en tercera posición, después del case de UnauthorizedError y antes del default. (express-jwt's `UnauthorizedError` carries `status = 401`, so placing it earlier would swallow it.)
 
 ```js
         case err !== null && typeof err === 'object' && Number.isInteger(err.status):
@@ -441,11 +441,20 @@ git commit -m "feat(api): require idrubro on create and reject a second open quo
 Agregar a `quodom-web/api/tests/quodom.rubro.test.js` un `describe` nuevo. Necesita dos productos de rubros distintos; agregalos en el `beforeAll` del archivo:
 
 ```js
+  // Las subcategorías tienen que existir: add() llama a getCat(producto.categoria)
+  // y lanza 'Err. Id de categoria no encontrado.' (400) si falta, lo que haría
+  // fallar el caso feliz antes de llegar a la validación de rubro.
+  await db.Category.bulkCreate([
+    { id: 70, nombrecategoria: 'Gaseosas', idcategoriapadre: 7, activa: true, orden: 1 },
+    { id: 40, nombrecategoria: 'Cementos', idcategoriapadre: 4, activa: true, orden: 1 }
+  ]);
   await db.Products.bulkCreate([
     { id: 700, nombreproducto: 'Gaseosa 2L', categoria: 70, categoriaPadre: 7, atributo1: null, atributo2: null },
     { id: 400, nombreproducto: 'Cemento 50kg', categoria: 40, categoriaPadre: 4, atributo1: null, atributo2: null }
   ]);
 ```
+
+Estas dos líneas van en el `beforeAll` de arriba del archivo (el que creó la Task 2), no en un `beforeAll` nuevo: editá el existente.
 
 Y el describe:
 
@@ -1197,7 +1206,12 @@ function notificarCambio(): void {
 Run: `cd quodom-web/app && npx vitest run src/quodom`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Note the expected typecheck breakage**
+
+Run: `cd quodom-web/app && npx tsc -b --noEmit`
+Expected: FALLA en **tres** archivos que todavía llaman a `quodomApi.create` sin `idrubro` — `guest/migrateGuestQuodom.ts` (Task 10), `screens/MisQuodoms/ListaMisQuodoms.tsx` (Task 14) y `screens/ModoIA/ModoIA.tsx` (Task 15) — además de los que ya venían rotos desde la Task 7. **Es lo esperado.** El typecheck no vuelve a estar limpio hasta la Task 15; hasta entonces el gate de cada tarea es `npx vitest run`. No arregles esos tres archivos acá: cada uno se reescribe entero en su tarea.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add quodom-web/app/src/api/quodom.ts quodom-web/app/src/quodom/agregarProducto.ts quodom-web/app/src/quodom/__tests__/agregarProducto.test.ts
@@ -1469,8 +1483,8 @@ Repetí el mismo cableado en `MasBuscados.tsx` (usa `p.categoriaPadre`) y en `Bu
 
 - [ ] **Step 7: Typecheck and test**
 
-Run: `cd quodom-web/app && npx tsc -b --noEmit && npx vitest run`
-Expected: typecheck limpio salvo los archivos que arreglan las tareas 10, 12 y 13; los tests que ya existían pasan.
+Run: `cd quodom-web/app && npx vitest run`
+Expected: PASS. El typecheck sigue rojo en los archivos que arreglan las tareas 10, 12, 13, 14 y 15 (ver Task 8 Step 6) — no lo corras como gate acá.
 
 - [ ] **Step 8: Commit**
 
@@ -1749,10 +1763,10 @@ Crear `quodom-web/app/src/guest/DialogoConflictoRubro.tsx` con las tres acciones
 <button className="btn btn-ghost" onClick={() => onElegir(null)}>Ahora no</button>
 ```
 
-- [ ] **Step 7: Typecheck and run the app suite**
+- [ ] **Step 7: Run the app suite**
 
-Run: `cd quodom-web/app && npx tsc -b --noEmit && npx vitest run`
-Expected: PASS.
+Run: `cd quodom-web/app && npx vitest run`
+Expected: PASS. El typecheck todavía no: quedan `ListaMisQuodoms.tsx` (Task 14) y `ModoIA.tsx` (Task 15). `signin` sólo se llama desde `SignIn.tsx` — verificado en el preflight — así que cambiarle la firma no rompe nada más.
 
 - [ ] **Step 8: Commit**
 
@@ -2402,10 +2416,10 @@ Y `chat()` devuelve `idrubro` en la propuesta.
 
 En `ModoIA.tsx`, `confirmProposal` deja de crear siempre un Quodom nuevo: busca `activoPorRubro(idrubro)`, y si no hay, muestra `DialogoNuevoRubro` (Task 9) antes de crear. Si ya hay, agrega ahí.
 
-- [ ] **Step 5: Run both suites**
+- [ ] **Step 5: Run both suites and close the typecheck**
 
-Run: `cd quodom-web/api && npm test` y `cd quodom-web/app && npx vitest run`
-Expected: PASS.
+Run: `cd quodom-web/api && npm test`, `cd quodom-web/app && npx vitest run`, y `cd quodom-web/app && npx tsc -b --noEmit`
+Expected: PASS los tres. **Ésta es la tarea donde el typecheck vuelve a quedar limpio**: es el último de los archivos que quedaron rojos desde la Task 7. Si `tsc` marca algo más, es un cabo suelto de una tarea anterior — arreglalo acá.
 
 - [ ] **Step 6: Commit**
 
