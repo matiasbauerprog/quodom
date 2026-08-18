@@ -1,37 +1,62 @@
 import { quodom as quodomApi } from '../api/quodom';
 import { quodomLines } from '../api/quodom_lines';
-import { addGuestLine, type GuestLine } from '../guest/guestQuodom';
+import { addGuestLine, guestLineCount, type GuestLine } from '../guest/guestQuodom';
 
-export type AgregarResult = { idquodom: string | null };
+export type AgregarResult =
+  | { estado: 'agregado'; idquodom: string | null }
+  | { estado: 'necesita_confirmacion'; idrubro: number };
+
+type Opts = { logueado: boolean; idrubro: number };
 
 /**
- * Adds a product to whatever the user's current Quodom is.
- *
- * Guests build the Quodom in localStorage (it migrates on login). Once there is
- * a session the line goes straight to the server, into the "Quodom activo" the
- * backend resolves for us, so it shows up in Mis Quodoms right away.
+ * Adds a product to the Quodom of its rubro. A Quodom holds a single rubro, so
+ * when there is no open one for it nothing is added: the caller has to confirm
+ * creating it first (confirmarYAgregar).
  */
-export async function agregarProducto(
-  line: GuestLine,
-  opts: { logueado: boolean }
-): Promise<AgregarResult> {
+export async function agregarProducto(line: GuestLine, opts: Opts): Promise<AgregarResult> {
   if (!opts.logueado) {
-    addGuestLine(line);
+    if (guestLineCount(opts.idrubro) === 0 && guestLineCount() > 0) {
+      return { estado: 'necesita_confirmacion', idrubro: opts.idrubro };
+    }
+    addGuestLine(opts.idrubro, line);
+    notificarCambio();
+    return { estado: 'agregado', idquodom: null };
+  }
+
+  const activo = await quodomApi.activoPorRubro(opts.idrubro);
+  if (!activo) return { estado: 'necesita_confirmacion', idrubro: opts.idrubro };
+
+  await agregarAlServidor(activo.id, line);
+  notificarCambio();
+  return { estado: 'agregado', idquodom: activo.id };
+}
+
+/** Second half of the flow: the user accepted opening a Quodom for this rubro. */
+export async function confirmarYAgregar(
+  line: GuestLine,
+  opts: Opts & { descripcion: string }
+): Promise<{ idquodom: string | null }> {
+  if (!opts.logueado) {
+    addGuestLine(opts.idrubro, line);
     notificarCambio();
     return { idquodom: null };
   }
 
-  const activo = await quodomApi.getLastOrCreate();
+  const creado = await quodomApi.create({ descripcion: opts.descripcion, idrubro: opts.idrubro });
+  await agregarAlServidor(creado.idquodom, line);
+  notificarCambio();
+  return { idquodom: creado.idquodom };
+}
+
+async function agregarAlServidor(idquodom: string, line: GuestLine): Promise<void> {
   await quodomLines.add({
-    idquodom: activo.id,
+    idquodom,
     idproducto: line.idproducto,
     cantidad: line.cantidad,
     nombreProducto: line.nombreProducto,
     ...(line.atributo1 ? { atributo1: line.atributo1 } : {}),
     ...(line.atributo2 ? { atributo2: line.atributo2 } : {})
   });
-  notificarCambio();
-  return { idquodom: activo.id };
 }
 
 function notificarCambio(): void {
