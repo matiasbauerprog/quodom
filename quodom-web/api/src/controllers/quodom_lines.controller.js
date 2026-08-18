@@ -1,4 +1,5 @@
 const db = require('../helpers/db');
+const { httpError } = require('../helpers/http-error');
 
 module.exports = {
     getAll,
@@ -38,9 +39,21 @@ async function getById(id, userId) {
 }
 
 async function add(params, userId) {
-    await ValidarQuodom(params.idquodom, userId, 'ADD');
+    const quodom = await ValidarQuodom(params.idquodom, userId, 'ADD');
 
     const producto = await getPr(params.idproducto);
+
+    if (producto.categoriaPadre !== quodom.idrubro) {
+        const [rubroProducto, rubroQuodom] = await Promise.all([
+            db.Category.findByPk(producto.categoriaPadre),
+            db.Category.findByPk(quodom.idrubro)
+        ]);
+        throw httpError(409, 'rubro_mismatch',
+            'No se pueden mezclar rubros: este producto es de '
+            + (rubroProducto ? rubroProducto.nombrecategoria : 'otro rubro')
+            + ' y el Quodom es de '
+            + (rubroQuodom ? rubroQuodom.nombrecategoria : 'otro rubro') + '.');
+    }
 
     params.categoria = producto.categoria;
     params.categoriaPadre = producto.categoriaPadre;
@@ -112,5 +125,5 @@ async function ValidarQuodom(idquodom, userId, action) {
             throw 'El estado del Quodom no permite modificaciones.';
     }
 
-    return true;
+    return Quodom;
 }

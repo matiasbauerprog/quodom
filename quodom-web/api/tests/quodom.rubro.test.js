@@ -6,6 +6,18 @@ beforeAll(async () => {
     { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, activa: true, orden: 1 },
     { id: 4, nombrecategoria: 'Construcción', idcategoriapadre: 0, activa: true, orden: 2 }
   ]);
+
+  // Las subcategorías tienen que existir: add() llama a getCat(producto.categoria)
+  // y lanza 'Err. Id de categoria no encontrado.' (400) si falta, lo que haría
+  // fallar el caso feliz antes de llegar a la validación de rubro.
+  await db.Category.bulkCreate([
+    { id: 70, nombrecategoria: 'Gaseosas', idcategoriapadre: 7, activa: true, orden: 1 },
+    { id: 40, nombrecategoria: 'Cementos', idcategoriapadre: 4, activa: true, orden: 1 }
+  ]);
+  await db.Products.bulkCreate([
+    { id: 700, nombreproducto: 'Gaseosa 2L', categoria: 70, categoriaPadre: 7, atributo1: null, atributo2: null },
+    { id: 400, nombreproducto: 'Cemento 50kg', categoria: 40, categoriaPadre: 4, atributo1: null, atributo2: null }
+  ]);
 });
 
 describe('quodom rubro column', () => {
@@ -85,5 +97,42 @@ describe('create enforces one open quodom per rubro', () => {
       .set('Authorization', 'Bearer ' + token)
       .send({ descripcion: 'Obra', idrubro: 4 });
     expect(res.status).toBe(200);
+  });
+});
+
+describe('add line enforces the quodom rubro', () => {
+  let token;
+  let idquodomBebidas;
+
+  beforeAll(async () => {
+    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    token = login.body.token;
+    const userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    await db.Quodom.destroy({ where: { createdBy: userId } });
+    const res = await request(app).post('/quodom/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Bebidas', idrubro: 7 });
+    idquodomBebidas = res.body.idquodom;
+  });
+
+  it('accepts a product of the same rubro', async () => {
+    const res = await request(app).post('/quodom_lines/add')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ idquodom: idquodomBebidas, idproducto: 700, cantidad: 1, nombreProducto: 'Gaseosa 2L' });
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects a product of another rubro with 409 and creates no line', async () => {
+    const antes = await db.Quodom_Lines.count({ where: { idquodom: idquodomBebidas } });
+
+    const res = await request(app).post('/quodom_lines/add')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ idquodom: idquodomBebidas, idproducto: 400, cantidad: 1, nombreProducto: 'Cemento 50kg' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('rubro_mismatch');
+    expect(res.body.message).toContain('Construcción');
+    expect(res.body.message).toContain('Bebidas');
+    expect(await db.Quodom_Lines.count({ where: { idquodom: idquodomBebidas } })).toBe(antes);
   });
 });
