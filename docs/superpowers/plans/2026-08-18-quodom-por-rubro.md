@@ -226,21 +226,32 @@ Expected: PASS, 2 tests.
 Crear `quodom-web/api/src/seed/reset-quodoms.js`:
 
 ```js
-// Wipes every Quodom and its lines. Needed once when idrubro is introduced:
-// model.sync() does not alter existing tables, so the old ones must go.
+// Drops and recreates the Quodom tables. Needed once when idrubro is introduced:
+// model.sync() creates a missing table but never ALTERs an existing one, so the
+// old quodom_headers would keep its old columns forever if we only deleted rows.
 // Users, catalog, addresses and notifications are left untouched.
 require('dotenv').config();
 const db = require('../helpers/db');
 
 (async () => {
     await db.ready;
-    const lines = await db.Quodom_Lines.destroy({ where: {}, truncate: true });
-    const headers = await db.Quodom.destroy({ where: {}, truncate: true });
-    console.log('quodom_lines wiped:', lines);
-    console.log('quodom_headers wiped:', headers);
+    const qi = db.sequelize.getQueryInterface();
+
+    // Lines first: they reference the header.
+    await qi.dropTable('quodom_lines');
+    await qi.dropTable('quodom_headers');
+
+    await db.Quodom.sync();
+    await db.Quodom_Lines.sync();
+
+    const [cols] = await db.sequelize.query('PRAGMA table_info(quodom_headers)');
+    console.log('quodom tables recreated. quodom_headers columns:', cols.map(c => c.name).join(', '));
+
     await db.sequelize.close();
 })();
 ```
+
+Las vistas (`v_Quodoms`, `v_Quodoms_Lines`) se recrean solas en el próximo arranque del server: `createViews` corre en cada `initialize()` con `DROP VIEW IF EXISTS` adelante.
 
 - [ ] **Step 8: Register the script**
 
@@ -253,7 +264,9 @@ En `quodom-web/api/package.json`, dentro de `scripts`, después de `"seed"`:
 - [ ] **Step 9: Run it against the dev database**
 
 Run: `cd quodom-web/api && npm run reset-quodoms`
-Expected: imprime las dos líneas y sale sin error. Después de esto, `sync()` recrea `quodom_headers` con `idrubro` en el próximo arranque del server.
+Expected: imprime la lista de columnas de `quodom_headers` y **`idrubro` tiene que estar en esa lista**. Si no está, el drop no ocurrió y el script está mal: no sigas.
+
+Esto borra los Quodoms de la base de desarrollo. Está autorizado y es intencional (spec §3.4), y `quodom-web/api/quodom.sqlite` está trackeado en git, así que es recuperable.
 
 - [ ] **Step 10: Run the whole API suite**
 
@@ -404,13 +417,23 @@ Expected: PASS.
 
 - [ ] **Step 6: Update the existing suite**
 
-En `quodom-web/api/tests/quodom.test.js`, cada `.send({ descripcion: ... })` contra `/quodom/create` pasa a incluir el rubro del producto de prueba, que es Pintura (5):
+Hacer `idrubro` NOT NULL rompió **tres** suites, no una. Medido después de la Task 2:
+
+- `tests/quodom.test.js`
+- `tests/whatsapp.test.js`
+- `tests/db.test.js`
+
+En las tres, todo `create` de Quodom pasa a llevar el rubro. Para los que van por HTTP, el rubro del producto de prueba es Pintura (5):
 
 ```js
       .send({ descripcion: 'Pintura Dpto', idrubro: 5 });
 ```
 
-Aplicá lo mismo a todos los `create` del archivo. Si algún test crea dos Quodoms para el mismo usuario, usá rubros distintos (5 y 4) o marcá el primero como `ENVIADO` antes del segundo — si no, ahora choca con la regla.
+Para los que crean por Sequelize directo (`db.Quodom.create({...})`, típico en `db.test.js`), agregá `idrubro: 5` al objeto.
+
+Aplicá lo mismo a todos los `create` de los tres archivos. Si algún test crea dos Quodoms para el mismo usuario, usá rubros distintos (5 y 4) o marcá el primero como `ENVIADO` antes del segundo — si no, ahora choca con la regla de un Quodom abierto por rubro.
+
+Corré `npx jest` y verificá que las tres suites quedan verdes. Si aparece una cuarta suite rota, arreglala también con el mismo criterio.
 
 - [ ] **Step 7: Run the whole API suite**
 
