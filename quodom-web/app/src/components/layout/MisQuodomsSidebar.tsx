@@ -26,12 +26,24 @@ export function MisQuodomsSidebar() {
       const requestId = ++requestIdRef.current;
       quodomApi.misQuodom()
         .then(d => { if (alive && requestId === requestIdRef.current) setList(d); })
-        .catch(() => { if (alive && requestId === requestIdRef.current) setList([]); });
+        .catch(() => {
+          if (!alive || requestId !== requestIdRef.current) return;
+          // A refresh triggered by `quodom:changed` can fail transiently
+          // (e.g. the network is busy right after the mutation that fired
+          // the event). Only wipe the list when there was nothing good to
+          // keep yet (the very first load); otherwise keep showing the
+          // last-known-good list rather than blanking a correct sidebar.
+          setList(prev => (prev === null ? [] : prev));
+        });
     };
     cargar();
     window.addEventListener('quodom:changed', cargar);
     return () => { alive = false; window.removeEventListener('quodom:changed', cargar); };
-  }, [user, nonce]);
+  // Depend on the user's id (a primitive), not the `user` object itself:
+  // an object reference can change across renders without the logged-in
+  // user actually changing, which would otherwise re-fire this effect (and
+  // refetch) on every unrelated re-render.
+  }, [user?.id, nonce]);
 
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 

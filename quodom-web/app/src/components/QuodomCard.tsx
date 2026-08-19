@@ -89,7 +89,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange }
       <div className="qc-left">
         {rubroLabel && <div className="qc-rubro">{rubroLabel}</div>}
         <div className="qc-fecha">{fechaDisplay}</div>
-        {nombre !== rubroLabel && <div className="qc-nombre">{nombre}</div>}
+        <div className="qc-nombre">{nombre}</div>
       </div>
 
       <div className="qc-zigzag-wrap"><ZigZag /></div>
