@@ -1,5 +1,6 @@
 const db = require('../helpers/db');
 const { callGemini } = require('../helpers/gemini');
+const { RUBROS_ACTIVOS } = require('../config/rubros');
 
 // Argentina is UTC-3 year-round. Use local date so the daily counter resets at
 // local midnight, not at 21:00 local (UTC midnight).
@@ -43,12 +44,13 @@ async function chat(userId, messages) {
   // turn only puts one request on the (often congested) main model.
   const intentModel = process.env.GEMINI_MODEL_INTENT || 'gemini-flash-lite-latest';
 
+  // Sólo los rubros habilitados: lo que el modelo no ve, no lo puede proponer.
   const subcats = await db.Category.findAll({
-    where: { idcategoriapadre: { [db.Sequelize.Op.gt]: 0 }, activa: true },
+    where: { idcategoriapadre: { [db.Sequelize.Op.in]: RUBROS_ACTIVOS }, activa: true },
     attributes: ['id', 'nombrecategoria', 'idcategoriapadre']
   });
   const rubros = await db.Category.findAll({
-    where: { idcategoriapadre: 0, activa: true },
+    where: { idcategoriapadre: 0, activa: true, id: { [db.Sequelize.Op.in]: RUBROS_ACTIVOS } },
     attributes: ['id', 'nombrecategoria']
   });
   const rubroById = new Map(rubros.map(r => [r.id, r.nombrecategoria]));

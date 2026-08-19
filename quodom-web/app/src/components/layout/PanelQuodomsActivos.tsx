@@ -9,6 +9,8 @@ export type ItemActivo = {
   nombreRubro: string;
   descripcion: string;
   cantproductos: number;
+  // Un carrito que todavía sólo existe en localStorage.
+  sinGuardar?: boolean;
 };
 
 export function PanelQuodomsActivos({ items, onNavegar }: { items: ItemActivo[]; onNavegar: () => void }) {
@@ -18,6 +20,7 @@ export function PanelQuodomsActivos({ items, onNavegar }: { items: ItemActivo[];
         <li key={it.key} className="pqa-item">
           <Link to={it.to} className="pqa-link" onClick={onNavegar}>
             <span className="pqa-rubro">{it.nombreRubro}</span>
+            {it.sinGuardar && <span className="pqa-sin-guardar">sin guardar</span>}
             <span className="pqa-desc">{it.descripcion}</span>
             <span className="pqa-cant">{it.cantproductos}</span>
           </Link>

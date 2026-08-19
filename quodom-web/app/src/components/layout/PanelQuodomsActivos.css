@@ -1,18 +1,10 @@
 .pqa-list {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
   margin: 0;
   padding: var(--sp-3);
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  background: var(--color-panel-oscuro);
-  max-height: 60vh;
-  overflow-y: auto;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .pqa-item {
@@ -48,6 +40,18 @@
   white-space: nowrap;
 }
 
+.pqa-sin-guardar {
+  padding: 1px 6px;
+  border: 1px solid var(--color-error);
+  border-radius: 999px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-error);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .pqa-cant {
   display: inline-flex;
   align-items: center;
@@ -66,3 +70,4 @@
 @media (min-width: 1025px) {
   .pqa-list { display: none; }
 }
+

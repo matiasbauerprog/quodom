@@ -7,6 +7,7 @@ import { useAuth } from '../../../auth/AuthContext';
 import { quodom } from '../../../api/quodom';
 import { quodomLines } from '../../../api/quodom_lines';
 import { openWhatsappLink } from '../../../utils/whatsapp';
+import { categorias } from '../../../api/categorias';
 import type { Quodom } from '../../../api/types';
 
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn(() => ({ user: null })) }));
@@ -23,6 +24,13 @@ vi.mock('../../../api/quodom', () => ({
 }));
 vi.mock('../../../api/quodom_lines', () => ({ quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn(), add: vi.fn() } }));
 vi.mock('../../../utils/whatsapp', () => ({ openWhatsappLink: vi.fn() }));
+vi.mock('../../../api/categorias', () => ({ categorias: { raiz: vi.fn() } }));
+
+// GET /categorias sólo devuelve los rubros habilitados (RUBROS_ACTIVOS
+// [1,2,3,5,7]); 4 (Construcción) está dado de baja en este lanzamiento.
+const RUBROS_HABILITADOS = [1, 2, 3, 5, 7].map(id => ({
+  id, nombrecategoria: 'Rubro ' + id, idcategoriapadre: 0, imagen: null, refreshImage: null, orden: id
+}));
 
 const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 1 };
 const CEMENTO = { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 1 };
@@ -46,6 +54,7 @@ describe('DetalleQuodom for guests', () => {
   beforeEach(() => {
     clearGuestQuodoms();
     vi.mocked(useAuth).mockReturnValue({ user: null } as ReturnType<typeof useAuth>);
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
   });
 
   it('shows only the lines of the rubro in the query string', async () => {
@@ -81,7 +90,7 @@ describe('DetalleQuodom for guests', () => {
 
     renderEn('/quodom?rubro=999');
 
-    await waitFor(() => expect(screen.getByText('Tu Quodom está vacío. Sumá productos desde Inicio o Buscar.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Tu Quodom está vacío. Sumá productos desde Inicio.')).toBeInTheDocument());
   });
 
   it('treats a non-numeric rubro like a missing one', async () => {
@@ -101,11 +110,58 @@ describe('DetalleQuodom for guests', () => {
   });
 });
 
+describe('DetalleQuodom con un carrito de un rubro dado de baja', () => {
+  beforeEach(() => {
+    clearGuestQuodoms();
+    vi.clearAllMocks();
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
+  });
+
+  it('no ofrece enviar y explica por qué, sin tocar el carrito (invitado)', async () => {
+    // Enviar dispara POST /quodom/create, que responde 400 idrubro_invalido
+    // para un rubro que el catálogo ya no ofrece: no se ofrece el botón.
+    vi.mocked(useAuth).mockReturnValue({ user: null } as ReturnType<typeof useAuth>);
+    addGuestLine(4, CEMENTO);
+
+    renderEn('/quodom?rubro=4');
+
+    await waitFor(() => expect(screen.getByText('Cemento 50kg')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/no está disponible/i)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Enviar por WhatsApp' })).toBeNull();
+    // Los productos siguen siendo del usuario: el carrito no se borra.
+    expect(getGuestCart(4).lines).toHaveLength(1);
+  });
+
+  it('no ofrece enviar tampoco con el usuario logueado', async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue(null);
+    addGuestLine(4, CEMENTO);
+
+    renderEn('/quodom?rubro=4');
+
+    await waitFor(() => expect(screen.getByText(/no está disponible/i)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Enviar por WhatsApp' })).toBeNull();
+    expect(quodom.create).not.toHaveBeenCalled();
+  });
+
+  it('sigue ofreciendo enviar un rubro que el catálogo sí ofrece', async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: null } as ReturnType<typeof useAuth>);
+    addGuestLine(7, GASEOSA);
+
+    renderEn('/quodom?rubro=7');
+
+    await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
+    expect(await screen.findByRole('button', { name: 'Enviar por WhatsApp' })).toBeEnabled();
+    expect(screen.queryByText(/no está disponible/i)).toBeNull();
+  });
+});
+
 describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
   beforeEach(() => {
     clearGuestQuodoms();
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
   });
 
   it('migrates the cart and opens the WhatsApp link when the rubro has no open Quodom', async () => {

@@ -1,4 +1,6 @@
 const db = require('../helpers/db');
+const { Op } = require('sequelize');
+const { RUBROS_ACTIVOS, esRubroActivo } = require('../config/rubros');
 
 module.exports = {
     getById,
@@ -12,7 +14,7 @@ async function getById(id) {
 
 async function getByCat(categoria) {
     return await db.Products.findAll({
-        where: { categoria: categoria },
+        where: { categoria: categoria, categoriaPadre: { [Op.in]: RUBROS_ACTIVOS } },
         attributes: { exclude: ['createdAt', 'updatedAt'] }
     });
 }
@@ -41,6 +43,7 @@ async function getProductsByCatQuodom(idquodom, id, userId) {
 // helpers
 async function getProduct(id) {
     const product = await db.Products.findByPk(id);
-    if (!product) throw 'Err. Producto no encontrado.';
+    // Un producto de un rubro apagado no existe para la app, igual que su rubro.
+    if (!product || !esRubroActivo(product.categoriaPadre)) throw 'Err. Producto no encontrado.';
     return product;
 }

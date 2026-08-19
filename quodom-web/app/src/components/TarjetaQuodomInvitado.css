@@ -1,0 +1,22 @@
+/* Sin la columna del zigzag: la tarjeta de invitado no lo dibuja. */
+.qc-invitado { grid-template-columns: 1fr 1.4fr; }
+
+.qc-invitado .qc-rubro {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+
+.qc-sin-guardar {
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  /* La tarjeta vive sobre el panel oscuro: el rojo de marca no contrasta ahí,
+     igual que en la etiqueta VENCIDO de QuodomCard. */
+  color: #FFB4B4;
+  white-space: nowrap;
+}

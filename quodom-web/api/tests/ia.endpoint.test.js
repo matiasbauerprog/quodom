@@ -10,11 +10,11 @@ let token;
 beforeAll(async () => {
   await db.ready;
   await db.Category.bulkCreate([
-    { id: 20, nombrecategoria: 'Rubro X', idcategoriapadre: 0, activa: true, orden: 1 },
-    { id: 21, nombrecategoria: 'Sub X', idcategoriapadre: 20, activa: true, orden: 1 }
+    { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, activa: true, orden: 1 },
+    { id: 21, nombrecategoria: 'Gaseosas', idcategoriapadre: 7, activa: true, orden: 1 }
   ], { ignoreDuplicates: true });
   await db.Products.bulkCreate([
-    { id: 500, nombreproducto: 'P500', categoria: 21, categoriaPadre: 20 }
+    { id: 500, nombreproducto: 'P500', categoria: 21, categoriaPadre: 7 }
   ], { ignoreDuplicates: true });
   await db.series.findOrCreate({ where: { codigo: 'QUODOM' }, defaults: { codigo: 'QUODOM', utilizado: 0, sigla: 'QD-' } });
 
@@ -37,7 +37,7 @@ describe('POST /api/ia/chat', () => {
 
   it('returns 200 with type=question', async () => {
     callGemini
-      .mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] })
+      .mockResolvedValueOnce({ idrubro: 7, idsSubcategoria: [21] })
       .mockResolvedValueOnce({ type: 'question', text: '¿cuántos?' });
 
     const res = await request(app).post('/api/ia/chat')
@@ -50,7 +50,7 @@ describe('POST /api/ia/chat', () => {
 
   it('returns 200 with type=proposal (filtered items)', async () => {
     callGemini
-      .mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] })
+      .mockResolvedValueOnce({ idrubro: 7, idsSubcategoria: [21] })
       .mockResolvedValueOnce({
         type: 'proposal', text: 'Te propongo:',
         items: [{ idproducto: 500, cantidad: 2, motivo: 'ok' }, { idproducto: 9999, cantidad: 1, motivo: 'ghost' }]
@@ -62,7 +62,7 @@ describe('POST /api/ia/chat', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.type).toBe('proposal');
-    expect(res.body.idrubro).toBe(20);
+    expect(res.body.idrubro).toBe(7);
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0]).toMatchObject({ idproducto: 500, cantidad: 2, nombreProducto: 'P500' });
   });
@@ -97,7 +97,7 @@ describe('POST /api/ia/chat', () => {
   it('returns 429 rate_limit after 11 requests in a minute', async () => {
     process.env.IA_RATE_LIMIT_PER_MINUTE = '10';
     for (let i = 0; i < 10; i++) {
-      callGemini.mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] }).mockResolvedValueOnce({ type: 'question', text: 'q' });
+      callGemini.mockResolvedValueOnce({ idrubro: 7, idsSubcategoria: [21] }).mockResolvedValueOnce({ type: 'question', text: 'q' });
       const r = await request(app).post('/api/ia/chat')
         .set('Authorization', 'Bearer ' + token)
         .send({ messages: [{ role: 'user', text: 'x' }] });
@@ -186,7 +186,7 @@ describe('POST /api/ia/chat', () => {
     process.env.IA_RATE_LIMIT_PER_MINUTE = '999';
     rateLimit._reset();
     callGemini
-      .mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] })
+      .mockResolvedValueOnce({ idrubro: 7, idsSubcategoria: [21] })
       .mockResolvedValueOnce({ type: 'question', text: '¿?' });
 
     const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;

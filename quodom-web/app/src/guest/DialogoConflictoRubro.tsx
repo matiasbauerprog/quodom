@@ -7,17 +7,27 @@ type Props = {
   conflicto: ConflictoRubro;
   onElegir: (accion: AccionRubro | null) => void;
   ocupado?: boolean;
+  // Postergar deja el carrito de invitado conviviendo con el Quodom del
+  // servidor del mismo rubro, y agregar producto va siempre al del servidor:
+  // el carrito queda huérfano. Como integrar no destruye nada, en el login no
+  // se ofrece salida; sólo se habilita cuando la migración ya falló y hay que
+  // dejar entrar al usuario igual.
+  permitirCancelar?: boolean;
+  etiquetaCancelar?: string;
 };
 
-export function DialogoConflictoRubro({ conflicto, onElegir, ocupado }: Props) {
+export function DialogoConflictoRubro({
+  conflicto, onElegir, ocupado, permitirCancelar, etiquetaCancelar = 'Ahora no'
+}: Props) {
   useEffect(() => {
+    if (!permitirCancelar) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !ocupado) onElegir(null); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onElegir, ocupado]);
+  }, [onElegir, ocupado, permitirCancelar]);
 
   function cerrar() {
-    if (ocupado) return;
+    if (ocupado || !permitirCancelar) return;
     onElegir(null);
   }
 
@@ -48,9 +58,11 @@ export function DialogoConflictoRubro({ conflicto, onElegir, ocupado }: Props) {
           <button type="button" className="btn btn-peligro" onClick={() => elegir('reemplazar')} disabled={ocupado}>
             {ocupado ? 'Migrando…' : `Reemplazar — se descarta ${conflicto.quodomExistente.nro} entero`}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={() => elegir(null)} disabled={ocupado}>
-            Ahora no
-          </button>
+          {permitirCancelar && (
+            <button type="button" className="btn btn-ghost" onClick={() => elegir(null)} disabled={ocupado}>
+              {etiquetaCancelar}
+            </button>
+          )}
         </div>
       </section>
     </div>

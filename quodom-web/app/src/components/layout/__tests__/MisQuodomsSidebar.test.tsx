@@ -3,11 +3,22 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MisQuodomsSidebar } from '../MisQuodomsSidebar';
 import { quodom as quodomApi } from '../../../api/quodom';
+import { useAuth } from '../../../auth/AuthContext';
+import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
 
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn() } }));
-vi.mock('../../../auth/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u-1' } }) }));
+vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
+const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 2 };
+
+function login() {
+  vi.mocked(useAuth).mockReturnValue({ user: { id: 'u-1' } } as unknown as ReturnType<typeof useAuth>);
+}
+
+function logout() {
+  vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
+}
 
 // Realistic, distinct descriptions: a user names their Quodom, they don't
 // just retype the rubro name.
@@ -15,7 +26,7 @@ const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', n
 const OBRA = { id: 'q-4', descripcion: 'Obra San Isidro', estado: 'CREADO', nro: 'QD-2', idrubro: 4, nombrerubro: 'Construcción', cantproductos: 1, createdBy: 'u-1', iddireccion: null };
 
 describe('MisQuodomsSidebar', () => {
-  beforeEach(() => { misQuodom.mockReset(); });
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); login(); });
 
   it('lists every open quodom with its rubro', async () => {
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
@@ -55,5 +66,68 @@ describe('MisQuodomsSidebar', () => {
     expect(screen.getByText('Bebidas oficina')).toBeInTheDocument();
     expect(screen.getByText('Obra San Isidro')).toBeInTheDocument();
     expect(screen.queryByText(/No tenés Quodoms/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('MisQuodomsSidebar sin sesión', () => {
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); logout(); });
+
+  it('lista los carritos de invitado con su rubro y la marca "sin guardar"', async () => {
+    addGuestLine(7, GASEOSA);
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText('Bebidas')).toBeInTheDocument();
+    expect(screen.getByText('sin guardar')).toBeInTheDocument();
+    expect(screen.getByText(/Quodoms activos/i)).toBeInTheDocument();
+    // Sin sesión no se le pide nada al servidor.
+    expect(misQuodom).not.toHaveBeenCalled();
+  });
+
+  it('avisa que sólo viven en este navegador', async () => {
+    addGuestLine(7, GASEOSA);
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText('sin guardar')).toBeInTheDocument();
+    expect(screen.getByText(/sólo en este navegador/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ingresar para guardarlos/i })).toBeInTheDocument();
+  });
+
+  it('sin carritos muestra el mismo vacío que con sesión, más el link de ingresar', async () => {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText(/No tenés Quodoms/i)).toBeInTheDocument();
+    // Sin sesión ya se ven los carritos de invitado: "ingresá para ver tus
+    // Quodoms" dejó de describir lo que hace el sidebar.
+    expect(screen.queryByText(/Ingresá para ver tus Quodoms/i)).toBeNull();
+    expect(screen.getByRole('link', { name: /ingresar/i })).toBeInTheDocument();
+    expect(screen.queryByText('sin guardar')).not.toBeInTheDocument();
+  });
+
+  it('se actualiza cuando cambia un carrito', async () => {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText(/No tenés Quodoms/i);
+
+    act(() => {
+      addGuestLine(1, { idproducto: 400, nombreProducto: 'Lavandina 1L', cantidad: 1 });
+      window.dispatchEvent(new Event('quodom:changed'));
+    });
+
+    expect(await screen.findByText('Limpieza')).toBeInTheDocument();
+  });
+});
+
+describe('MisQuodomsSidebar con sesión y carritos huérfanos', () => {
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); login(); });
+
+  it('muestra los carritos sin guardar junto a los Quodoms del servidor', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS]);
+    addGuestLine(1, { idproducto: 400, nombreProducto: 'Lavandina 1L', cantidad: 1 });
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText('Bebidas oficina')).toBeInTheDocument();
+    expect(screen.getByText('Limpieza')).toBeInTheDocument();
+    expect(screen.getByText('sin guardar')).toBeInTheDocument();
+    // Ya está logueado: el aviso de "sólo en este navegador" no aplica.
+    expect(screen.queryByText(/sólo en este navegador/i)).not.toBeInTheDocument();
   });
 });
