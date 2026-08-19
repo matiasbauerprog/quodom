@@ -95,8 +95,27 @@
 }
 .qc-acciones { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .qc-action:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
-.qc-action-enviar { border-color: var(--color-exito); color: #C7F0D8; }
-.qc-page .qc-action-enviar { color: var(--color-exito); }
+/* Enviar es la acción que cierra el flujo: va en verde lleno, no delineada. */
+.qc-action-enviar {
+  background: var(--color-exito);
+  border-color: var(--color-exito);
+  color: #fff;
+}
+.qc-action-enviar:hover:not(:disabled) { background: var(--color-exito); filter: brightness(1.08); }
+.qc-page .qc-action-enviar { color: #fff; }
+
+.qc-rename { margin: 0; }
+.qc-rename-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.12);
+  color: inherit;
+  font-family: var(--font-prompt);
+  font-size: 15px;
+}
+.qc-page .qc-rename-input { background: #fff; color: var(--color-texto); }
 .qc-action:disabled { opacity: 0.55; cursor: not-allowed; }
 .qc-err { color: #FFB4B4; font-size: var(--fs-tiny); margin-top: var(--sp-1); }
 

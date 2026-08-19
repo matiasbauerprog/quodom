@@ -19,7 +19,7 @@ function formatDate(iso?: string | null): string {
 }
 
 function estadoInfo(q: Quodom): { code: 'creado' | 'enviado' | 'vencido'; label: string; detail?: string } {
-  if (q.estado === 'CREADO') return { code: 'creado', label: 'En armado', detail: (q.cantproductos ?? 0) + ' productos · ' + (q.porccompletado ?? 0) + '% completo' };
+  if (q.estado === 'CREADO') return { code: 'creado', label: 'En armado', detail: (q.cantproductos ?? 0) + ' productos' };
   const enviadoDate = q.fechaenvio ? new Date(q.fechaenvio).getTime() : 0;
   const vencido = enviadoDate > 0 && (Date.now() - enviadoDate) > HOURS_72;
   if (vencido) return { code: 'vencido', label: 'VENCIDO', detail: 'Pasaron las 72hs y se venció tu pedido.' };
@@ -50,6 +50,8 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [renombrando, setRenombrando] = useState(false);
+  const [nombreNuevo, setNombreNuevo] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const info = estadoInfo(quodom);
@@ -57,6 +59,25 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   const nombre = quodom.descripcion || quodom.nro;
 
   async function openDetail() { navigate('/quodom?id=' + encodeURIComponent(quodom.id)); }
+
+  // Continuar es "seguir sumando productos de este rubro": lo que hace falta a
+  // continuación es el catálogo del rubro, no la ficha del Quodom.
+  function seguirEnElRubro() { navigate('/?rubro=' + quodom.idrubro); }
+
+  async function guardarNombre(e: React.FormEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const limpio = nombreNuevo.trim();
+    if (!limpio || limpio === (quodom.descripcion ?? '')) { setRenombrando(false); return; }
+    setBusy(true); setErr(null);
+    try {
+      await quodomApi.update(quodom.id, { descripcion: limpio });
+      setRenombrando(false);
+      onChange?.();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : 'No se pudo cambiar el nombre.');
+    } finally { setBusy(false); }
+  }
 
   function activar() {
     if (onToggle) onToggle();
@@ -110,15 +131,37 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
           {(info.code === 'enviado' || info.code === 'vencido') && (
             <button className="qc-menu-item" onClick={onRepetir}>Repetir</button>
           )}
+          <button
+            className="qc-menu-item"
+            onClick={e => {
+              e.stopPropagation();
+              setMenuOpen(false);
+              setNombreNuevo(quodom.descripcion ?? '');
+              setRenombrando(true);
+            }}
+          >Cambiar nombre</button>
           <button className="qc-menu-item qc-menu-danger" onClick={onEliminar}>Eliminar</button>
-          <button className="qc-menu-item" onClick={e => { e.stopPropagation(); setMenuOpen(false); }}>Cancelar</button>
         </div>
       )}
 
       <div className="qc-left">
         {rubroLabel && <div className="qc-rubro">{rubroLabel}</div>}
         <div className="qc-fecha">{fechaDisplay}</div>
-        <div className="qc-nombre">{nombre}</div>
+        {renombrando ? (
+          <form className="qc-rename" onSubmit={guardarNombre} onClick={e => e.stopPropagation()}>
+            <input
+              className="qc-rename-input"
+              aria-label="Nombre del Quodom"
+              value={nombreNuevo}
+              autoFocus
+              disabled={busy}
+              onChange={e => setNombreNuevo(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setRenombrando(false); } }}
+            />
+          </form>
+        ) : (
+          <div className="qc-nombre">{nombre}</div>
+        )}
       </div>
 
       <div className="qc-zigzag-wrap"><ZigZag /></div>
@@ -145,13 +188,13 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
             <div className="qc-estado-label qc-estado-creado-label">EN ARMADO</div>
             <div className="qc-detail">{info.detail}</div>
             <div className="qc-acciones">
-              <button className="qc-action" onClick={e => { e.stopPropagation(); openDetail(); }}>Continuar</button>
+              <button className="qc-action" onClick={e => { e.stopPropagation(); seguirEnElRubro(); }}>Continuar</button>
               {onEnviar && (
                 <button
                   className="qc-action qc-action-enviar"
                   disabled={enviando}
                   onClick={e => { e.stopPropagation(); onEnviar(); }}
-                >{enviando ? 'Enviando…' : 'Enviar'}</button>
+                >{enviando ? 'Enviando…' : 'Enviar por WhatsApp'}</button>
               )}
             </div>
           </>
