@@ -2,3 +2,14 @@
 .mq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
 .mq-list { display: grid; gap: var(--sp-3); }
 .mq-item { width: 100%; }
+.mq-rubros { margin-bottom: var(--sp-4); }
+.mq-rubros-titulo { margin-bottom: var(--sp-3); }
+.mq-rubros-list { display: grid; gap: var(--sp-2); list-style: none; margin: 0 0 var(--sp-3); padding: 0; }
+
+@media (min-width: 601px) {
+  .mq-rubros-list { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1025px) {
+  .mq-rubros-list { grid-template-columns: repeat(3, 1fr); }
+}
