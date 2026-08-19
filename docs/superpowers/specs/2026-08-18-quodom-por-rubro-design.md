@@ -267,6 +267,32 @@ cliente que no valide.
 - La barra inferior despliega la lista de Quodoms abiertos y la actualiza al
   recibir `quodom:changed`.
 
+## 10.1 Desviaciones decididas durante la implementación
+
+Registradas acá para que el spec no mienta sobre lo que se construyó. Estado y
+pendientes completos en `docs/superpowers/ESTADO-quodom-por-rubro.md`.
+
+- **§5, el diálogo no muestra la frase comparativa.** "…y tu Quodom abierto es de
+  X" se descartó: habría costado una consulta extra para servir una sola cláusula,
+  y el título quedó como "Creá un Quodom de <rubro>", que es cierto tanto con cero
+  Quodoms como mezclando rubros. El texto anterior afirmaba una mezcla incluso
+  cuando no la había.
+- **Spec de 2026-07-12 §4.3, envío por WhatsApp sin sesión.** Deja de auto-enviar:
+  ahora es enviar → login → aterrizar en el Quodom migrado → enviar de nuevo. Con
+  carritos de varios rubros, "enviar" ya no corresponde a un solo Quodom.
+- **§4.1 agrega una validación que el spec no pedía:** `create` verifica que el
+  `idrubro` sea realmente un rubro (`idcategoriapadre = 0`) y responde 400
+  `idrubro_invalido` si no. Sin eso, un id de subcategoría creaba un Quodom al que
+  ningún producto podía entrar nunca.
+- **§4.1 se refuerza con un índice único parcial** sobre `(createdBy, idrubro)
+  WHERE estado = 'CREADO'`. El chequeo de aplicación es check-then-create, así que
+  dos pestañas simultáneas podían abrir dos Quodoms del mismo rubro. La violación
+  del índice se traduce al mismo 409 `rubro_duplicado`.
+- **§6, "integrar" suma cantidades del lado del servidor**, no del cliente:
+  `quodom_lines/add` fusiona con la línea existente cuando coinciden producto y
+  atributos. Así queda arreglado para todos los llamadores, incluido el "+" del
+  catálogo.
+
 ## 11. Fuera de alcance
 
 - Mover líneas de un Quodom a otro.
