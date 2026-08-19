@@ -4,7 +4,7 @@ beforeAll(async () => {
   await db.ready;
   await db.Category.bulkCreate([
     { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, activa: true, orden: 1 },
-    { id: 4, nombrecategoria: 'Construcción', idcategoriapadre: 0, activa: true, orden: 2 }
+    { id: 1, nombrecategoria: 'Limpieza', idcategoriapadre: 0, activa: true, orden: 2 }
   ]);
 
   // Las subcategorías tienen que existir: add() llama a getCat(producto.categoria)
@@ -12,11 +12,11 @@ beforeAll(async () => {
   // fallar el caso feliz antes de llegar a la validación de rubro.
   await db.Category.bulkCreate([
     { id: 70, nombrecategoria: 'Gaseosas', idcategoriapadre: 7, activa: true, orden: 1 },
-    { id: 40, nombrecategoria: 'Cementos', idcategoriapadre: 4, activa: true, orden: 1 }
+    { id: 40, nombrecategoria: 'Lavandinas', idcategoriapadre: 1, activa: true, orden: 1 }
   ]);
   await db.Products.bulkCreate([
     { id: 700, nombreproducto: 'Gaseosa 2L', categoria: 70, categoriaPadre: 7, atributo1: null, atributo2: null },
-    { id: 400, nombreproducto: 'Cemento 50kg', categoria: 40, categoriaPadre: 4, atributo1: null, atributo2: null }
+    { id: 400, nombreproducto: 'Lavandina 1L', categoria: 40, categoriaPadre: 1, atributo1: null, atributo2: null }
   ]);
 });
 
@@ -31,11 +31,11 @@ describe('quodom rubro column', () => {
 
   it('exposes idrubro and nombrerubro through v_Quodoms', async () => {
     const q = await db.Quodom.create({
-      descripcion: 'Obra', createdBy: 'u-2', estado: 'CREADO', idrubro: 4
+      descripcion: 'Oficina', createdBy: 'u-2', estado: 'CREADO', idrubro: 1
     });
     const row = await db.v_Quodoms.findOne({ where: { id: q.id } });
-    expect(row.idrubro).toBe(4);
-    expect(row.nombrerubro).toBe('Construcción');
+    expect(row.idrubro).toBe(1);
+    expect(row.nombrerubro).toBe('Limpieza');
   });
 });
 
@@ -111,7 +111,7 @@ describe('create enforces one open quodom per rubro', () => {
   it('allows a different rubro while one is open', async () => {
     const res = await request(app).post('/quodom/create')
       .set('Authorization', 'Bearer ' + token)
-      .send({ descripcion: 'Obra', idrubro: 4 });
+      .send({ descripcion: 'Oficina', idrubro: 1 });
     expect(res.status).toBe(200);
   });
 });
@@ -143,11 +143,11 @@ describe('add line enforces the quodom rubro', () => {
 
     const res = await request(app).post('/quodom_lines/add')
       .set('Authorization', 'Bearer ' + token)
-      .send({ idquodom: idquodomBebidas, idproducto: 400, cantidad: 1, nombreProducto: 'Cemento 50kg' });
+      .send({ idquodom: idquodomBebidas, idproducto: 400, cantidad: 1, nombreProducto: 'Lavandina 1L' });
 
     expect(res.status).toBe(409);
     expect(res.body.error).toBe('rubro_mismatch');
-    expect(res.body.message).toContain('Construcción');
+    expect(res.body.message).toContain('Limpieza');
     expect(res.body.message).toContain('Bebidas');
     expect(await db.Quodom_Lines.count({ where: { idquodom: idquodomBebidas } })).toBe(antes);
   });
@@ -188,7 +188,7 @@ describe('GET /quodom/activo/:idrubro', () => {
   });
 
   it('ignores quodoms of other rubros and other users', async () => {
-    const res = await request(app).get('/quodom/activo/4')
+    const res = await request(app).get('/quodom/activo/1')
       .set('Authorization', 'Bearer ' + token);
     expect(res.body.data).toBeNull();
   });
@@ -279,7 +279,7 @@ describe('unique index guards the one-open-quodom-per-rubro rule', () => {
 
   it('does not block the same user holding a different rubro open', async () => {
     await db.Quodom.create({
-      descripcion: 'Obra', createdBy: userId, estado: 'CREADO', idrubro: 4, nro: 'IDX-5'
+      descripcion: 'Oficina', createdBy: userId, estado: 'CREADO', idrubro: 1, nro: 'IDX-5'
     });
 
     expect(await db.Quodom.count({ where: { createdBy: userId, estado: 'CREADO' } })).toBe(2);

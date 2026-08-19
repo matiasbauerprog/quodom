@@ -8,18 +8,18 @@ const USER_ID = 'user-ia-controller-1';
 beforeAll(async () => {
   await db.ready;
   await db.Category.bulkCreate([
-    { id: 10, nombrecategoria: 'Pinturería', idcategoriapadre: 0, activa: true, orden: 1 },
-    { id: 11, nombrecategoria: 'Pinturas', idcategoriapadre: 10, activa: true, orden: 1 },
-    { id: 12, nombrecategoria: 'Rodillos', idcategoriapadre: 10, activa: true, orden: 2 },
-    // Real-shaped rubros for the cross-rubro filtering tests: Pintura (5) and Bebidas (7).
+    // Todos los rubros usados acá tienen que estar en RUBROS_ACTIVOS: el Modo IA
+    // sólo ve los habilitados. Pintura (5) y Bebidas (7) para el filtro cruzado.
     { id: 5, nombrecategoria: 'Pintura', idcategoriapadre: 0, activa: true, orden: 1 },
+    { id: 11, nombrecategoria: 'Pinturas', idcategoriapadre: 5, activa: true, orden: 1 },
+    { id: 12, nombrecategoria: 'Rodillos', idcategoriapadre: 5, activa: true, orden: 2 },
     { id: 35, nombrecategoria: 'Látex', idcategoriapadre: 5, activa: true, orden: 1 },
     { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, activa: true, orden: 1 },
     { id: 70, nombrecategoria: 'Gaseosas', idcategoriapadre: 7, activa: true, orden: 1 }
   ], { ignoreDuplicates: true });
   await db.Products.bulkCreate([
-    { id: 200, nombreproducto: 'Látex interior 4L', categoria: 11, categoriaPadre: 10, atributo1: 'Color', atributo2: null },
-    { id: 201, nombreproducto: 'Rodillo lana 22cm', categoria: 12, categoriaPadre: 10, atributo1: null, atributo2: null },
+    { id: 200, nombreproducto: 'Látex interior 4L', categoria: 11, categoriaPadre: 5, atributo1: 'Color', atributo2: null },
+    { id: 201, nombreproducto: 'Rodillo lana 22cm', categoria: 12, categoriaPadre: 5, atributo1: null, atributo2: null },
     { id: 300, nombreproducto: 'Latex premium 10L', categoria: 35, categoriaPadre: 5, atributo1: null, atributo2: null },
     { id: 301, nombreproducto: 'Gaseosa cola 2L', categoria: 70, categoriaPadre: 7, atributo1: null, atributo2: null }
   ], { ignoreDuplicates: true });
@@ -30,7 +30,7 @@ beforeEach(() => { callGemini.mockReset(); });
 describe('ia.chat', () => {
   it('returns { type: "question" } when Gemini responds with a question', async () => {
     callGemini
-      .mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [11] })
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [11] })
       .mockResolvedValueOnce({ type: 'question', text: '¿de qué color?' });
 
     const out = await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar' }]);
@@ -41,7 +41,7 @@ describe('ia.chat', () => {
 
   it('returns { type: "proposal" } and filters items with unknown idproducto', async () => {
     callGemini
-      .mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [11, 12] })
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [11, 12] })
       .mockResolvedValueOnce({
         type: 'proposal',
         text: 'Te propongo:',
@@ -63,7 +63,7 @@ describe('ia.chat', () => {
   });
 
   it('returns question when 0 subcategorías detected (skips main call)', async () => {
-    callGemini.mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [] });
+    callGemini.mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [] });
 
     const out = await ia.chat(USER_ID, [{ role: 'user', text: 'blablabla' }]);
 
@@ -74,7 +74,7 @@ describe('ia.chat', () => {
 
   it('returns question when proposal has 0 valid items after filtering', async () => {
     callGemini
-      .mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [11] })
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [11] })
       .mockResolvedValueOnce({
         type: 'proposal',
         text: 'Te propongo:',

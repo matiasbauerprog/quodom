@@ -1,6 +1,7 @@
 const db = require('../helpers/db');
 const serie = require('../helpers/series');
 const { httpError } = require('../helpers/http-error');
+const { esRubroActivo } = require('../config/rubros');
 
 module.exports = {
     getById,
@@ -42,7 +43,9 @@ async function create(params, userId) {
     const rubro = await db.Category.findOne({
         where: { id: params.idrubro, idcategoriapadre: 0 }
     });
-    if (!rubro) {
+    // Un rubro fuera de la whitelist no se ofrece en el catálogo, así que un
+    // alta contra él sólo puede venir de un cliente viejo o de una URL a mano.
+    if (!rubro || !esRubroActivo(params.idrubro)) {
         throw httpError(400, 'idrubro_invalido', 'El rubro indicado no existe.');
     }
 
