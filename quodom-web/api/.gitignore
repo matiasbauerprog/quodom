@@ -1,5 +1,9 @@
 node_modules/
 .env
-uploads/
+# Las fotos de producto se commitean: el deploy tiene que ser autocontenido,
+# y el disco de Render es efímero. Lo que no va son los artefactos del
+# importador de imágenes.
+uploads/*.csv
+uploads/*.txt
 *.sqlite-shm
 *.sqlite-wal
