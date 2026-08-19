@@ -236,3 +236,94 @@ describe('repetir of an already-open rubro', () => {
     expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7 } })).toBe(1);
   });
 });
+
+// The application-level check in create() handles the normal case. This index is
+// the net underneath it: two requests that interleave between the check and the
+// insert would otherwise both create an open Quodom of the same rubro.
+describe('unique index guards the one-open-quodom-per-rubro rule', () => {
+  const userId = 'idx-user';
+
+  beforeAll(async () => {
+    await db.Quodom.destroy({ where: { createdBy: userId } });
+  });
+
+  it('rejects a second open quodom of the same rubro at the database level', async () => {
+    await db.Quodom.create({
+      descripcion: 'Bebidas', createdBy: userId, estado: 'CREADO', idrubro: 7, nro: 'IDX-1'
+    });
+
+    await expect(db.Quodom.create({
+      descripcion: 'Bebidas otra vez', createdBy: userId, estado: 'CREADO', idrubro: 7, nro: 'IDX-2'
+    })).rejects.toThrow(db.Sequelize.UniqueConstraintError);
+
+    expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7 } })).toBe(1);
+  });
+
+  it('allows another open quodom of the same rubro once the first is ENVIADO', async () => {
+    await db.Quodom.update({ estado: 'ENVIADO' }, { where: { createdBy: userId, idrubro: 7 } });
+
+    await db.Quodom.create({
+      descripcion: 'Bebidas nueva tanda', createdBy: userId, estado: 'CREADO', idrubro: 7, nro: 'IDX-3'
+    });
+
+    expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7, estado: 'CREADO' } })).toBe(1);
+  });
+
+  it('does not block a different user holding the same rubro open', async () => {
+    await db.Quodom.create({
+      descripcion: 'Bebidas de otro', createdBy: 'idx-user-2', estado: 'CREADO', idrubro: 7, nro: 'IDX-4'
+    });
+
+    expect(await db.Quodom.count({ where: { createdBy: 'idx-user-2', idrubro: 7, estado: 'CREADO' } })).toBe(1);
+  });
+
+  it('does not block the same user holding a different rubro open', async () => {
+    await db.Quodom.create({
+      descripcion: 'Obra', createdBy: userId, estado: 'CREADO', idrubro: 4, nro: 'IDX-5'
+    });
+
+    expect(await db.Quodom.count({ where: { createdBy: userId, estado: 'CREADO' } })).toBe(2);
+  });
+});
+
+describe('a lost race answers 409, not 500', () => {
+  let token;
+  let userId;
+
+  beforeAll(async () => {
+    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    token = login.body.token;
+    userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    await db.Quodom.destroy({ where: { createdBy: userId } });
+  });
+
+  it('maps the unique-constraint violation to rubro_duplicado', async () => {
+    // Simulate the interleaving: the controller's pre-check runs against an empty
+    // slot, then the competing request's Quodom lands before our insert does.
+    const original = db.Quodom.findOne;
+    db.Quodom.findOne = async function (...args) {
+      const found = await original.apply(this, args);
+      if (found === null) {
+        await db.Quodom.create({
+          descripcion: 'Ganó la otra pestaña', createdBy: userId, estado: 'CREADO', idrubro: 7, nro: 'RACE-1'
+        });
+      }
+      return found;
+    };
+
+    try {
+      const res = await request(app).post('/quodom/create')
+        .set('Authorization', 'Bearer ' + token)
+        .send({ descripcion: 'Perdió la carrera', idrubro: 7 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('rubro_duplicado');
+      expect(res.body.message).toContain('Bebidas');
+      expect(res.body.idquodom).toBeDefined();
+    } finally {
+      db.Quodom.findOne = original;
+    }
+
+    expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7, estado: 'CREADO' } })).toBe(1);
+  });
+});

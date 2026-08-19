@@ -50,9 +50,7 @@ async function create(params, userId) {
         where: { createdBy: userId, idrubro: params.idrubro, estado: 'CREADO' }
     });
     if (abierto) {
-        throw httpError(409, 'rubro_duplicado',
-            'Ya tenés un Quodom abierto de ' + rubro.nombrecategoria + '.',
-            { idquodom: abierto.id });
+        throw rubroDuplicado(rubro, abierto);
     }
 
     if (!params.iddireccion) {
@@ -64,9 +62,28 @@ async function create(params, userId) {
     params.createdBy = userId;
     params.estado = 'CREADO';
 
-    const { id } = await db.Quodom.create(params);
+    try {
+        const { id } = await db.Quodom.create(params);
+        return (id);
+    } catch (e) {
+        // The check above lost a race: another request opened a Quodom of this
+        // rubro between the lookup and this insert, and the partial unique index
+        // stopped the duplicate. Answer exactly as the check would have, so the
+        // caller cannot tell which of the two guards fired.
+        if (e instanceof db.Sequelize.UniqueConstraintError) {
+            const ganador = await db.Quodom.findOne({
+                where: { createdBy: userId, idrubro: params.idrubro, estado: 'CREADO' }
+            });
+            throw rubroDuplicado(rubro, ganador);
+        }
+        throw e;
+    }
+}
 
-    return (id);
+function rubroDuplicado(rubro, abierto) {
+    return httpError(409, 'rubro_duplicado',
+        'Ya tenés un Quodom abierto de ' + rubro.nombrecategoria + '.',
+        abierto ? { idquodom: abierto.id } : {});
 }
 
 async function update(id, params, userId) {

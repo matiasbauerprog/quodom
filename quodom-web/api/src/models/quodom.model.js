@@ -27,7 +27,20 @@ function model(sequelize) {
         defaultScope: {
         },
         scopes: {
-        }
+        },
+        indexes: [
+            {
+                // The controller checks this rule before inserting, which is what
+                // produces the friendly 409. This partial index is the net under
+                // that check: two requests interleaving between the lookup and the
+                // insert would otherwise both open a Quodom of the same rubro.
+                // Partial, so an ENVIADO Quodom never blocks opening a new one.
+                name: 'quodom_abierto_por_rubro',
+                unique: true,
+                fields: ['createdBy', 'idrubro'],
+                where: { estado: 'CREADO' }
+            }
+        ]
     };
 
     return sequelize.define('quodom_header', attributes, options);
