@@ -115,3 +115,10 @@
   padding: 12px 16px;
 }
 .home-modo-ia:hover { filter: brightness(1.05); }
+
+/* Con un rubro elegido el bloque de arriba se achica para que el primer
+   producto quede cerca del borde superior en un teléfono. */
+.container.home-inicial.home-compacto {
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}

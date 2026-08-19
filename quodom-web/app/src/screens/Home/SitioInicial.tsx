@@ -1,45 +1,99 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { categorias } from '../../api/categorias';
 import type { Category } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
-import { RubroIcon } from '../../components/icons/RubroIcon';
+import { RubroSelector } from './RubroSelector';
+import { SubcategoriaTabs } from './SubcategoriaTabs';
+import { ListaProductos } from './ListaProductos';
 import './SitioInicial.css';
 
+// Devuelve el número del param o null: "", "abc" y "0" son todos "sin valor".
+function numParam(valor: string | null): number | null {
+  const n = Number(valor);
+  return valor && Number.isInteger(n) && n > 0 ? n : null;
+}
+
 export function SitioInicial() {
-  const [cats, setCats] = useState<Category[] | null>(null);
+  const [params, setParams] = useSearchParams();
+  const rubroParam = numParam(params.get('rubro'));
+  const subParam = numParam(params.get('sub'));
+
+  const [rubros, setRubros] = useState<Category[] | null>(null);
+  const [subs, setSubs] = useState<Category[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [errSubs, setErrSubs] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  const [nonceSubs, setNonceSubs] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    setCats(null); setErr(null);
+    setRubros(null); setErr(null);
     categorias.raiz()
-      .then(d => { if (alive) setCats(d); })
+      .then(d => { if (alive) setRubros(d); })
       .catch(e => { if (alive) setErr(e instanceof ApiError ? e.message : 'Error al cargar categorías.'); });
     return () => { alive = false; };
   }, [nonce]);
 
+  // Un rubro que no está habilitado (link viejo, URL a mano, rubro apagado en
+  // api/src/config/rubros.js) degrada al home, no muestra un error.
+  const rubroValido = rubros !== null && rubroParam !== null && rubros.some(r => r.id === rubroParam);
+  useEffect(() => {
+    if (rubros !== null && rubroParam !== null && !rubroValido) setParams({}, { replace: true });
+  }, [rubros, rubroParam, rubroValido, setParams]);
+
+  const idrubro = rubroValido ? rubroParam : null;
+
+  useEffect(() => {
+    if (idrubro === null) { setSubs(null); setErrSubs(null); return; }
+    let alive = true;
+    setSubs(null); setErrSubs(null);
+    categorias.subs(idrubro)
+      .then(d => { if (alive) setSubs(d); })
+      .catch(e => { if (alive) setErrSubs(e instanceof ApiError ? e.message : 'Error al cargar subcategorías.'); });
+    return () => { alive = false; };
+  }, [idrubro, nonceSubs]);
+
+  // Normalización: llegar con ?rubro= sin sub, o con una sub de otro rubro,
+  // abre la primera. `replace` para no dejar una entrada intermedia que haga
+  // que el Atrás parezca no hacer nada.
+  const subValida = subs !== null && subParam !== null && subs.some(s => s.id === subParam);
+  useEffect(() => {
+    if (idrubro === null || subs === null || subs.length === 0 || subValida) return;
+    setParams({ rubro: String(idrubro), sub: String(subs[0].id) }, { replace: true });
+  }, [idrubro, subs, subValida, setParams]);
+
+  const idsub = subValida ? subParam : null;
+
   if (err) return <div className="container"><ErrorState message={err} onRetry={() => setNonce(n => n + 1)} /></div>;
 
   return (
-    <section className="container home-inicial">
-      <h1 className="home-wordmark">QUODOM</h1>
-      <Link to="/modo-ia" className="btn home-modo-ia">
-        Modo IA — armá tu Quodom conversando
-      </Link>
-      {!cats ? <Loader /> : (
-        <div className="cat-grid">
-          {cats.map(c => (
-            <Link key={c.id} to={'/categoria/' + c.id} className="cat-card">
-              <RubroIcon id={c.id} size={72} />
-              <span className="cat-card-name">{c.nombrecategoria}</span>
-            </Link>
-          ))}
-        </div>
+    <section className={'container home-inicial' + (idrubro !== null ? ' home-compacto' : '')}>
+      {idrubro === null && (
+        <>
+          <h1 className="home-wordmark">QUODOM</h1>
+          <Link to="/modo-ia" className="btn home-modo-ia">
+            Modo IA — armá tu Quodom conversando
+          </Link>
+        </>
       )}
+
+      {!rubros ? <Loader /> : <RubroSelector rubros={rubros} idSeleccionado={idrubro} />}
+
+      {idrubro !== null && errSubs && (
+        <ErrorState message={errSubs} onRetry={() => setNonceSubs(n => n + 1)} />
+      )}
+      {idrubro !== null && !errSubs && !subs && <Loader />}
+      {idrubro !== null && subs && subs.length > 0 && (
+        <SubcategoriaTabs idrubro={idrubro} subs={subs} idSeleccionada={idsub} />
+      )}
+      {idrubro !== null && subs && subs.length === 0 && (
+        <p className="prods-empty">Este rubro todavía no tiene subcategorías.</p>
+      )}
+
+      {idsub !== null && <ListaProductos idsubcategoria={idsub} />}
     </section>
   );
 }
