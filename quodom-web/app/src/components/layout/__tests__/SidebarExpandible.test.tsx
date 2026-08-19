@@ -70,27 +70,30 @@ describe('sidebar: mini editor', () => {
     expect(porQuodom).toHaveBeenCalledWith('q-7');
   });
 
-  it('el Quodom elegido pasa a ser el primero', async () => {
+  it('la lista no se reordena al desplegar: la tarjeta se abre donde está', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Limpieza mensual');
     expect(tarjetas()[0]).toHaveTextContent('Bebidas oficina');
 
+    porQuodom.mockResolvedValue([{ id: 21, idquodom: 'q-1', idproducto: 400, cantidad: 1, nombreProducto: 'Lavandina 1L' }]);
     fireEvent.click(screen.getByText('Limpieza mensual'));
+    await screen.findByText('Lavandina 1L');
 
-    await waitFor(() => expect(tarjetas()[0]).toHaveTextContent('Limpieza mensual'));
+    // Mover la tarjeta bajo el dedo hace saltar el resto de la lista.
+    expect(tarjetas()[0]).toHaveTextContent('Bebidas oficina');
+    expect(tarjetas()[1]).toHaveTextContent('Limpieza mensual');
   });
 
-  it('el segundo clic minimiza los productos y devuelve el orden', async () => {
+  it('el segundo clic minimiza los productos', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-    await screen.findByText('Limpieza mensual');
+    await screen.findByText('Bebidas oficina');
 
-    fireEvent.click(screen.getByText('Limpieza mensual'));
-    await waitFor(() => expect(tarjetas()[0]).toHaveTextContent('Limpieza mensual'));
+    fireEvent.click(screen.getByText('Bebidas oficina'));
+    await screen.findByText('Coca Cola 2L');
 
-    fireEvent.click(screen.getByText('Limpieza mensual'));
+    fireEvent.click(screen.getByText('Bebidas oficina'));
 
-    await waitFor(() => expect(tarjetas()[0]).toHaveTextContent('Bebidas oficina'));
-    expect(screen.queryByText('Coca Cola 2L')).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Coca Cola 2L')).toBeNull());
   });
 
   it('abrir otro cierra el anterior: hay uno solo desplegado', async () => {

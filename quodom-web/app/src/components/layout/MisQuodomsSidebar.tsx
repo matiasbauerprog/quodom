@@ -67,9 +67,9 @@ export function MisQuodomsSidebar() {
   const activos = list ? list.filter(q => q.estado === 'CREADO') : [];
   const hayActivos = activos.length > 0 || invitado.length > 0;
 
-  // Una sola lista: los carritos de invitado y los Quodoms del servidor se
-  // ordenan juntos, si no un Quodom desplegado quedaría debajo de los
-  // carritos en vez de primero.
+  // Una sola lista de carritos de invitado y Quodoms del servidor. El orden
+  // NO cambia al desplegar: mover la tarjeta bajo el dedo hace saltar todo lo
+  // demás y cuesta volver a encontrar dónde estabas.
   type Item =
     | { clave: string; tipo: 'invitado'; resumen: ResumenInvitado }
     | { clave: string; tipo: 'servidor'; quodom: Quodom };
@@ -77,11 +77,6 @@ export function MisQuodomsSidebar() {
     ...invitado.map((r): Item => ({ clave: 'g:' + r.idrubro, tipo: 'invitado', resumen: r })),
     ...activos.map((q): Item => ({ clave: 'q:' + q.id, tipo: 'servidor', quodom: q }))
   ];
-  // El desplegado va primero; el resto conserva su orden, así que al colapsar
-  // la lista vuelve sola a como estaba.
-  const i = items.findIndex(x => x.clave === abierto);
-  const ordenados = i <= 0 ? items : [items[i], ...items.slice(0, i), ...items.slice(i + 1)];
-
   const toggle = (clave: string) => setAbierto(a => (a === clave ? null : clave));
   // Sin sesión ya se ven los carritos de invitado, así que "ingresá para ver
   // tus Quodoms" dejó de ser cierto: el vacío es el mismo mensaje para los dos.
@@ -103,7 +98,7 @@ export function MisQuodomsSidebar() {
         <section className="mq-sidebar-section">
           <h3 className="mq-sidebar-section-title">Quodoms activos</h3>
           <ul className="mq-sidebar-list">
-            {ordenados.map(it => {
+            {items.map(it => {
               const abierta = abierto === it.clave;
               return (
                 <li key={it.clave} className={'mq-sidebar-item' + (abierta ? ' mq-sidebar-item-abierta' : '')}>
