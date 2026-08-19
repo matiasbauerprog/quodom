@@ -27,7 +27,8 @@ services:
   - type: web
     name: quodom-app
     runtime: static
-    plan: free
+    # Sin `plan`: los static sites de Render no aceptan ese campo, son gratis
+    # por definición y declararlo hace fallar el blueprint entero.
     rootDir: quodom-web/app
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
