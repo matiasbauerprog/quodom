@@ -5,18 +5,21 @@ import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
 import { QuodomCard } from '../QuodomCard';
 import { TarjetaQuodomInvitado } from '../TarjetaQuodomInvitado';
+import { LineasQuodomSidebar } from './LineasQuodomSidebar';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
 import { nombreRubro } from '../../quodom/rubros';
 import './MisQuodomsSidebar.css';
-
-const MAX_ULTIMOS = 5;
 
 export function MisQuodomsSidebar() {
   const { user } = useAuth();
   const [list, setList] = useState<Quodom[] | null>(null);
   const [invitado, setInvitado] = useState<ResumenInvitado[]>(resumenCarritosInvitado);
   const [nonce, setNonce] = useState(0);
+  // Clave del Quodom desplegado: 'q:<id>' para los del servidor, 'g:<rubro>'
+  // para los carritos. Uno solo a la vez — el elegido sube al tope, y eso no
+  // tendría sentido con varios abiertos.
+  const [abierto, setAbierto] = useState<string | null>(null);
   // Guards against `quodom:changed` firing repeatedly in quick succession:
   // only the response for the most recently started request is applied, so
   // an earlier request resolving after a later one can't overwrite it with
@@ -59,9 +62,27 @@ export function MisQuodomsSidebar() {
 
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
+  // A la derecha van sólo los activos: los enviados son historial y viven en
+  // Mis Quodoms, a un clic de "Ver todos".
   const activos = list ? list.filter(q => q.estado === 'CREADO') : [];
-  const enviados = list ? list.filter(q => q.estado === 'ENVIADO').slice(0, MAX_ULTIMOS) : [];
   const hayActivos = activos.length > 0 || invitado.length > 0;
+
+  // Una sola lista: los carritos de invitado y los Quodoms del servidor se
+  // ordenan juntos, si no un Quodom desplegado quedaría debajo de los
+  // carritos en vez de primero.
+  type Item =
+    | { clave: string; tipo: 'invitado'; resumen: ResumenInvitado }
+    | { clave: string; tipo: 'servidor'; quodom: Quodom };
+  const items: Item[] = [
+    ...invitado.map((r): Item => ({ clave: 'g:' + r.idrubro, tipo: 'invitado', resumen: r })),
+    ...activos.map((q): Item => ({ clave: 'q:' + q.id, tipo: 'servidor', quodom: q }))
+  ];
+  // El desplegado va primero; el resto conserva su orden, así que al colapsar
+  // la lista vuelve sola a como estaba.
+  const i = items.findIndex(x => x.clave === abierto);
+  const ordenados = i <= 0 ? items : [items[i], ...items.slice(0, i), ...items.slice(i + 1)];
+
+  const toggle = (clave: string) => setAbierto(a => (a === clave ? null : clave));
   // Sin sesión ya se ven los carritos de invitado, así que "ingresá para ver
   // tus Quodoms" dejó de ser cierto: el vacío es el mismo mensaje para los dos.
   const vacio = invitado.length === 0 && (!user || (list !== null && list.length === 0));
@@ -82,39 +103,36 @@ export function MisQuodomsSidebar() {
         <section className="mq-sidebar-section">
           <h3 className="mq-sidebar-section-title">Quodoms activos</h3>
           <ul className="mq-sidebar-list">
-            {invitado.map(r => (
-              <li key={'g-' + r.idrubro} className="mq-sidebar-item">
-                <TarjetaQuodomInvitado resumen={r} />
-              </li>
-            ))}
-            {activos.map(q => (
-              <li key={q.id} className="mq-sidebar-item">
-                <QuodomCard
-                  quodom={q}
-                  variant="sidebar"
-                  rubroLabel={q.nombrerubro || nombreRubro(q.idrubro)}
-                  onChange={refresh}
-                />
-              </li>
-            ))}
+            {ordenados.map(it => {
+              const abierta = abierto === it.clave;
+              return (
+                <li key={it.clave} className={'mq-sidebar-item' + (abierta ? ' mq-sidebar-item-abierta' : '')}>
+                  {it.tipo === 'invitado' ? (
+                    <>
+                      <TarjetaQuodomInvitado resumen={it.resumen} expandido={abierta} onToggle={() => toggle(it.clave)} />
+                      {abierta && <LineasQuodomSidebar modo="invitado" idrubro={it.resumen.idrubro} onChange={refresh} />}
+                    </>
+                  ) : (
+                    <>
+                      <QuodomCard
+                        quodom={it.quodom}
+                        variant="sidebar"
+                        rubroLabel={it.quodom.nombrerubro || nombreRubro(it.quodom.idrubro)}
+                        onChange={refresh}
+                        expandido={abierta}
+                        onToggle={() => toggle(it.clave)}
+                      />
+                      {abierta && <LineasQuodomSidebar modo="servidor" idquodom={it.quodom.id} onChange={refresh} />}
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
 
       {!user && invitado.length > 0 && <AvisoSinGuardar />}
-
-      {enviados.length > 0 && (
-        <section className="mq-sidebar-section">
-          <h3 className="mq-sidebar-section-title">Últimos Quodoms</h3>
-          <ul className="mq-sidebar-list">
-            {enviados.map(q => (
-              <li key={q.id} className="mq-sidebar-item">
-                <QuodomCard quodom={q} variant="sidebar" onChange={refresh} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {user && list && list.length > 0 && (
         <Link to="/mis-quodoms" className="btn mq-sidebar-vermas">Ver todos</Link>

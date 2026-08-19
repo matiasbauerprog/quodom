@@ -34,7 +34,16 @@ function ZigZag() {
   );
 }
 
-export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange }: { quodom: Quodom; variant?: Variant; rubroLabel?: string; onChange?: () => void }) {
+export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle }: {
+  quodom: Quodom;
+  variant?: Variant;
+  rubroLabel?: string;
+  onChange?: () => void;
+  // Con `onToggle`, el cuerpo de la tarjeta despliega los productos en lugar
+  // de navegar. La variante `page` no lo pasa y sigue navegando como siempre.
+  expandido?: boolean;
+  onToggle?: () => void;
+}) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -44,6 +53,11 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange }
   const nombre = quodom.descripcion || quodom.nro;
 
   async function openDetail() { navigate('/quodom?id=' + encodeURIComponent(quodom.id)); }
+
+  function activar() {
+    if (onToggle) onToggle();
+    else openDetail();
+  }
 
   async function onRepetir(e: React.MouseEvent) {
     e.stopPropagation();
@@ -72,7 +86,18 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange }
   }
 
   return (
-    <article className={'qc qc-' + variant + ' qc-estado-' + info.code} onClick={openDetail} role="button" tabIndex={0}>
+    <article
+      className={'qc qc-' + variant + ' qc-estado-' + info.code + (expandido ? ' qc-expandida' : '')}
+      onClick={activar}
+      onKeyDown={e => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activar(); }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-expanded={onToggle ? !!expandido : undefined}
+      aria-label={quodom.nro + ' · ' + nombre}
+    >
       <button className="qc-menu" aria-label="Acciones" onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}>
         <span /><span /><span />
       </button>

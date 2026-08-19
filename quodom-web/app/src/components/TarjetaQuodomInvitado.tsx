@@ -6,12 +6,32 @@ import './TarjetaQuodomInvitado.css';
 // Un carrito de invitado con la misma forma que QuodomCard, pero sin el menú
 // de acciones: repetir, eliminar y ocultar son operaciones del servidor y este
 // Quodom todavía no existe ahí.
-export function TarjetaQuodomInvitado({ resumen }: { resumen: ResumenInvitado }) {
+export function TarjetaQuodomInvitado({ resumen, expandido, onToggle }: {
+  resumen: ResumenInvitado;
+  expandido?: boolean;
+  onToggle?: () => void;
+}) {
   const navigate = useNavigate();
   const abrir = () => navigate('/quodom?rubro=' + resumen.idrubro);
 
+  function activar() {
+    if (onToggle) onToggle();
+    else abrir();
+  }
+
   return (
-    <article className="qc qc-sidebar qc-estado-creado qc-invitado" onClick={abrir} role="button" tabIndex={0}>
+    <article
+      className={'qc qc-sidebar qc-estado-creado qc-invitado' + (expandido ? ' qc-expandida' : '')}
+      onClick={activar}
+      onKeyDown={e => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activar(); }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-expanded={onToggle ? !!expandido : undefined}
+      aria-label={resumen.nombreRubro + ' · ' + resumen.descripcion}
+    >
       <div className="qc-left">
         <div className="qc-rubro">
           {resumen.nombreRubro}

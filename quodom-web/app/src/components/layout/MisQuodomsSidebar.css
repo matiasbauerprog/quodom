@@ -48,6 +48,13 @@
   .mq-sidebar-empty p { margin: 0 0 var(--sp-2) 0; font-size: var(--fs-small); }
   .mq-sidebar-empty .btn { margin-top: var(--sp-3); background: #fff; color: var(--color-acento); }
   .mq-sidebar-list { display: flex; flex-direction: column; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; }
+  /* La tarjeta desplegada y sus productos se leen como una sola pieza. */
+  .mq-sidebar-item-abierta {
+    background: rgba(255, 255, 255, 0.08);
+    border-top-left-radius: var(--radius-hoja-tl);
+    border-bottom-right-radius: var(--radius-hoja-br);
+  }
+  .mq-sidebar-item-abierta .qc-expandida { background: transparent; }
   .mq-sidebar-item { width: 100%; }
 
   .mq-sidebar-vermas {
