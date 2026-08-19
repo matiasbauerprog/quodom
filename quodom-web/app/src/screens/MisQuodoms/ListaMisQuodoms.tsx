@@ -7,7 +7,7 @@ import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
 import { QuodomCard } from '../../components/QuodomCard';
-import { RUBROS } from '../../quodom/rubros';
+import { RUBROS, nombreRubro } from '../../quodom/rubros';
 import './ListaMisQuodoms.css';
 
 export function ListaMisQuodoms() {
@@ -120,7 +120,12 @@ export function ListaMisQuodoms() {
           <ul className="mq-list">
             {list.map(q => (
               <li key={q.id} className="mq-item">
-                <QuodomCard quodom={q} variant="page" onChange={refresh} />
+                <QuodomCard
+                  quodom={q}
+                  variant="page"
+                  rubroLabel={q.nombrerubro || nombreRubro(q.idrubro)}
+                  onChange={refresh}
+                />
               </li>
             ))}
           </ul>

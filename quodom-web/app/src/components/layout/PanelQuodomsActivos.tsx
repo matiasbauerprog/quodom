@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Quodom } from '../../api/types';
+import { nombreRubro } from '../../quodom/rubros';
 import './PanelQuodomsActivos.css';
 
 export type ItemActivo = {
@@ -32,7 +33,7 @@ export function quodomsAItems(list: Quodom[]): ItemActivo[] {
     .map(q => ({
       key: q.id,
       to: '/quodom?id=' + encodeURIComponent(q.id),
-      nombreRubro: q.nombrerubro ?? 'Sin rubro',
+      nombreRubro: q.nombrerubro || nombreRubro(q.idrubro),
       descripcion: q.descripcion,
       cantproductos: q.cantproductos ?? 0
     }));

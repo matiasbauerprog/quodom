@@ -64,7 +64,7 @@ export function MisQuodomsSidebar() {
       {user && list && list.length === 0 && (
         <div className="mq-sidebar-empty">
           <p><strong>No tenés Quodoms.</strong></p>
-          <p>Navegá, agregá productos y se creará uno.</p>
+          <p>Elegí un producto del catálogo y confirmá para crear tu primer Quodom.</p>
         </div>
       )}
 

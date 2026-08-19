@@ -50,6 +50,14 @@ describe('ListaMisQuodoms: nuevo por rubro', () => {
     expect(content().hasAttribute('inert')).toBe(false);
   });
 
+  it('shows the rubro on each card so quodoms of different rubros are distinguishable', async () => {
+    misQuodom.mockResolvedValue([{ ...BEBIDAS_ABIERTO, descripcion: 'Oficina' }]);
+    render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+    await waitFor(() => screen.getByText('Oficina'));
+
+    expect(screen.getByText('Bebidas')).toBeInTheDocument();
+  });
+
   it('creates with the chosen idrubro', async () => {
     misQuodom.mockResolvedValue([]);
     create.mockResolvedValue({ res: true, idquodom: 'q-new' });
