@@ -22,9 +22,10 @@ function errorHandler(err, req, res, next) {
                     return res.status(401).json({ res: false, message: 'No autorizado.' });
             }
 
-        case err !== null && typeof err === 'object' && Number.isInteger(err.status):
+        case err !== null && typeof err === 'object' && Number.isInteger(err.status): {
             const { status, ...body } = err;
             return res.status(status).json({ res: false, ...body });
+        }
 
         default:
             //SL Oculto los error en la respuesta, pero los muestro en consola

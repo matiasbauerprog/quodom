@@ -204,3 +204,35 @@ describe('GET /quodom/activo/:idrubro', () => {
     expect(await db.Quodom.count()).toBe(antes);
   });
 });
+
+describe('repetir of an already-open rubro', () => {
+  let token;
+  let userId;
+
+  beforeAll(async () => {
+    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    token = login.body.token;
+    userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    await db.Quodom.destroy({ where: { createdBy: userId } });
+  });
+
+  it('rejects with 409 rubro_duplicado when the rubro already has an open quodom', async () => {
+    // Spec §4.4: repetir inherits idrubro from the source and delegates to
+    // create(), so the same 409 as a direct create applies. Simplest repro:
+    // repetir a quodom while it is still CREADO, so the "already open" quodom
+    // that create() finds is the source itself.
+    const creado = await request(app).post('/quodom/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Bebidas', idrubro: 7 });
+    await request(app).post('/quodom_lines/add')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ idquodom: creado.body.idquodom, idproducto: 700, cantidad: 1, nombreProducto: 'Gaseosa 2L' });
+
+    const res = await request(app).post('/quodom/repetir/' + creado.body.idquodom)
+      .set('Authorization', 'Bearer ' + token);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('rubro_duplicado');
+    expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7 } })).toBe(1);
+  });
+});

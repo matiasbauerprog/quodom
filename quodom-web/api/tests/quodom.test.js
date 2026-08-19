@@ -115,15 +115,21 @@ describe('quodom', () => {
     expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
   });
 
-  it('PUT /quodom/:id strips protected fields like estado and nro', async () => {
+  it('PUT /quodom/:id strips protected fields like estado, nro and idrubro', async () => {
+    // Spec §3.1: idrubro is fixed at creation and PUT ignores it explicitly.
+    // The guarantee comes from validate-request.js's stripUnknown: true
+    // (updateSchema in quodom.route.js has no idrubro key at all), not
+    // anything this feature owns, but it is the invariant this feature
+    // depends on so it gets its own assertion.
     const res = await request(app).put('/quodom/' + idquodom)
       .set('Authorization', 'Bearer ' + token)
-      .send({ descripcion: 'Pintura Dpto 2', estado: 'ENVIADO', nro: 'HACK' });
+      .send({ descripcion: 'Pintura Dpto 2', estado: 'ENVIADO', nro: 'HACK', idrubro: 4 });
     expect(res.status).toBe(200);
     const q = await db.Quodom.findByPk(idquodom);
     expect(q.descripcion).toBe('Pintura Dpto 2');
     expect(q.estado).toBe('CREADO');
     expect(q.nro).toBe('QD-1');
+    expect(q.idrubro).toBe(5);
   });
 
   it('PUT /quodom_lines/:id strips mass-assignment fields', async () => {

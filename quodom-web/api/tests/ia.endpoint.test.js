@@ -62,6 +62,7 @@ describe('POST /api/ia/chat', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.type).toBe('proposal');
+    expect(res.body.idrubro).toBe(20);
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0]).toMatchObject({ idproducto: 500, cantidad: 2, nombreProducto: 'P500' });
   });
