@@ -8,6 +8,7 @@ import { ForgotPassword } from '../screens/Auth/ForgotPassword';
 import { ResetPassword } from '../screens/Auth/ResetPassword';
 import { ValidarEmail } from '../screens/Auth/ValidarEmail';
 import { SitioInicial } from '../screens/Home/SitioInicial';
+import { RedirectRubro, RedirectSubcategoria } from '../screens/Home/RedirectCategoria';
 import { DetalleQuodom } from '../screens/Quodom/DetalleQuodom';
 import { ListaMisQuodoms } from '../screens/MisQuodoms/ListaMisQuodoms';
 import { ListaDirecciones } from '../screens/Direcciones/ListaDirecciones';
@@ -30,6 +31,8 @@ const router = createBrowserRouter([
     element: <Layout><Outlet /></Layout>,
     children: [
       { path: '/', element: <SitioInicial /> },
+      { path: '/categoria/:id', element: <RedirectRubro /> },
+      { path: '/subcategoria/:id', element: <RedirectSubcategoria /> },
       { path: '/modo-ia', element: <ProtectedRoute><ModoIA /></ProtectedRoute> },
       { path: '/quodom', element: <DetalleQuodom /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
