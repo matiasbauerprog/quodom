@@ -10,9 +10,10 @@ function todayArgentina() {
 const INTENT_SCHEMA = {
   type: 'object',
   properties: {
+    idrubro: { type: 'integer' },
     idsSubcategoria: { type: 'array', items: { type: 'integer' } }
   },
-  required: ['idsSubcategoria']
+  required: ['idrubro', 'idsSubcategoria']
 };
 
 const CHAT_SCHEMA = {
@@ -51,9 +52,11 @@ async function chat(userId, messages) {
     attributes: ['id', 'nombrecategoria']
   });
   const rubroById = new Map(rubros.map(r => [r.id, r.nombrecategoria]));
+  const subcatPorId = new Map(subcats.map(s => [s.id, { idrubro: s.idcategoriapadre, nombre: s.nombrecategoria }]));
   const subcatList = subcats.map(s => ({
     id: s.id,
     nombre: s.nombrecategoria,
+    idrubro: s.idcategoriapadre,
     rubro: rubroById.get(s.idcategoriapadre) || ''
   }));
 
@@ -66,14 +69,20 @@ async function chat(userId, messages) {
     model: intentModel,
     systemPrompt:
       'Sos un clasificador. Recibís el mensaje de un usuario que quiere armar un presupuesto de compra ' +
-      'y una lista de subcategorías con su rubro padre. Devolvé un JSON con los IDs de subcategorías ' +
-      'relevantes al mensaje. Si ninguna aplica, devolvé un array vacío. ' +
+      'y una lista de subcategorías, cada una con el id del rubro (categoría padre) al que pertenece. ' +
+      'Un presupuesto (Quodom) es siempre de un solo rubro: devolvé el id del rubro más relevante para el ' +
+      'mensaje ("idrubro") y sólo las subcategorías de ESE rubro que apliquen ("idsSubcategoria"). ' +
+      'Si el mensaje abarca varios rubros, elegí el principal. Si ninguna subcategoría aplica, devolvé ' +
+      'idsSubcategoria como array vacío (igual indicá el idrubro más probable). ' +
       'Subcategorías disponibles: ' + JSON.stringify(subcatList),
     contents: intentContents,
     responseSchema: INTENT_SCHEMA
   });
 
-  const ids = Array.isArray(intent.idsSubcategoria) ? intent.idsSubcategoria : [];
+  const idrubro = intent.idrubro;
+  const ids = Array.isArray(intent.idsSubcategoria)
+    ? intent.idsSubcategoria.filter(id => subcatPorId.get(id)?.idrubro === idrubro)
+    : [];
   if (ids.length === 0) {
     return { type: 'question', text: '¿De qué rubro es tu proyecto? Contame un poco más para poder ayudarte.' };
   }
@@ -115,7 +124,10 @@ async function chat(userId, messages) {
       'Si un producto tiene atributos (los verás como "atributo1" y "atributo2" en la lista), esos DEBE elegirlos el usuario — preguntáselo.\n' +
       '4. Hacé UNA sola pregunta por turno, clara y concreta. No amontones varias preguntas.\n' +
       '5. Cuando finalmente propongas, en "motivo" incluí el cálculo o razón concreta ' +
-      '(ej. "3 latas de 4L para cubrir 36m² a 2 manos, cada lata rinde 12m² por mano").\n\n' +
+      '(ej. "3 latas de 4L para cubrir 36m² a 2 manos, cada lata rinde 12m² por mano").\n' +
+      '6. Esta conversación es sólo del rubro "' + (rubroById.get(idrubro) || '') + '": si el proyecto que ' +
+      'describe el usuario abarca además otros rubros (ej. pintura y bebidas para la misma obra), NO los mezcles ' +
+      'en la propuesta. Repreguntá por cuál rubro arrancar primero y seguí sólo con ese.\n\n' +
       'GUÍAS POR RUBRO (adaptá al proyecto del usuario):\n' +
       '- Pintura: preguntá si las paredes están enduidas/preparadas, si es cocina/baño (necesita antihongo), interior o exterior, cuántas manos, color deseado, si tiene humedad.\n' +
       '- Construcción en seco (Durlock/placas): tipo de proyecto (tabique/cielorraso/revestimiento), medidas totales, si necesita aislación térmica o acústica.\n' +
@@ -152,7 +164,7 @@ async function chat(userId, messages) {
         text: 'No encontré productos del catálogo para eso. ¿Podés contarme más de qué tipo de proyecto es?'
       };
     }
-    return { type: 'proposal', text: reply.text, items: filtered };
+    return { type: 'proposal', text: reply.text, items: filtered, idrubro };
   }
 
   return { type: 'question', text: reply.text };

@@ -10,11 +10,18 @@ beforeAll(async () => {
   await db.Category.bulkCreate([
     { id: 10, nombrecategoria: 'Pinturería', idcategoriapadre: 0, activa: true, orden: 1 },
     { id: 11, nombrecategoria: 'Pinturas', idcategoriapadre: 10, activa: true, orden: 1 },
-    { id: 12, nombrecategoria: 'Rodillos', idcategoriapadre: 10, activa: true, orden: 2 }
+    { id: 12, nombrecategoria: 'Rodillos', idcategoriapadre: 10, activa: true, orden: 2 },
+    // Real-shaped rubros for the cross-rubro filtering tests: Pintura (5) and Bebidas (7).
+    { id: 5, nombrecategoria: 'Pintura', idcategoriapadre: 0, activa: true, orden: 1 },
+    { id: 35, nombrecategoria: 'Látex', idcategoriapadre: 5, activa: true, orden: 1 },
+    { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, activa: true, orden: 1 },
+    { id: 70, nombrecategoria: 'Gaseosas', idcategoriapadre: 7, activa: true, orden: 1 }
   ], { ignoreDuplicates: true });
   await db.Products.bulkCreate([
     { id: 200, nombreproducto: 'Látex interior 4L', categoria: 11, categoriaPadre: 10, atributo1: 'Color', atributo2: null },
-    { id: 201, nombreproducto: 'Rodillo lana 22cm', categoria: 12, categoriaPadre: 10, atributo1: null, atributo2: null }
+    { id: 201, nombreproducto: 'Rodillo lana 22cm', categoria: 12, categoriaPadre: 10, atributo1: null, atributo2: null },
+    { id: 300, nombreproducto: 'Latex premium 10L', categoria: 35, categoriaPadre: 5, atributo1: null, atributo2: null },
+    { id: 301, nombreproducto: 'Gaseosa cola 2L', categoria: 70, categoriaPadre: 7, atributo1: null, atributo2: null }
   ], { ignoreDuplicates: true });
 });
 
@@ -23,7 +30,7 @@ beforeEach(() => { callGemini.mockReset(); });
 describe('ia.chat', () => {
   it('returns { type: "question" } when Gemini responds with a question', async () => {
     callGemini
-      .mockResolvedValueOnce({ idsSubcategoria: [11] })
+      .mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [11] })
       .mockResolvedValueOnce({ type: 'question', text: '¿de qué color?' });
 
     const out = await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar' }]);
@@ -34,7 +41,7 @@ describe('ia.chat', () => {
 
   it('returns { type: "proposal" } and filters items with unknown idproducto', async () => {
     callGemini
-      .mockResolvedValueOnce({ idsSubcategoria: [11, 12] })
+      .mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [11, 12] })
       .mockResolvedValueOnce({
         type: 'proposal',
         text: 'Te propongo:',
@@ -56,7 +63,7 @@ describe('ia.chat', () => {
   });
 
   it('returns question when 0 subcategorías detected (skips main call)', async () => {
-    callGemini.mockResolvedValueOnce({ idsSubcategoria: [] });
+    callGemini.mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [] });
 
     const out = await ia.chat(USER_ID, [{ role: 'user', text: 'blablabla' }]);
 
@@ -67,7 +74,7 @@ describe('ia.chat', () => {
 
   it('returns question when proposal has 0 valid items after filtering', async () => {
     callGemini
-      .mockResolvedValueOnce({ idsSubcategoria: [11] })
+      .mockResolvedValueOnce({ idrubro: 10, idsSubcategoria: [11] })
       .mockResolvedValueOnce({
         type: 'proposal',
         text: 'Te propongo:',
@@ -84,5 +91,35 @@ describe('ia.chat', () => {
     callGemini.mockRejectedValueOnce(new Error('gemini: HTTP 500 boom'));
 
     await expect(ia.chat(USER_ID, [{ role: 'user', text: 'test' }])).rejects.toThrow(/gemini/);
+  });
+
+  it('drops subcategories that do not belong to the returned rubro', async () => {
+    // Pintura (5) tiene la subcategoría 35; Bebidas (7) tiene la 70.
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35, 70] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿Interior o exterior?' });
+
+    await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar' }]);
+
+    // La segunda llamada arma la lista de productos: sólo puede traer los de Pintura.
+    const prompt = callGemini.mock.calls[1][0].systemPrompt;
+    expect(prompt).toContain('Latex');
+    expect(prompt).not.toContain('Gaseosa');
+  });
+
+  it('returns the idrubro alongside a proposal', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'proposal', text: 'Listo', items: [{ idproducto: 300, cantidad: 2 }] });
+
+    const res = await ia.chat(USER_ID, [
+      { role: 'user', text: 'quiero pintar' },
+      { role: 'assistant', text: '¿cuántos m2?' },
+      { role: 'assistant', text: '¿interior?' },
+      { role: 'user', text: '30m2 interior' }
+    ]);
+
+    expect(res.type).toBe('proposal');
+    expect(res.idrubro).toBe(5);
   });
 });

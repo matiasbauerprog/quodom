@@ -37,7 +37,7 @@ describe('POST /api/ia/chat', () => {
 
   it('returns 200 with type=question', async () => {
     callGemini
-      .mockResolvedValueOnce({ idsSubcategoria: [21] })
+      .mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] })
       .mockResolvedValueOnce({ type: 'question', text: '¿cuántos?' });
 
     const res = await request(app).post('/api/ia/chat')
@@ -50,7 +50,7 @@ describe('POST /api/ia/chat', () => {
 
   it('returns 200 with type=proposal (filtered items)', async () => {
     callGemini
-      .mockResolvedValueOnce({ idsSubcategoria: [21] })
+      .mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] })
       .mockResolvedValueOnce({
         type: 'proposal', text: 'Te propongo:',
         items: [{ idproducto: 500, cantidad: 2, motivo: 'ok' }, { idproducto: 9999, cantidad: 1, motivo: 'ghost' }]
@@ -96,7 +96,7 @@ describe('POST /api/ia/chat', () => {
   it('returns 429 rate_limit after 11 requests in a minute', async () => {
     process.env.IA_RATE_LIMIT_PER_MINUTE = '10';
     for (let i = 0; i < 10; i++) {
-      callGemini.mockResolvedValueOnce({ idsSubcategoria: [21] }).mockResolvedValueOnce({ type: 'question', text: 'q' });
+      callGemini.mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] }).mockResolvedValueOnce({ type: 'question', text: 'q' });
       const r = await request(app).post('/api/ia/chat')
         .set('Authorization', 'Bearer ' + token)
         .send({ messages: [{ role: 'user', text: 'x' }] });
@@ -185,7 +185,7 @@ describe('POST /api/ia/chat', () => {
     process.env.IA_RATE_LIMIT_PER_MINUTE = '999';
     rateLimit._reset();
     callGemini
-      .mockResolvedValueOnce({ idsSubcategoria: [21] })
+      .mockResolvedValueOnce({ idrubro: 20, idsSubcategoria: [21] })
       .mockResolvedValueOnce({ type: 'question', text: '¿?' });
 
     const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;

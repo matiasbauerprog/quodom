@@ -11,7 +11,7 @@ export type IaProposalItem = {
 
 export type IaResponse =
   | { type: 'question'; text: string }
-  | { type: 'proposal'; text: string; items: IaProposalItem[] };
+  | { type: 'proposal'; text: string; items: IaProposalItem[]; idrubro: number };
 
 export const iaApi = {
   chat: (messages: IaMessage[]) =>
