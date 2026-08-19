@@ -11,3 +11,6 @@
 .dq-attr { display: block; text-align: left; padding: var(--sp-2) var(--sp-3); background: rgba(230,57,70,.08); border-radius: var(--radius-input); color: var(--color-acento); }
 .dq-attr strong { color: var(--color-texto); }
 .dq-send { margin-top: var(--sp-4); }
+.dq-chooser { display: grid; gap: var(--sp-3); margin-top: var(--sp-3); list-style: none; padding: 0; }
+.dq-chooser-item { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3); text-decoration: none; color: var(--color-texto); }
+.dq-chooser-item strong { font-family: var(--font-prompt); color: var(--color-acento); }
