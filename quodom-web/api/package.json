@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Quodom Web API - Express + Sequelize + SQLite (no vendors, no payments)",
   "license": "MIT",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "build": "node src/seed/seed.js",
     "start": "node src/server.js",
