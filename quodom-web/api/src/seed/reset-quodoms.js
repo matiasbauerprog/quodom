@@ -19,6 +19,15 @@ async function main() {
     const [cols] = await db.sequelize.query('PRAGMA table_info(quodom_headers)');
     console.log('quodom tables recreated. quodom_headers columns:', cols.map(c => c.name).join(', '));
 
+    // The database runs in WAL mode, so writes live in quodom.sqlite-wal until a
+    // checkpoint folds them into quodom.sqlite. Only quodom.sqlite is tracked in
+    // git (the -wal and -shm files are ignored), so without this the file someone
+    // commits after running this script can silently lag the database they just
+    // built. TRUNCATE also empties the WAL, leaving nothing behind to confuse the
+    // next reader.
+    const [[wal]] = await db.sequelize.query('PRAGMA wal_checkpoint(TRUNCATE)');
+    console.log('WAL checkpointed into quodom.sqlite:', JSON.stringify(wal));
+
     await db.sequelize.close();
 }
 
