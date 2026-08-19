@@ -6,6 +6,24 @@ import { nombreRubro } from '../../quodom/rubros';
 import { PanelQuodomsActivos, quodomsAItems, type ItemActivo } from './PanelQuodomsActivos';
 import './BarraQuodomInferior.css';
 
+// A guest cart left over after a declined ('cancelar') migration, or one
+// simply never logged into, stays in localStorage (spec §6). Once logged in,
+// the sidebar/panel/Mis Quodoms only list server Quodoms, so without this it
+// becomes unreachable except by typing /quodom?rubro=<id> or signing out.
+// Labelled distinctly ('sin guardar') so it doesn't read as a server Quodom.
+function itemsCarritosInvitado(): ItemActivo[] {
+  return guestRubrosConLineas().map(idrubro => {
+    const cart = getGuestCart(idrubro);
+    return {
+      key: 'g-' + idrubro,
+      to: '/quodom?rubro=' + idrubro,
+      nombreRubro: nombreRubro(idrubro),
+      descripcion: (cart.descripcion.trim() || 'Carrito') + ' · sin guardar',
+      cantproductos: cart.lines.length
+    };
+  });
+}
+
 export function BarraQuodomInferior() {
   const { user } = useAuth();
   // `null` means "no data loaded yet" (distinct from an empty list, which
@@ -24,21 +42,14 @@ export function BarraQuodomInferior() {
     let requestId = 0;
     const cargar = () => {
       if (!user) {
-        setItems(guestRubrosConLineas().map(idrubro => {
-          const cart = getGuestCart(idrubro);
-          return {
-            key: 'g-' + idrubro,
-            to: '/quodom?rubro=' + idrubro,
-            nombreRubro: nombreRubro(idrubro),
-            descripcion: cart.descripcion || 'Sin guardar',
-            cantproductos: cart.lines.length
-          };
-        }));
+        setItems(itemsCarritosInvitado());
         return;
       }
       const thisRequestId = ++requestId;
       quodomApi.misQuodom()
-        .then(lista => { if (alive && thisRequestId === requestId) setItems(quodomsAItems(lista)); })
+        .then(lista => {
+          if (alive && thisRequestId === requestId) setItems([...quodomsAItems(lista), ...itemsCarritosInvitado()]);
+        })
         .catch(() => {
           if (!alive || thisRequestId !== requestId) return;
           // A refresh triggered by `quodom:changed` can fail transiently

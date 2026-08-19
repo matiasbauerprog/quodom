@@ -3,9 +3,11 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { BarraQuodomInferior } from '../BarraQuodomInferior';
 import { quodom as quodomApi } from '../../../api/quodom';
+import { useAuth } from '../../../auth/AuthContext';
+import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
 
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn() } }));
-vi.mock('../../../auth/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u-1' } }) }));
+vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 // Distinct from its own rubro name (like MisQuodomsSidebar's test data, Task
@@ -14,9 +16,22 @@ const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 // `getByText` ambiguous between the two spans that render it.
 const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-1', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, createdBy: 'u-1', iddireccion: null };
 const OBRA = { id: 'q-4', descripcion: 'Obra', estado: 'CREADO', nro: 'QD-2', idrubro: 4, nombrerubro: 'Construcción', cantproductos: 1, createdBy: 'u-1', iddireccion: null };
+const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 2 };
+
+function login() {
+  vi.mocked(useAuth).mockReturnValue({ user: { id: 'u-1' } } as unknown as ReturnType<typeof useAuth>);
+}
+
+function logout() {
+  vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
+}
 
 describe('BarraQuodomInferior', () => {
-  beforeEach(() => misQuodom.mockReset());
+  beforeEach(() => {
+    misQuodom.mockReset();
+    clearGuestQuodoms();
+    login();
+  });
 
   it('stays hidden when there is no open quodom', async () => {
     misQuodom.mockResolvedValue([]);
@@ -66,5 +81,60 @@ describe('BarraQuodomInferior', () => {
     act(() => { window.dispatchEvent(new Event('quodom:changed')); });
 
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument());
+  });
+
+  it('lists a leftover guest cart alongside the logged-in user\'s server quodoms', async () => {
+    // Spec §6: a declined ('cancelar') migration leaves the guest cart intact
+    // in localStorage. Without this it becomes unreachable once logged in.
+    addGuestLine(4, { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 1 });
+    misQuodom.mockResolvedValue([BEBIDAS]);
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument()); // 1 server + 1 guest
+
+    fireEvent.click(screen.getByRole('button', { name: /Mis Quodoms activos/i }));
+
+    expect(screen.getByText('Bebidas')).toBeInTheDocument();
+    expect(screen.getByText('Construcción')).toBeInTheDocument();
+    // Labelled distinctly so it doesn't read as a saved server Quodom.
+    expect(screen.getByText(/sin guardar/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Construcción/ })).toHaveAttribute('href', '/quodom?rubro=4');
+  });
+});
+
+describe('BarraQuodomInferior for guests', () => {
+  beforeEach(() => {
+    misQuodom.mockReset();
+    clearGuestQuodoms();
+    logout();
+  });
+
+  it('stays hidden when the guest has no cart with lines', async () => {
+    const { container } = render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    await waitFor(() => expect(container.querySelector('.barra-quodom')).toBeNull());
+    expect(misQuodom).not.toHaveBeenCalled();
+  });
+
+  it('shows the count of guest carts with lines and expands to list them', async () => {
+    addGuestLine(7, GASEOSA);
+    addGuestLine(4, { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 1 });
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+
+    await waitFor(() => expect(screen.getByText(/Mis Quodoms activos/i)).toBeInTheDocument());
+    expect(screen.getByText('2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Mis Quodoms activos/i }));
+
+    expect(screen.getByRole('link', { name: /Bebidas/ })).toHaveAttribute('href', '/quodom?rubro=7');
+    expect(screen.getByRole('link', { name: /Construcción/ })).toHaveAttribute('href', '/quodom?rubro=4');
+  });
+
+  it('refreshes on quodom:changed as a guest adds a product', async () => {
+    const { container } = render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    expect(container.querySelector('.barra-quodom')).toBeNull();
+
+    addGuestLine(7, GASEOSA);
+    act(() => { window.dispatchEvent(new Event('quodom:changed')); });
+
+    await waitFor(() => expect(screen.getByText(/Mis Quodoms activos/i)).toBeInTheDocument());
   });
 });
