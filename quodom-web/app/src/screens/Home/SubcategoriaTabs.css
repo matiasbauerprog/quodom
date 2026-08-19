@@ -1,0 +1,30 @@
+.subtabs {
+  display: flex;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 640px;
+  overflow-x: auto;
+  padding-bottom: var(--sp-2);
+  /* Sin esto la barra de scroll tapa las tabs en Windows. */
+  scrollbar-width: thin;
+}
+.subtab {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--color-tarjeta);
+  color: var(--color-texto);
+  font-family: var(--font-work);
+  font-size: var(--fs-small);
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+}
+.subtab-sel {
+  background: var(--color-acento);
+  color: #fff;
+}
+
+@media (min-width: 1025px) {
+  .subtabs { max-width: 720px; flex-wrap: wrap; overflow-x: visible; }
+}
