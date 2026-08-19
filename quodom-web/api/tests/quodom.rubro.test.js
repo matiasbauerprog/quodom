@@ -62,6 +62,22 @@ describe('create enforces one open quodom per rubro', () => {
     expect(res.status).toBe(400);
   });
 
+  it('rejects a create whose idrubro is a subcategory, not a rubro', async () => {
+    const res = await request(app).post('/quodom/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Gaseosas', idrubro: 70 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('idrubro_invalido');
+  });
+
+  it('rejects a create whose idrubro does not exist at all', async () => {
+    const res = await request(app).post('/quodom/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Nada', idrubro: 9999 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('idrubro_invalido');
+  });
+
   it('creates the first quodom of a rubro', async () => {
     const res = await request(app).post('/quodom/create')
       .set('Authorization', 'Bearer ' + token)

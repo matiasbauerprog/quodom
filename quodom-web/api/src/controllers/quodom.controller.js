@@ -39,13 +39,19 @@ async function getPorcById(userId, id) {
 }
 
 async function create(params, userId) {
+    const rubro = await db.Category.findOne({
+        where: { id: params.idrubro, idcategoriapadre: 0 }
+    });
+    if (!rubro) {
+        throw httpError(400, 'idrubro_invalido', 'El rubro indicado no existe.');
+    }
+
     const abierto = await db.Quodom.findOne({
         where: { createdBy: userId, idrubro: params.idrubro, estado: 'CREADO' }
     });
     if (abierto) {
-        const rubro = await db.Category.findByPk(params.idrubro);
         throw httpError(409, 'rubro_duplicado',
-            'Ya tenés un Quodom abierto de ' + (rubro ? rubro.nombrecategoria : 'ese rubro') + '.',
+            'Ya tenés un Quodom abierto de ' + rubro.nombrecategoria + '.',
             { idquodom: abierto.id });
     }
 
