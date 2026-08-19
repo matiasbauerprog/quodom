@@ -19,6 +19,7 @@ import { migrarRubro } from '../../guest/migrateGuestQuodom';
 import type { AccionRubro, ConflictoRubro } from '../../guest/migrateGuestQuodom';
 import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
 import { nombreRubro } from '../../quodom/rubros';
+import { rubroDisponible } from '../../quodom/rubrosDisponibles';
 import './DetalleQuodom.css';
 
 type Mode = 'guest' | 'server';
@@ -48,6 +49,12 @@ export function DetalleQuodom() {
   const [conflicto, setConflicto] = useState<ConflictoRubro | null>(null);
   const [attr, setAttr] = useState<{ lineIndex?: number; lineId?: number; idproducto: number; nombreatributo: string; slot: 1 | 2; actual: string | null | undefined } | null>(null);
   const [nonce, setNonce] = useState(0);
+  // A cart can outlive its rubro: guest carts live in the user's own
+  // localStorage and survive a deploy that retires one. Sending such a cart
+  // always fails (POST /quodom/create -> 400 idrubro_invalido), so the send
+  // is withdrawn instead of offered. Defaults to `true` and only flips on a
+  // definite answer: a catalogue hiccup must not withdraw a valid send.
+  const [rubroHabilitado, setRubroHabilitado] = useState(true);
 
   const guest = useMemo(
     () => (idrubro !== null ? getGuestCart(idrubro) : { descripcion: '', lines: [] }),
@@ -95,6 +102,15 @@ export function DetalleQuodom() {
       .catch(() => {});
     return () => { alive = false; };
   }, [mode, idrubro, user, guest.lines.length, navigate]);
+
+  useEffect(() => {
+    if (mode !== 'guest' || idrubro === null) { setRubroHabilitado(true); return; }
+    let alive = true;
+    rubroDisponible(idrubro)
+      .then(ok => { if (alive) setRubroHabilitado(ok); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [mode, idrubro]);
 
   useEffect(() => {
     if (mode === 'guest') { setDescripcion(guest.descripcion); return; }
@@ -223,7 +239,7 @@ export function DetalleQuodom() {
               </ul>
             </>
           )}
-          {rubrosDisponibles.length === 0 && <p className="dq-empty">Tu Quodom está vacío. Sumá productos desde Inicio o Buscar.</p>}
+          {rubrosDisponibles.length === 0 && <p className="dq-empty">Tu Quodom está vacío. Sumá productos desde Inicio.</p>}
         </section>
       </>
     );
@@ -242,7 +258,7 @@ export function DetalleQuodom() {
           <input className="input" value={descripcion} onChange={e => setDescripcion(e.target.value)} onBlur={() => saveDescripcion(descripcion)} />
         </label>
 
-        {lines.length === 0 && <p className="dq-empty">Tu Quodom está vacío. Sumá productos desde Inicio o Buscar.</p>}
+        {lines.length === 0 && <p className="dq-empty">Tu Quodom está vacío. Sumá productos desde Inicio.</p>}
 
         <ul className="dq-lines">
           {lines.map(l => (
@@ -271,9 +287,16 @@ export function DetalleQuodom() {
           ))}
         </ul>
 
-        <button className="btn btn-exito btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
-          {busy ? 'Enviando…' : (mode === 'server' && server?.quodom.estado === 'ENVIADO' ? 'Ya enviado' : 'Enviar por WhatsApp')}
-        </button>
+        {rubroHabilitado ? (
+          <button className="btn btn-exito btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
+            {busy ? 'Enviando…' : (mode === 'server' && server?.quodom.estado === 'ENVIADO' ? 'Ya enviado' : 'Enviar por WhatsApp')}
+          </button>
+        ) : (
+          <p className="dq-aviso hoja" role="status">
+            {nombreRubro(idrubro!)} no está disponible por ahora, así que este Quodom no se puede enviar.
+            Tus productos quedan guardados acá por si el rubro vuelve.
+          </p>
+        )}
 
         {attr && (
           <SelectorAtributo

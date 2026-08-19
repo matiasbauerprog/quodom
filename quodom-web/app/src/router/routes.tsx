@@ -1,4 +1,5 @@
-import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
+import { Navigate, createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
+import type { RouteObject } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
 import { SignIn } from '../screens/Auth/SignIn';
@@ -20,7 +21,7 @@ import { CambiarPass } from '../screens/Profile/CambiarPass';
 import { ListaNotificaciones } from '../screens/Notificaciones/ListaNotificaciones';
 import { ModoIA } from '../screens/ModoIA/ModoIA';
 
-const router = createBrowserRouter([
+export const routes: RouteObject[] = [
   { path: '/login', element: <SignIn /> },
   { path: '/registro', element: <SignUp /> },
   { path: '/cuenta-creada', element: <CuentaCreada /> },
@@ -42,10 +43,19 @@ const router = createBrowserRouter([
       { path: '/direcciones', element: <ProtectedRoute><ListaDirecciones /></ProtectedRoute> },
       { path: '/direcciones/nuevo', element: <ProtectedRoute><AgregarDireccion /></ProtectedRoute> },
       { path: '/direcciones/:id', element: <ProtectedRoute><ModificarDireccion /></ProtectedRoute> },
-      { path: '/notificaciones', element: <ProtectedRoute><ListaNotificaciones /></ProtectedRoute> }
+      { path: '/notificaciones', element: <ProtectedRoute><ListaNotificaciones /></ProtectedRoute> },
+      // La búsqueda se retiró, pero /busqueda estuvo publicada y linkeada
+      // desde el Drawer: va a seguir viniendo del historial del navegador.
+      { path: '/busqueda', element: <Navigate to="/" replace /> },
+      // vercel.json reescribe todo a index.html, así que cualquier URL
+      // desconocida llega hasta acá. Sin este comodín react-router dibuja su
+      // 404 en inglés fuera del <Layout>, sin AppBar ni Drawer para volver.
+      { path: '*', element: <Navigate to="/" replace /> }
     ]
   }
-]);
+];
+
+const router = createBrowserRouter(routes);
 
 export function AppRouter() {
   return <RouterProvider router={router} />;

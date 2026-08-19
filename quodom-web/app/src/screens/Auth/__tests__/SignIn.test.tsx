@@ -13,14 +13,21 @@ vi.mock('../../../guest/migrateGuestQuodom', () => ({
 
 const signin = vi.fn();
 
-const CONFLICTO = {
-  idrubro: 7,
-  quodomExistente: {
-    id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7',
-    idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 3, createdBy: 'u-1', iddireccion: null
-  },
-  lineasInvitado: 2
-} as unknown as Awaited<ReturnType<typeof planificarMigracion>>['conflictos'][number];
+type Conflicto = Awaited<ReturnType<typeof planificarMigracion>>['conflictos'][number];
+
+function conflicto(idrubro: number, nombrerubro: string): Conflicto {
+  return {
+    idrubro,
+    quodomExistente: {
+      id: 'q-' + idrubro, descripcion: nombrerubro + ' oficina', estado: 'CREADO', nro: 'QD-' + idrubro,
+      idrubro, nombrerubro, cantproductos: 3, createdBy: 'u-1', iddireccion: null
+    },
+    lineasInvitado: 2
+  } as unknown as Conflicto;
+}
+
+const CONFLICTO = conflicto(7, 'Bebidas');
+const CONFLICTO_LIMPIEZA = conflicto(1, 'Limpieza');
 
 function fillAndSubmit() {
   fireEvent.change(screen.getByLabelText(/usuario o email/i), { target: { value: 'ana' } });
@@ -48,7 +55,7 @@ describe('SignIn', () => {
 
   it('shows a distinct message when signin succeeds but migration fails, not a login error', async () => {
     signin.mockResolvedValue(undefined);
-    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [4], conflictos: [] });
+    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [4], conflictos: [], noDisponibles: [] });
     vi.mocked(migrarRubro).mockRejectedValue(new Error('network down'));
 
     render(<MemoryRouter><SignIn /></MemoryRouter>);
@@ -63,7 +70,7 @@ describe('SignIn', () => {
 
   it('no ofrece salir del conflicto mientras no falle nada', async () => {
     signin.mockResolvedValue(undefined);
-    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [], conflictos: [CONFLICTO] });
+    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [], conflictos: [CONFLICTO], noDisponibles: [] });
 
     render(<MemoryRouter><SignIn /></MemoryRouter>);
     fillAndSubmit();
@@ -81,7 +88,7 @@ describe('SignIn', () => {
 
   it('ofrece continuar sin integrar recién cuando la migración falla', async () => {
     signin.mockResolvedValue(undefined);
-    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [], conflictos: [CONFLICTO] });
+    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [], conflictos: [CONFLICTO], noDisponibles: [] });
     vi.mocked(migrarRubro).mockRejectedValue(new Error('network down'));
 
     render(<MemoryRouter><SignIn /></MemoryRouter>);
@@ -97,9 +104,27 @@ describe('SignIn', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('deja de ofrecer la salida en el conflicto siguiente', async () => {
+    // "Continuar sin integrar" existe sólo para destrabar un fallo puntual.
+    // Si quedara pegada, el resto de la cola podría abandonarse sin que nada
+    // haya fallado, reabriendo el agujero de carritos huérfanos.
+    signin.mockResolvedValue(undefined);
+    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [], conflictos: [CONFLICTO, CONFLICTO_LIMPIEZA], noDisponibles: [] });
+    vi.mocked(migrarRubro).mockRejectedValue(new Error('network down'));
+
+    render(<MemoryRouter><SignIn /></MemoryRouter>);
+    fillAndSubmit();
+
+    fireEvent.click(await screen.findByRole('button', { name: /integrar los dos/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /continuar sin integrar/i }));
+
+    await waitFor(() => expect(screen.getByText(/Quodom de Limpieza ya abierto/i)).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /continuar sin integrar/i })).toBeNull();
+  });
+
   it('navigates away with no error when there is nothing to migrate', async () => {
     signin.mockResolvedValue(undefined);
-    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [], conflictos: [] });
+    vi.mocked(planificarMigracion).mockResolvedValue({ sinConflicto: [], conflictos: [], noDisponibles: [] });
 
     render(<MemoryRouter><SignIn /></MemoryRouter>);
     fillAndSubmit();
