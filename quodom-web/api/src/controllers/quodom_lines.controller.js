@@ -66,6 +66,13 @@ async function add(params, userId) {
         params.nombreCategoria = categoria.nombrecategoria;
     }
 
+    const existente = await findLineaExistente(params);
+    if (existente) {
+        existente.cantidad = Number(existente.cantidad) + Number(params.cantidad);
+        await existente.save();
+        return existente.id;
+    }
+
     const { id } = await db.Quodom_Lines.create(params);
 
     return (id);
@@ -112,6 +119,20 @@ async function getCat(id) {
     const categoria = await db.Category.findByPk(id);
     if (!categoria) throw 'Err. Id de categoria no encontrado.';
     return categoria;
+}
+
+// Same rule as sameLine() in the frontend's guestQuodom.ts: same product and
+// same attributes (null/undefined/'' all treated as "no attribute") means the
+// same line, so quantities get summed instead of duplicated.
+async function findLineaExistente(params) {
+    const candidatas = await db.Quodom_Lines.findAll({
+        where: { idquodom: params.idquodom, idproducto: params.idproducto }
+    });
+    const norm = (v) => v ?? '';
+    return candidatas.find((linea) =>
+        norm(linea.atributo1) === norm(params.atributo1)
+        && norm(linea.atributo2) === norm(params.atributo2)
+    ) || null;
 }
 
 async function ValidarQuodom(idquodom, userId, action) {

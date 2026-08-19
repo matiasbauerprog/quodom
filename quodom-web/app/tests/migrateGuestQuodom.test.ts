@@ -52,16 +52,45 @@ describe('guest migration by rubro', () => {
     expect(getGuestCart(4).lines).toEqual([]);
   });
 
-  it('integrar adds the guest lines into the existing quodom', async () => {
-    addGuestLine(7, GASEOSA);
+  it('integrar sends every guest line, unmerged, to the existing quodom', async () => {
+    // Merging same-product-same-attributes quantities is a server-side rule
+    // (quodom_lines.controller.js add()), not something migrarRubro computes
+    // itself. This asserts the frontend forwards each guest line intact, with
+    // its own cantidad, so the server can do that summing. Two distinct guest
+    // lines catch a regression that would batch or drop one of them.
+    addGuestLine(7, GASEOSA); // idproducto 700, cantidad 2
+    addGuestLine(7, { idproducto: 401, nombreProducto: 'Agua 500ml', cantidad: 3 });
     activoPorRubro.mockResolvedValue({ id: 'q-7', idrubro: 7 });
 
     const id = await migrarRubro(7, 'integrar');
 
     expect(create).not.toHaveBeenCalled();
     expect(eliminar).not.toHaveBeenCalled();
-    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', cantidad: 2 }));
+    expect(addLine).toHaveBeenCalledTimes(2);
+    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 700, cantidad: 2 }));
+    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 401, cantidad: 3 }));
     expect(id).toBe('q-7');
+  });
+
+  it('integrar relies on the server to sum quantities for a repeated product', async () => {
+    // Simulates the server-side merge (covered end-to-end by
+    // api/tests/quodom_lines.merge.test.js): the quodom already has 5 units of
+    // idproducto 700, so adding the guest's 2 should leave 7, not 2 new units
+    // in a second line. This is what would break silently if the merge logic
+    // were ever removed from the controller.
+    addGuestLine(7, GASEOSA); // idproducto 700, cantidad 2
+    activoPorRubro.mockResolvedValue({ id: 'q-7', idrubro: 7 });
+
+    let stored = 5;
+    addLine.mockImplementation(async (params: { cantidad: number }) => {
+      stored += params.cantidad; // mirrors the controller's summed-line behaviour
+      return { res: true, id: 1 };
+    });
+
+    await migrarRubro(7, 'integrar');
+
+    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 700, cantidad: 2 }));
+    expect(stored).toBe(7);
   });
 
   it('reemplazar deletes the whole existing quodom and creates a new one', async () => {
