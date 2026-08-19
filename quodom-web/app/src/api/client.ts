@@ -25,8 +25,14 @@ type Options = {
   headers?: Record<string, string>;
 };
 
+// Una sola definición de dónde vive el API: las imágenes se piden por URL
+// directa y antes tenían su propio default, que quedó apuntando a localhost.
+export function apiBase(): string {
+  return import.meta.env.VITE_API_URL || 'http://localhost:3999';
+}
+
 export async function apiFetch<T = unknown>(path: string, options: Options = {}): Promise<T> {
-  const base = import.meta.env.VITE_API_URL || 'https://quodom.onrender.com';
+  const base = apiBase();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers ?? {})

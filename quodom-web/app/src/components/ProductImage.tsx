@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { apiBase } from '../api/client';
 import './ProductImage.css';
 
 export function productImageUrl(idproducto: number): string {
-  const base = import.meta.env.VITE_API_URL || 'http://localhost:3999';
-  return base + '/img/producto/' + idproducto;
+  return apiBase() + '/img/producto/' + idproducto;
 }
 
 export function ProductImage({
