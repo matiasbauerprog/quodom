@@ -16,6 +16,7 @@ export function ListaMisQuodoms() {
   const [err, setErr] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const [eligiendoRubro, setEligiendoRubro] = useState(false);
+  const [creando, setCreando] = useState(false);
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
   useEffect(() => {
@@ -27,9 +28,22 @@ export function ListaMisQuodoms() {
     return () => { alive = false; };
   }, [nonce]);
 
+  useEffect(() => {
+    if (!eligiendoRubro) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !creando) setEligiendoRubro(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [eligiendoRubro, creando]);
+
   const rubrosOcupados = new Set((list ?? []).filter(q => q.estado === 'CREADO').map(q => q.idrubro));
 
+  function cerrarPicker() {
+    if (creando) return;
+    setEligiendoRubro(false);
+  }
+
   async function crearDeRubro(idrubro: number) {
+    setCreando(true);
     try {
       const r = await quodomApi.create({ descripcion: 'Mi Quodom', idrubro });
       setEligiendoRubro(false);
@@ -37,7 +51,9 @@ export function ListaMisQuodoms() {
       navigate('/quodom?id=' + encodeURIComponent(r.idquodom));
     } catch (e) {
       setEligiendoRubro(false);
-      setErr(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo crear.');
+      setErr(e instanceof ApiError ? e.message : 'No se pudo crear.');
+    } finally {
+      setCreando(false);
     }
   }
 
@@ -48,43 +64,53 @@ export function ListaMisQuodoms() {
         <button className="btn" onClick={() => setEligiendoRubro(true)}>Nuevo</button>
       </div>
       {eligiendoRubro && (
-        <section className="mq-rubros" aria-label="Elegí el rubro del Quodom">
-          <h2 className="mq-rubros-titulo">¿De qué rubro es el Quodom?</h2>
-          <ul className="mq-rubros-list">
-            {Object.entries(RUBROS).map(([id, nombre]) => {
-              const idrubro = Number(id);
-              const ocupado = rubrosOcupados.has(idrubro);
-              return (
-                <li key={id}>
-                  <button
-                    type="button"
-                    className="btn btn-block"
-                    disabled={ocupado}
-                    onClick={() => crearDeRubro(idrubro)}
-                  >
-                    {nombre}{ocupado ? ' — ya tenés uno abierto' : ''}
-                  </button>
-                </li>
-              );
-            })}
+        <div className="mq-rubros-backdrop" onClick={cerrarPicker}>
+          <section
+            className="mq-rubros card hoja"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mq-rubros-titulo"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 id="mq-rubros-titulo" className="mq-rubros-titulo">¿De qué rubro es el Quodom?</h2>
+            <ul className="mq-rubros-list">
+              {Object.entries(RUBROS).map(([id, nombre]) => {
+                const idrubro = Number(id);
+                const ocupado = rubrosOcupados.has(idrubro);
+                return (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      className="btn btn-block"
+                      disabled={ocupado || creando}
+                      onClick={() => crearDeRubro(idrubro)}
+                    >
+                      {nombre}{ocupado ? ' — ya tenés uno abierto' : ''}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <button type="button" className="btn btn-ghost" onClick={cerrarPicker} disabled={creando}>Cancelar</button>
+          </section>
+        </div>
+      )}
+      <div className="mq-content" aria-hidden={eligiendoRubro || undefined}>
+        {err && <ErrorState message={err} onRetry={refresh} />}
+        {!err && !list && <Loader />}
+        {list && list.length === 0 && (
+          <EmptyState title="Todavía no tenés Quodoms" description="Armá uno desde el catálogo o creá uno vacío." />
+        )}
+        {list && list.length > 0 && (
+          <ul className="mq-list">
+            {list.map(q => (
+              <li key={q.id} className="mq-item">
+                <QuodomCard quodom={q} variant="page" onChange={refresh} />
+              </li>
+            ))}
           </ul>
-          <button type="button" className="btn btn-ghost" onClick={() => setEligiendoRubro(false)}>Cancelar</button>
-        </section>
-      )}
-      {!eligiendoRubro && err && <ErrorState message={err} onRetry={refresh} />}
-      {!eligiendoRubro && !err && !list && <Loader />}
-      {!eligiendoRubro && list && list.length === 0 && (
-        <EmptyState title="Todavía no tenés Quodoms" description="Armá uno desde el catálogo o creá uno vacío." />
-      )}
-      {!eligiendoRubro && list && list.length > 0 && (
-        <ul className="mq-list">
-          {list.map(q => (
-            <li key={q.id} className="mq-item">
-              <QuodomCard quodom={q} variant="page" onChange={refresh} />
-            </li>
-          ))}
-        </ul>
-      )}
+        )}
+      </div>
     </section>
   );
 }
