@@ -1,0 +1,22 @@
+.aviso-sin-guardar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+  background: rgba(230, 57, 70, 0.12);
+  border: 1px solid rgba(230, 57, 70, 0.45);
+}
+
+.aviso-sin-guardar-texto {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+}
+
+/* Sobre el panel oscuro (sidebar y panel de la barra inferior). */
+.aviso-sin-guardar .btn {
+  background: #fff;
+  color: var(--color-acento);
+}

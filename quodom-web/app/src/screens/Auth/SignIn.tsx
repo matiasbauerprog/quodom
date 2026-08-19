@@ -18,6 +18,9 @@ export function SignIn() {
   const [error, setError] = useState<string | null>(null);
   const [conflictos, setConflictos] = useState<ConflictoRubro[]>([]);
   const [resolviendo, setResolviendo] = useState(false);
+  // Sólo tras una migración fallida se ofrece seguir sin integrar: si no, un
+  // servidor caído dejaría al usuario encerrado en el login.
+  const [falloMigracion, setFalloMigracion] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,12 +67,14 @@ export function SignIn() {
     setResolviendo(true);
     try {
       await migrarRubro(actual.idrubro, accion);
+      setFalloMigracion(false);
       setConflictos(resto);
       if (resto.length === 0) navigate(from ?? '/', { replace: true });
     } catch (err) {
       // The guest cart for this rubro survives a failed migrarRubro (it only
       // clears once every line is confirmed), so keep the conflict on screen
       // instead of dropping it — the user can retry the same rubro.
+      setFalloMigracion(true);
       setError(err instanceof ApiError || err instanceof Error ? err.message : 'No se pudo migrar el carrito.');
     } finally {
       setResolviendo(false);
@@ -99,7 +104,13 @@ export function SignIn() {
         </div>
       </div>
       {conflictos.length > 0 && (
-        <DialogoConflictoRubro conflicto={conflictos[0]} onElegir={resolverConflicto} ocupado={resolviendo} />
+        <DialogoConflictoRubro
+          conflicto={conflictos[0]}
+          onElegir={resolverConflicto}
+          ocupado={resolviendo}
+          permitirCancelar={falloMigracion}
+          etiquetaCancelar="Continuar sin integrar"
+        />
       )}
     </div>
   );

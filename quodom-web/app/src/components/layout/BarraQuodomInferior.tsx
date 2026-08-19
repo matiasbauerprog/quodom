@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { quodom as quodomApi } from '../../api/quodom';
-import { getGuestCart, guestRubrosConLineas } from '../../guest/guestQuodom';
-import { nombreRubro } from '../../quodom/rubros';
+import { resumenCarritosInvitado } from '../../guest/resumenInvitado';
+import { AvisoSinGuardar } from '../AvisoSinGuardar';
 import { PanelQuodomsActivos, quodomsAItems, type ItemActivo } from './PanelQuodomsActivos';
 import './BarraQuodomInferior.css';
 
@@ -12,16 +12,14 @@ import './BarraQuodomInferior.css';
 // becomes unreachable except by typing /quodom?rubro=<id> or signing out.
 // Labelled distinctly ('sin guardar') so it doesn't read as a server Quodom.
 function itemsCarritosInvitado(): ItemActivo[] {
-  return guestRubrosConLineas().map(idrubro => {
-    const cart = getGuestCart(idrubro);
-    return {
-      key: 'g-' + idrubro,
-      to: '/quodom?rubro=' + idrubro,
-      nombreRubro: nombreRubro(idrubro),
-      descripcion: (cart.descripcion.trim() || 'Carrito') + ' · sin guardar',
-      cantproductos: cart.lines.length
-    };
-  });
+  return resumenCarritosInvitado().map(r => ({
+    key: 'g-' + r.idrubro,
+    to: '/quodom?rubro=' + r.idrubro,
+    nombreRubro: r.nombreRubro,
+    descripcion: r.descripcion,
+    cantproductos: r.cantproductos,
+    sinGuardar: true
+  }));
 }
 
 export function BarraQuodomInferior() {
@@ -92,7 +90,14 @@ export function BarraQuodomInferior() {
 
   return (
     <div className="barra-quodom-wrap" ref={contenedor}>
-      {abierto && <PanelQuodomsActivos items={items} onNavegar={() => setAbierto(false)} />}
+      {abierto && (
+        <div className="barra-quodom-panel">
+          <PanelQuodomsActivos items={items} onNavegar={() => setAbierto(false)} />
+          {!user && items.some(i => i.sinGuardar) && (
+            <AvisoSinGuardar onNavegar={() => setAbierto(false)} />
+          )}
+        </div>
+      )}
       <button
         type="button"
         className="barra-quodom"

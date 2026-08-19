@@ -293,6 +293,9 @@ export function DetalleQuodom() {
           <DialogoConflictoRubro
             conflicto={conflicto}
             ocupado={busy}
+            // Acá el usuario abrió el diálogo a propósito, al mandar por
+            // WhatsApp: cancelar lo devuelve a su carrito sin ensuciar nada.
+            permitirCancelar
             onElegir={accion => {
               if (!accion) { setConflicto(null); return; }
               enviarGuestConAccion(conflicto.idrubro, accion);
