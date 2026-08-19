@@ -23,6 +23,25 @@
   background: var(--color-acento);
   margin: 6px auto 0 auto;
 }
+.home-search { position: relative; width: 100%; max-width: 640px; }
+.home-search-icon {
+  position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+  color: var(--color-texto-muted); pointer-events: none;
+  display: inline-flex;
+  z-index: 1;
+}
+.home-inicial .home-search .home-search-input {
+  height: 52px;
+  padding-left: 56px;
+  padding-right: var(--sp-4);
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: var(--shadow-card);
+}
+/* Con un rubro elegido el buscador sigue estando, más bajo para no comerse
+   el alto que necesitan las tabs y los productos. */
+.home-compacto .home-search .home-search-input { height: 42px; }
+
 .cat-grid {
   /* Móvil: tres arriba y el resto abajo, centrados. Con flex la última fila
      incompleta queda centrada sola, cosa que una grilla de columnas fijas no

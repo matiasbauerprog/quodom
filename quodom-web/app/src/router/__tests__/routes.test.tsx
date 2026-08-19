@@ -10,18 +10,17 @@ vi.mock('../../components/layout/Layout', () => ({
   Layout: ({ children }: { children: ReactNode }) => <div data-testid="shell">{children}</div>
 }));
 vi.mock('../../screens/Home/SitioInicial', () => ({ SitioInicial: () => <p>Inicio</p> }));
+vi.mock('../../screens/Home/BusquedaScreen', () => ({ BusquedaScreen: () => <p>Búsqueda</p> }));
 
 function renderEn(ruta: string) {
   return render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [ruta] })} />);
 }
 
 describe('rutas de rescate', () => {
-  it('manda /busqueda al inicio, dentro del shell', async () => {
-    // /busqueda era una URL viva y linkeada desde el Drawer: va a seguir
-    // apareciendo en el autocompletado del navegador durante meses.
+  it('sirve /busqueda dentro del shell', async () => {
     renderEn('/busqueda');
 
-    await waitFor(() => expect(screen.getByText('Inicio')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Búsqueda')).toBeInTheDocument());
     expect(screen.getByTestId('shell')).toBeInTheDocument();
   });
 

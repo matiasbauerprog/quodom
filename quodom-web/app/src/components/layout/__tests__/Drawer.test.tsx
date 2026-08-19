@@ -14,12 +14,10 @@ function montar() {
 }
 
 describe('Drawer', () => {
-  it('linkea a Modo IA en lugar de a Buscar', () => {
+  it('linkea a Buscar y a Modo IA', () => {
     montar();
 
-    // La búsqueda se dio de baja: con cinco rubros y las subcategorías a un
-    // clic dejó de tener razón de ser.
-    expect(screen.queryByRole('link', { name: /buscar/i })).toBeNull();
+    expect(screen.getByRole('link', { name: /buscar/i })).toHaveAttribute('href', '/busqueda');
     // Modo IA vive acá porque el header del home lo esconde al elegir un rubro.
     expect(screen.getByRole('link', { name: /modo ia/i })).toHaveAttribute('href', '/modo-ia');
   });

@@ -3,6 +3,11 @@
   gap: var(--sp-2);
   width: 100%;
   max-width: 640px;
+  /* Centradas cuando entran. `safe` deja el centrado de lado si desbordan:
+     con `center` a secas el primer tab queda cortado fuera del área
+     scrolleable y no hay forma de llegar a él. */
+  justify-content: center;
+  justify-content: safe center;
   overflow-x: auto;
   padding-bottom: var(--sp-2);
   /* Sin esto la barra de scroll tapa las tabs en Windows. */
@@ -26,5 +31,5 @@
 }
 
 @media (min-width: 1025px) {
-  .subtabs { max-width: 720px; flex-wrap: wrap; overflow-x: visible; }
+  .subtabs { max-width: 720px; flex-wrap: wrap; overflow-x: visible; justify-content: center; }
 }

@@ -9,6 +9,7 @@ import { ForgotPassword } from '../screens/Auth/ForgotPassword';
 import { ResetPassword } from '../screens/Auth/ResetPassword';
 import { ValidarEmail } from '../screens/Auth/ValidarEmail';
 import { SitioInicial } from '../screens/Home/SitioInicial';
+import { BusquedaScreen } from '../screens/Home/BusquedaScreen';
 import { RedirectRubro, RedirectSubcategoria } from '../screens/Home/RedirectCategoria';
 import { DetalleQuodom } from '../screens/Quodom/DetalleQuodom';
 import { ListaMisQuodoms } from '../screens/MisQuodoms/ListaMisQuodoms';
@@ -44,9 +45,7 @@ export const routes: RouteObject[] = [
       { path: '/direcciones/nuevo', element: <ProtectedRoute><AgregarDireccion /></ProtectedRoute> },
       { path: '/direcciones/:id', element: <ProtectedRoute><ModificarDireccion /></ProtectedRoute> },
       { path: '/notificaciones', element: <ProtectedRoute><ListaNotificaciones /></ProtectedRoute> },
-      // La búsqueda se retiró, pero /busqueda estuvo publicada y linkeada
-      // desde el Drawer: va a seguir viniendo del historial del navegador.
-      { path: '/busqueda', element: <Navigate to="/" replace /> },
+      { path: '/busqueda', element: <BusquedaScreen /> },
       // vercel.json reescribe todo a index.html, así que cualquier URL
       // desconocida llega hasta acá. Sin este comodín react-router dibuja su
       // 404 en inglés fuera del <Layout>, sin AppBar ni Drawer para volver.

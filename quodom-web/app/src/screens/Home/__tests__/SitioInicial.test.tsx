@@ -49,8 +49,7 @@ describe('SitioInicial', () => {
     expect(await screen.findByRole('link', { name: /bebidas/i })).toBeInTheDocument();
     expect(screen.getByText('QUODOM')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: /subcategorías/i })).toBeNull();
-    // La búsqueda se dio de baja: no queda ningún input en el home.
-    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByRole('searchbox', { name: /buscar productos/i })).toBeInTheDocument();
     expect(subs).not.toHaveBeenCalled();
     expect(porCategoria).not.toHaveBeenCalled();
   });
@@ -86,11 +85,13 @@ describe('SitioInicial', () => {
     expect(screen.getByRole('link', { name: 'Aguas' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('con un rubro elegido esconde el wordmark', async () => {
+  it('con un rubro elegido esconde el wordmark pero deja el buscador', async () => {
     montar('/?rubro=7');
 
     await screen.findByText('Coca Cola 2L');
     expect(screen.queryByText('QUODOM')).toBeNull();
+    // Verlo desaparecer al entrar a un rubro se lee como que se perdió.
+    expect(screen.getByRole('searchbox', { name: /buscar productos/i })).toBeInTheDocument();
   });
 
   it('un rubro inexistente vuelve al home sin mostrar error', async () => {

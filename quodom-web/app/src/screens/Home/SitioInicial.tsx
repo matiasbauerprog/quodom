@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { categorias } from '../../api/categorias';
 import type { Category } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -17,7 +17,9 @@ function numParam(valor: string | null): number | null {
 }
 
 export function SitioInicial() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const [q, setQ] = useState('');
   const rubroParam = numParam(params.get('rubro'));
   const subParam = numParam(params.get('sub'));
 
@@ -67,17 +69,33 @@ export function SitioInicial() {
 
   const idsub = subValida ? subParam : null;
 
+  function onSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const term = q.trim();
+    if (term.length < 2) return;
+    navigate('/busqueda?q=' + encodeURIComponent(term));
+  }
+
   if (err) return <div className="container"><ErrorState message={err} onRetry={() => setNonce(n => n + 1)} /></div>;
 
   return (
     <section className={'container home-inicial' + (idrubro !== null ? ' home-compacto' : '')}>
+      {idrubro === null && <h1 className="home-wordmark">QUODOM</h1>}
+
+      {/* El buscador queda fuera del bloque que se oculta: con un rubro
+          elegido sigue siendo la salida más rápida a otra cosa, y verlo
+          desaparecer al entrar a un rubro se lee como que se perdió. */}
+      <form className="home-search" onSubmit={onSearch} role="search">
+        <span className="home-search-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+        </span>
+        <input className="input home-search-input" type="search" placeholder="¿Qué necesitás?" aria-label="Buscar productos" value={q} onChange={e => setQ(e.target.value)} />
+      </form>
+
       {idrubro === null && (
-        <>
-          <h1 className="home-wordmark">QUODOM</h1>
-          <Link to="/modo-ia" className="btn home-modo-ia">
-            Modo IA — armá tu Quodom conversando
-          </Link>
-        </>
+        <Link to="/modo-ia" className="btn home-modo-ia">
+          Modo IA — armá tu Quodom conversando
+        </Link>
       )}
 
       {!rubros ? <Loader /> : <RubroSelector rubros={rubros} idSeleccionado={idrubro} />}

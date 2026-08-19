@@ -26,7 +26,7 @@ type Options = {
 };
 
 export async function apiFetch<T = unknown>(path: string, options: Options = {}): Promise<T> {
-  const base = import.meta.env.VITE_API_URL || 'http://localhost:3999';
+  const base = import.meta.env.VITE_API_URL || 'https://quodom.onrender.com';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers ?? {})
