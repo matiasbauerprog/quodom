@@ -10,7 +10,6 @@ import { ValidarEmail } from '../screens/Auth/ValidarEmail';
 import { SitioInicial } from '../screens/Home/SitioInicial';
 import { SubcategoriaLista } from '../screens/Home/SubcategoriaLista';
 import { ProductosPorCategoria } from '../screens/Home/ProductosPorCategoria';
-import { BusquedaScreen } from '../screens/Home/BusquedaScreen';
 import { DetalleQuodom } from '../screens/Quodom/DetalleQuodom';
 import { ListaMisQuodoms } from '../screens/MisQuodoms/ListaMisQuodoms';
 import { ListaDirecciones } from '../screens/Direcciones/ListaDirecciones';
@@ -35,7 +34,6 @@ const router = createBrowserRouter([
       { path: '/', element: <SitioInicial /> },
       { path: '/categoria/:id', element: <SubcategoriaLista /> },
       { path: '/subcategoria/:id', element: <ProductosPorCategoria /> },
-      { path: '/busqueda', element: <BusquedaScreen /> },
       { path: '/modo-ia', element: <ProtectedRoute><ModoIA /></ProtectedRoute> },
       { path: '/quodom', element: <DetalleQuodom /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
