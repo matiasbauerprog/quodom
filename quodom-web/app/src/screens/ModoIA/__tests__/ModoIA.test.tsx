@@ -109,7 +109,7 @@ describe('ModoIA (confirming a proposal, reuses the catalog rubro flow)', () => 
     expect(quodom.activoPorRubro).toHaveBeenCalledWith(5);
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-EXIST', idproducto: 300, cantidad: 2 }));
     expect(quodom.create).not.toHaveBeenCalled();
-    expect(screen.queryByText(/no se pueden mezclar rubros/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('asks before creating a Quodom when the rubro has none open, then creates and adds on confirm', async () => {
@@ -120,7 +120,7 @@ describe('ModoIA (confirming a proposal, reuses the catalog rubro flow)', () => 
     await enviarYProponer();
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
 
-    await waitFor(() => expect(screen.getByText(/no se pueden mezclar rubros/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
     expect(quodom.create).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: /crear quodom de pintura/i }));

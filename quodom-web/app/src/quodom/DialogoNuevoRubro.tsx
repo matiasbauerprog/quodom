@@ -3,13 +3,12 @@ import './DialogoNuevoRubro.css';
 
 type Props = {
   nombreRubro: string;
-  nombreRubroAbierto?: string | null;
   onConfirmar: () => void;
   onCancelar: () => void;
   ocupado?: boolean;
 };
 
-export function DialogoNuevoRubro({ nombreRubro, nombreRubroAbierto, onConfirmar, onCancelar, ocupado }: Props) {
+export function DialogoNuevoRubro({ nombreRubro, onConfirmar, onCancelar, ocupado }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !ocupado) onCancelar(); };
     window.addEventListener('keydown', onKey);
@@ -30,10 +29,9 @@ export function DialogoNuevoRubro({ nombreRubro, nombreRubroAbierto, onConfirmar
         aria-labelledby="dnr-titulo"
         onClick={e => e.stopPropagation()}
       >
-        <h2 id="dnr-titulo" className="dnr-titulo">No se pueden mezclar rubros</h2>
+        <h2 id="dnr-titulo" className="dnr-titulo">Creá un Quodom de {nombreRubro}</h2>
         <p className="dnr-texto">
-          Este producto es de <strong>{nombreRubro}</strong>
-          {nombreRubroAbierto ? <> y tu Quodom abierto es de <strong>{nombreRubroAbierto}</strong></> : null}.
+          Este producto es de <strong>{nombreRubro}</strong> y todavía no tenés un Quodom abierto de ese rubro.
           Cada Quodom lleva un solo rubro.
         </p>
         <div className="dnr-acciones">

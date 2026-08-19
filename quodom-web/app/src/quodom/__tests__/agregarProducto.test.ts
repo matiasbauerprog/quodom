@@ -66,6 +66,16 @@ describe('agregarProducto', () => {
     expect(activoPorRubro).not.toHaveBeenCalled();
   });
 
+  it('adds a second product to the guest cart of the same rubro without asking', async () => {
+    await agregarProducto(GASEOSA, { logueado: false, idrubro: 7 });
+
+    const AGUA = { idproducto: 701, nombreProducto: 'Agua 500ml', cantidad: 1 };
+    const res = await agregarProducto(AGUA, { logueado: false, idrubro: 7 });
+
+    expect(res).toEqual({ estado: 'agregado', idquodom: null });
+    expect(getGuestCart(7).lines).toEqual([GASEOSA, AGUA]);
+  });
+
   it('asks a guest for confirmation when the rubro has no cart yet but another does', async () => {
     await agregarProducto(GASEOSA, { logueado: false, idrubro: 7 });
 

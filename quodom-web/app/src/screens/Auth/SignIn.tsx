@@ -23,8 +23,10 @@ export function SignIn() {
     e.preventDefault();
     setError(null);
     setBusy(true);
+    let signedIn = false;
     try {
       await signin(username, password);
+      signedIn = true;
       const plan = await planificarMigracion();
       for (const idrubro of plan.sinConflicto) {
         await migrarRubro(idrubro, 'crear');
@@ -35,7 +37,17 @@ export function SignIn() {
       }
       navigate(from ?? '/', { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError || err instanceof Error ? err.message : 'No se pudo ingresar.');
+      if (signedIn) {
+        // signin() already succeeded here — what failed is migrating a guest
+        // cart, not logging in. The generic "No se pudo ingresar." would read
+        // as a failed login even though the user is authenticated, so this
+        // needs its own message. The guest carts that didn't migrate are
+        // untouched in localStorage (migrarRubro only clears one once every
+        // line is confirmed), so nothing is lost.
+        setError('Ingresaste, pero algunos de tus carritos no se pudieron migrar. Tus productos siguen guardados; podés reintentarlo más tarde.');
+      } else {
+        setError(err instanceof ApiError || err instanceof Error ? err.message : 'No se pudo ingresar.');
+      }
     } finally {
       setBusy(false);
     }
