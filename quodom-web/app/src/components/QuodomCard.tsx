@@ -34,7 +34,7 @@ function ZigZag() {
   );
 }
 
-export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle }: {
+export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, onEnviar, enviando }: {
   quodom: Quodom;
   variant?: Variant;
   rubroLabel?: string;
@@ -43,6 +43,10 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   // de navegar. La variante `page` no lo pasa y sigue navegando como siempre.
   expandido?: boolean;
   onToggle?: () => void;
+  // Sin `onEnviar` la tarjeta no ofrece enviar: los carritos de invitado
+  // necesitan login y migración antes, y eso vive en el detalle.
+  onEnviar?: () => void | Promise<void>;
+  enviando?: boolean;
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -140,7 +144,16 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
           <>
             <div className="qc-estado-label qc-estado-creado-label">EN ARMADO</div>
             <div className="qc-detail">{info.detail}</div>
-            <button className="qc-action" onClick={e => { e.stopPropagation(); openDetail(); }}>Continuar</button>
+            <div className="qc-acciones">
+              <button className="qc-action" onClick={e => { e.stopPropagation(); openDetail(); }}>Continuar</button>
+              {onEnviar && (
+                <button
+                  className="qc-action qc-action-enviar"
+                  disabled={enviando}
+                  onClick={e => { e.stopPropagation(); onEnviar(); }}
+                >{enviando ? 'Enviando…' : 'Enviar'}</button>
+              )}
+            </div>
           </>
         )}
         {err && <div className="qc-err">{err}</div>}

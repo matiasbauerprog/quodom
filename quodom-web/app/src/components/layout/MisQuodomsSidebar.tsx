@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { quodom as quodomApi } from '../../api/quodom';
+import { ApiError } from '../../api/client';
+import { openWhatsappLink } from '../../utils/whatsapp';
 import type { Quodom } from '../../api/types';
 import { QuodomCard } from '../QuodomCard';
 import { TarjetaQuodomInvitado } from '../TarjetaQuodomInvitado';
@@ -20,6 +22,13 @@ export function MisQuodomsSidebar() {
   // para los carritos. Uno solo a la vez — el elegido sube al tope, y eso no
   // tendría sentido con varios abiertos.
   const [abierto, setAbierto] = useState<string | null>(null);
+  // Quodoms enviados en esta visita. Siguen a la vista, ya marcados ENVIADO,
+  // para que el envío se vea confirmado donde estaba la tarjeta. Es estado de
+  // componente a propósito: no sobrevive a un F5, y después de recargar el
+  // Quodom queda sólo en Mis Quodoms, que es su lugar.
+  const [reciénEnviados, setReciénEnviados] = useState<string[]>([]);
+  const [enviando, setEnviando] = useState<string | null>(null);
+  const [errEnviar, setErrEnviar] = useState<string | null>(null);
   // Guards against `quodom:changed` firing repeatedly in quick succession:
   // only the response for the most recently started request is applied, so
   // an earlier request resolving after a later one can't overwrite it with
@@ -64,7 +73,9 @@ export function MisQuodomsSidebar() {
 
   // A la derecha van sólo los activos: los enviados son historial y viven en
   // Mis Quodoms, a un clic de "Ver todos".
-  const activos = list ? list.filter(q => q.estado === 'CREADO') : [];
+  const activos = list
+    ? list.filter(q => q.estado === 'CREADO' || reciénEnviados.includes(q.id))
+    : [];
   const hayActivos = activos.length > 0 || invitado.length > 0;
 
   // Una sola lista de carritos de invitado y Quodoms del servidor. El orden
@@ -78,6 +89,24 @@ export function MisQuodomsSidebar() {
     ...activos.map((q): Item => ({ clave: 'q:' + q.id, tipo: 'servidor', quodom: q }))
   ];
   const toggle = (clave: string) => setAbierto(a => (a === clave ? null : clave));
+
+  async function enviar(q: Quodom) {
+    if (enviando) return;
+    setEnviando(q.id); setErrEnviar(null);
+    try {
+      const r = await quodomApi.whatsapp(q.id);
+      openWhatsappLink(r.link);
+      setReciénEnviados(ids => (ids.includes(q.id) ? ids : [...ids, q.id]));
+      // Un Quodom enviado ya no se edita.
+      setAbierto(a => (a === 'q:' + q.id ? null : a));
+      // El estado lo cambia el backend al dar el link: sin este aviso el
+      // sidebar y la barra inferior se quedaban mostrándolo activo.
+      window.dispatchEvent(new Event('quodom:changed'));
+      refresh();
+    } catch (e) {
+      setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo enviar.');
+    } finally { setEnviando(null); }
+  }
   // Sin sesión ya se ven los carritos de invitado, así que "ingresá para ver
   // tus Quodoms" dejó de ser cierto: el vacío es el mismo mensaje para los dos.
   const vacio = invitado.length === 0 && (!user || (list !== null && list.length === 0));
@@ -116,6 +145,8 @@ export function MisQuodomsSidebar() {
                         onChange={refresh}
                         expandido={abierta}
                         onToggle={() => toggle(it.clave)}
+                        onEnviar={() => enviar(it.quodom)}
+                        enviando={enviando === it.quodom.id}
                       />
                       {abierta && <LineasQuodomSidebar modo="servidor" idquodom={it.quodom.id} onChange={refresh} />}
                     </>
@@ -126,6 +157,8 @@ export function MisQuodomsSidebar() {
           </ul>
         </section>
       )}
+
+      {errEnviar && <p className="mq-sidebar-err" role="alert">{errEnviar}</p>}
 
       {!user && invitado.length > 0 && <AvisoSinGuardar />}
 

@@ -36,4 +36,4 @@ Fuentes: Prompt para títulos y botones (`--font-prompt`), Work Sans para texto 
 - **HTML semántico:** `header`, `nav`, `main`, `section`, `article`, `button`, `label`+`input`.
 - **Errores del API:** los controllers backend responden `{ res: false, message }` con status 4xx; el cliente lanza `ApiError` con el `message` — mostrarlo tal cual.
 - **Persistencia local:** solo dos claves — `quodom.token` (JWT) y `quodom.guest` (Quodom de invitado). Ninguna otra información sensible en `localStorage`.
-- **Testing:** integración/UI se verifica en el navegador (dev server + API real). Se agregan tests Vitest solo cuando la lógica es pura y no trivial.
+- **Testing:** el recorrido visual se hace siempre en el navegador (dev server + API real) — es lo que valida layout, contraste y sensación de uso, y ningún test lo reemplaza. Además se escriben tests de Vitest sobre el comportamiento: tanto lógica pura (api client, guest quodom, migración) como componentes con Testing Library, cuando hay una regla que se puede romper en silencio — qué se llama y con qué argumentos, qué se muestra en cada estado, qué pasa cuando el servidor falla. No se testea el aspecto.

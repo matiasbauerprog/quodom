@@ -192,6 +192,9 @@ export function DetalleQuodom() {
       const r = await quodomApi.whatsapp(server.quodom.id);
       openWhatsappLink(r.link);
       setNonce(n => n + 1);
+      // El backend pasa el Quodom a ENVIADO al dar el link. Sin este aviso el
+      // sidebar y la barra inferior lo seguían mostrando en armado.
+      window.dispatchEvent(new Event('quodom:changed'));
     } catch (e) { setErr(e instanceof ApiError ? e.message : 'No se pudo enviar.'); }
     finally { setBusy(false); }
   }

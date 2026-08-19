@@ -93,7 +93,10 @@
   background: transparent;
   color: inherit;
 }
+.qc-acciones { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .qc-action:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
+.qc-action-enviar { border-color: var(--color-exito); color: #C7F0D8; }
+.qc-page .qc-action-enviar { color: var(--color-exito); }
 .qc-action:disabled { opacity: 0.55; cursor: not-allowed; }
 .qc-err { color: #FFB4B4; font-size: var(--fs-tiny); margin-top: var(--sp-1); }
 
