@@ -161,8 +161,10 @@ Frontend (vitest + testing-library), sobre el home:
 6. `?rubro=7&sub=999` (sub de otro rubro): cae a la primera sub del rubro.
 7. Con rubro elegido, el wordmark no está en pantalla; tocar el rubro marcado
    vuelve a `/` y lo trae de nuevo.
-8. Agregar un producto desde la lista: el test de `ProductosPorCategoria` se muda
-   a `ListaProductos` sin cambiar lo que verifica.
+8. Agregar un producto desde la lista llama a `useAgregarProducto` con la línea
+   y el `categoriaPadre` del producto. `ProductosPorCategoria` nunca tuvo tests,
+   así que esta cobertura es nueva, no una mudanza.
+9. El `Drawer` linkea a Modo IA y ya no a Buscar; el home no tiene buscador.
 
 No se agregan tests de API: el backend no cambia.
 
