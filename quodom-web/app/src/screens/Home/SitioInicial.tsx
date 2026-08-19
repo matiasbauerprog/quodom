@@ -6,7 +6,6 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { RubroIcon } from '../../components/icons/RubroIcon';
-import { MasBuscados } from './MasBuscados';
 import { useAuth } from '../../auth/AuthContext';
 import './SitioInicial.css';
 
@@ -66,7 +65,8 @@ export function SitioInicial() {
           ))}
         </div>
       )}
-      <MasBuscados />
+      {/* Más buscados sale del home por ahora. El componente sigue en
+          ./MasBuscados: para volver a mostrarlo, importarlo y renderizarlo acá. */}
     </section>
   );
 }

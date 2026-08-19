@@ -40,9 +40,13 @@
 }
 
 .cat-grid {
-  display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(4, 1fr);
+  /* Móvil: tres arriba y el resto abajo, centrados. Con flex la última fila
+     incompleta queda centrada sola, cosa que una grilla de columnas fijas no
+     hace. De 601px para arriba pasa a una sola fila (ver más abajo). */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-3);
   width: 100%;
   max-width: 640px;
 }
@@ -51,6 +55,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  flex: 0 0 calc((100% - 2 * var(--sp-3)) / 3);
+  /* Sin esto una tarjeta no baja del ancho de su contenido y desborda la fila. */
+  min-width: 0;
   gap: var(--sp-2);
   padding: var(--sp-4) var(--sp-3);
   text-align: center;
@@ -61,10 +68,16 @@
   transition: transform .15s ease, box-shadow .15s ease;
 }
 .cat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.10); }
+.cat-card .rubro-icon {
+  width: 100%;
+  height: auto;
+  max-width: 72px;
+}
 .cat-card-name {
   font-family: var(--font-work);
   font-weight: 700;
   font-size: 13px;
+  overflow-wrap: anywhere;
   color: var(--color-texto);
   line-height: 1.15;
   text-transform: uppercase;
@@ -81,6 +94,16 @@
 
 @media (min-width: 601px) {
   .home-wordmark { font-size: 56px; }
+  /* Tablet y desktop: todos los rubros en una sola fila, sean los que sean —
+     cuando vuelvan los tres rubros apagados se reparten el ancho igual. */
+  .cat-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: clamp(6px, 1.2vw, var(--sp-4));
+  }
+  .cat-card { padding: clamp(8px, 1.6vw, var(--sp-4)) clamp(4px, 1vw, var(--sp-3)); }
+  .cat-card-name { font-size: clamp(10px, 1.6vw, 13px); }
 }
 @media (min-width: 1025px) {
   .cat-grid { max-width: 720px; }
