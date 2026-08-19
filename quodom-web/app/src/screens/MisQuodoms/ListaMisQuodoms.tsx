@@ -95,7 +95,22 @@ export function ListaMisQuodoms() {
           </section>
         </div>
       )}
-      <div className="mq-content" aria-hidden={eligiendoRubro || undefined}>
+      {/*
+        Both aria-hidden and inert are set deliberately, not redundantly:
+        - aria-hidden is what @testing-library/dom's byRole queries actually check
+          (see isSubtreeInaccessible), so it keeps this background out of the
+          picker's accessible-name queries in tests and for real screen readers.
+        - inert is what real browsers use to pull this subtree out of Tab order.
+          React 18 has no built-in prop for it (added in React 19), so it is
+          passed as the empty-string attribute form, which is what actually
+          reaches the DOM under React 18 (inert={true} does not).
+      */}
+      <div
+        className="mq-content"
+        aria-hidden={eligiendoRubro || undefined}
+        // @ts-expect-error `inert` is a valid global HTML attribute; React 18's types add it only in v19.
+        inert={eligiendoRubro ? '' : undefined}
+      >
         {err && <ErrorState message={err} onRetry={refresh} />}
         {!err && !list && <Loader />}
         {list && list.length === 0 && (

@@ -35,6 +35,21 @@ describe('ListaMisQuodoms: nuevo por rubro', () => {
     expect(screen.getByRole('button', { name: /Bebidas/ })).toBeDisabled();
   });
 
+  it('makes the background inert while picking a rubro', async () => {
+    misQuodom.mockResolvedValue([]);
+    const { container } = render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+    await waitFor(() => screen.getByRole('button', { name: /nuevo/i }));
+
+    const content = () => container.querySelector('.mq-content') as HTMLElement;
+    expect(content().hasAttribute('inert')).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: /nuevo/i }));
+    expect(content().hasAttribute('inert')).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(content().hasAttribute('inert')).toBe(false);
+  });
+
   it('creates with the chosen idrubro', async () => {
     misQuodom.mockResolvedValue([]);
     create.mockResolvedValue({ res: true, idquodom: 'q-new' });
