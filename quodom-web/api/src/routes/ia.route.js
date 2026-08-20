@@ -4,6 +4,8 @@ const auth = require('../middleware/auth');
 const rateLimit = require('../middleware/rateLimit');
 const Controler = require('../controllers/ia.controller');
 const { responderFalloIa } = require('../helpers/iaErrores');
+const ListaControler = require('../controllers/lista.controller');
+const { EntradaInvalida } = require('../helpers/listaEntrada');
 
 const MAX_TURNS = () => parseInt(process.env.IA_MAX_TURNS || '20', 10);
 const MAX_USER_MSG = () => parseInt(process.env.IA_MAX_USER_MESSAGE_LENGTH || '500', 10);
@@ -15,6 +17,13 @@ router.post(
   auth.verifyToken(),
   (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM())(req, res, next),
   chat
+);
+
+router.post(
+  '/lista',
+  auth.verifyToken(),
+  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM())(req, res, next),
+  lista
 );
 
 module.exports = router;
@@ -54,6 +63,39 @@ async function chat(req, res, next) {
       console.error('ia: incrementDaily failed for user ' + req.user.id + ':', e && e.message);
     }
     return res.json(reply);
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function lista(req, res, next) {
+  try {
+    const currentCount = await Controler.getDailyCount(req.user.id);
+    if (currentCount >= MAX_DAILY()) {
+      return res.status(429).json({
+        res: false,
+        error: 'limit_exceeded',
+        message: 'Alcanzaste el límite diario (' + MAX_DAILY() + ' mensajes). Volvé mañana o usá el buscador.'
+      });
+    }
+
+    let resultado;
+    try {
+      resultado = await ListaControler.procesarLista(req.body || {});
+    } catch (e) {
+      // Lo que el usuario mandó mal es un 400, no un fallo de la IA.
+      if (e instanceof EntradaInvalida) {
+        return res.status(400).json({ res: false, error: e.codigo, message: e.message });
+      }
+      return responderFalloIa(res, e, 'lista for user ' + req.user.id);
+    }
+
+    try {
+      await Controler.incrementDaily(req.user.id);
+    } catch (e) {
+      console.error('ia: incrementDaily failed for user ' + req.user.id + ':', e && e.message);
+    }
+    return res.json(resultado);
   } catch (e) {
     next(e);
   }
