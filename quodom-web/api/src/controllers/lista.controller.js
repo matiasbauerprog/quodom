@@ -98,7 +98,11 @@ async function procesarLista(entrada) {
 
     for (const ne of Array.isArray(reply.noEncontrados) ? reply.noEncontrados : []) {
         const textoOriginal = String(ne.textoOriginal || '').trim();
-        vistos.add(clave(textoOriginal));
+        const key = clave(textoOriginal);
+        // Si el modelo mandó la misma línea en "items" y en "noEncontrados", gana el match:
+        // cada línea va a un solo lado, nunca a los dos.
+        if (vistos.has(key)) continue;
+        vistos.add(key);
         resueltos.push({
             textoOriginal,
             motivo: typeof ne.motivo === 'string' && ne.motivo ? ne.motivo : 'no está en el catálogo'

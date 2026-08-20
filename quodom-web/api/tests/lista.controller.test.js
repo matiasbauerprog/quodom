@@ -97,6 +97,21 @@ describe('procesarLista', () => {
     ]);
   });
 
+  it('cuando el modelo manda la misma línea en items y en noEncontrados, gana el match', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [{ textoOriginal: '3 lavandinas 5L', idproducto: 8001, cantidad: 3 }],
+      noEncontrados: [{ textoOriginal: '3 lavandinas 5L', motivo: 'no hay stock' }]
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 lavandinas 5L' });
+
+    expect(out.grupos).toHaveLength(1);
+    expect(out.grupos[0].items).toEqual([
+      { textoOriginal: '3 lavandinas 5L', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3 }
+    ]);
+    expect(out.noEncontrados).toEqual([]);
+  });
+
   it('conserva el motivo que devuelve el modelo', async () => {
     callGemini.mockResolvedValueOnce({
       items: [],
