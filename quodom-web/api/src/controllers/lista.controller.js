@@ -54,7 +54,9 @@ function systemPrompt(catalogo) {
         '4. En "textoOriginal" copiá el renglón del usuario tal cual lo leíste, sin reescribirlo.\n' +
         '5. Si el usuario no aclara cantidad, poné 1.\n' +
         '6. Si un renglón no existe en el catálogo, va a "noEncontrados" con un "motivo" corto y concreto.\n' +
-        '7. No elijas color, medida ni terminación: eso lo completa el usuario después.\n\n' +
+        '7. No elijas color, medida ni terminación: eso lo completa el usuario después.\n' +
+        '8. Si un renglón es claramente un encabezado de columna de una planilla (por ejemplo ' +
+        '"Cantidad Producto" o "Descripción") y no un producto, va a "noEncontrados" con motivo "encabezado".\n\n' +
         'Productos disponibles: ' + JSON.stringify(
             catalogo.map(p => ({ idproducto: p.id, nombre: p.nombre }))
         );
@@ -141,12 +143,21 @@ async function procesarLista(entrada) {
             porRubro.set(r.idrubro, grupo);
             grupos.push(grupo);
         }
-        grupo.items.push({
-            textoOriginal: r.textoOriginal,
-            idproducto: r.idproducto,
-            nombreProducto: r.nombreProducto,
-            cantidad: r.cantidad
-        });
+        // Dos líneas de la entrada pueden matchear el mismo producto ("2 resmas A4" y
+        // "5 resmas A4 75g"): se fusionan en un solo ítem para no duplicar la key en el
+        // grupo ni la cantidad, sumando las cantidades y conservando ambos textos originales.
+        const existente = grupo.items.find(it => it.idproducto === r.idproducto);
+        if (existente) {
+            existente.cantidad += r.cantidad;
+            existente.textoOriginal += '; ' + r.textoOriginal;
+        } else {
+            grupo.items.push({
+                textoOriginal: r.textoOriginal,
+                idproducto: r.idproducto,
+                nombreProducto: r.nombreProducto,
+                cantidad: r.cantidad
+            });
+        }
     }
 
     return { res: true, grupos, noEncontrados, lineasIgnoradas };

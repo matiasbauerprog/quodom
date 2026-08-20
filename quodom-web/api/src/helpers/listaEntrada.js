@@ -111,4 +111,4 @@ function normalizar(entrada, maxLineas) {
     return { parts: [{ text: lineas.join('\n') }], lineas, ignoradas };
 }
 
-module.exports = { normalizar, EntradaInvalida, MAX_FILE_MB };
+module.exports = { normalizar, EntradaInvalida };

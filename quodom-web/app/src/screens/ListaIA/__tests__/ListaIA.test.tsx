@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { ListaIA } from '../ListaIA';
 import { listaApi } from '../../../api/lista';
+import { quodom as quodomApi } from '../../../api/quodom';
+import { quodomLines } from '../../../api/quodom_lines';
 
 vi.mock('../../../api/lista', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api/lista')>();
@@ -16,6 +18,8 @@ vi.mock('../../../api/quodom_lines', () => ({
 }));
 
 const mockProcesar = listaApi.procesar as unknown as ReturnType<typeof vi.fn>;
+const mockActivoPorRubro = quodomApi.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
+const mockAdd = quodomLines.add as unknown as ReturnType<typeof vi.fn>;
 
 const RESPUESTA = {
   res: true as const,
@@ -33,7 +37,11 @@ const RESPUESTA = {
   lineasIgnoradas: 0
 };
 
-beforeEach(() => { mockProcesar.mockReset(); });
+beforeEach(() => {
+  mockProcesar.mockReset();
+  mockActivoPorRubro.mockReset();
+  mockAdd.mockReset();
+});
 
 function renderYEnviar(respuesta: unknown = RESPUESTA) {
   mockProcesar.mockResolvedValue(respuesta);
@@ -75,6 +83,28 @@ describe('ListaIA', () => {
   it('avisa cuando no matcheó nada', async () => {
     renderYEnviar({ res: true, grupos: [], noEncontrados: [], lineasIgnoradas: 0 });
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/no encontré/i));
+  });
+
+  it('confirmar un grupo no navega ni oculta los demás: el segundo grupo sigue confirmable', async () => {
+    mockActivoPorRubro.mockResolvedValue({ id: 'Q-1' });
+    mockAdd.mockResolvedValue(undefined);
+
+    renderYEnviar();
+    await waitFor(() => expect(screen.getByText(/Limpieza/)).toBeInTheDocument());
+    expect(screen.getByText(/Librería/)).toBeInTheDocument();
+
+    const botones = screen.getAllByRole('button', { name: /agregar al quodom/i });
+    expect(botones).toHaveLength(2);
+
+    fireEvent.click(botones[0]);
+
+    await waitFor(() => expect(screen.getAllByText(/Agregado/)).toHaveLength(1));
+
+    // El primer grupo quedó marcado y el segundo sigue en pantalla y confirmable:
+    // la pantalla no navegó a otro lado.
+    expect(screen.getByText(/Librería/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /agregar al quodom/i })).toHaveLength(1);
+    expect(mockAdd).toHaveBeenCalledTimes(1);
   });
 
   it('muestra el error del servidor y deja volver a intentar', async () => {

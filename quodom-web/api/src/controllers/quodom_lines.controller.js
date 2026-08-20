@@ -43,6 +43,11 @@ async function add(params, userId) {
 
     const producto = await getPr(params.idproducto);
 
+    // Nota: acá el rubro se lee de producto.categoriaPadre, pero
+    // src/helpers/catalogoActivo.js lo resuelve desde `categorias` (el idcategoriapadre
+    // de la categoría del producto). Hoy las dos reglas coinciden en todo producto activo
+    // (ver docs/superpowers/specs/2026-08-20-lista-ia-design.md), pero si alguna vez
+    // divergen, este chequeo rechazaría un grupo que el propio server propuso.
     if (producto.categoriaPadre !== quodom.idrubro) {
         const [rubroProducto, rubroQuodom] = await Promise.all([
             db.Category.findByPk(producto.categoriaPadre),

@@ -94,6 +94,21 @@ describe('POST /api/ia/lista', () => {
     expect(res.body.error).toBe('ia_busy');
   });
 
+  it('devuelve 429 rate_limit tras 11 pedidos en un minuto', async () => {
+    process.env.IA_RATE_LIMIT_PER_MINUTE = '10';
+    callGemini.mockResolvedValue({ items: [], noEncontrados: [] });
+
+    for (let i = 0; i < 10; i++) {
+      const r = await post({ tipo: 'texto', texto: 'lavandina' });
+      expect(r.status).toBe(200);
+    }
+    const r11 = await post({ tipo: 'texto', texto: 'lavandina' });
+    expect(r11.status).toBe(429);
+    expect(r11.body.error).toBe('rate_limit');
+
+    delete process.env.IA_RATE_LIMIT_PER_MINUTE;
+  });
+
   it('corta con 429 al llegar al límite diario', async () => {
     // Los tests de arriba ya consumieron cupo: sin limpiar la tabla, con el
     // límite en 1 la primera llamada de este test daría 429 por orden de

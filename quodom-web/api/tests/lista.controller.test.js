@@ -136,6 +136,25 @@ describe('procesarLista', () => {
     expect(out.grupos[0].items[0].cantidad).toBe(1);
   });
 
+  it('fusiona dos líneas de la entrada que matchean el mismo producto', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [
+        { textoOriginal: '2 resmas A4', idproducto: 8002, cantidad: 2 },
+        { textoOriginal: '5 resmas A4 75g', idproducto: 8002, cantidad: 5 }
+      ],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '2 resmas A4\n5 resmas A4 75g' });
+
+    const libreria = out.grupos.find(g => g.idrubro === 2);
+    expect(libreria.items).toHaveLength(1);
+    expect(libreria.items[0].idproducto).toBe(8002);
+    expect(libreria.items[0].cantidad).toBe(7);
+    expect(libreria.items[0].textoOriginal).toContain('2 resmas A4');
+    expect(libreria.items[0].textoOriginal).toContain('5 resmas A4 75g');
+  });
+
   it('recorta una planilla larga antes del llamado e informa el resto', async () => {
     process.env.IA_LISTA_MAX_LINEAS = '2';
     callGemini.mockResolvedValueOnce({ items: [], noEncontrados: [] });

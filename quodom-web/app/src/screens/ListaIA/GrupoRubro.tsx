@@ -76,6 +76,7 @@ export function GrupoRubro({ grupo }: { grupo: ListaGrupo }) {
   async function crearYConfirmar() {
     if (!pendiente) return;
     setConfirming(true);
+    setError(null);
     try {
       const creado = await quodomApi.create({ descripcion: descripcionLista(), idrubro: grupo.idrubro });
       await agregarLineas(creado.idquodom, pendiente);
