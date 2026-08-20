@@ -17,7 +17,8 @@ beforeAll(async () => {
     { id: 8001, nombreproducto: 'Lavandina 5L', categoria: 92, categoriaPadre: 1 },
     { id: 8002, nombreproducto: 'Resma A4 75g', categoria: 93, categoriaPadre: 2 },
     { id: 8003, nombreproducto: 'Casco obra', categoria: 94, categoriaPadre: 8 },
-    { id: 8004, nombreproducto: 'Resma A4 90g', categoria: 93, categoriaPadre: 2 }
+    { id: 8004, nombreproducto: 'Resma A4 90g', categoria: 93, categoriaPadre: 2 },
+    { id: 8005, nombreproducto: 'Resma A4 100g', categoria: 93, categoriaPadre: 2 }
   ], { ignoreDuplicates: true });
 });
 
@@ -272,7 +273,7 @@ describe('procesarLista (líneas ambiguas)', () => {
       items: [],
       ambiguas: [{
         textoOriginal: '3 platos', cantidad: 3, sugerido: 8001,
-        candidatos: [8001, 8002, 8004, 8001, 8002]
+        candidatos: [8001, 8002, 8004, 8005]
       }],
       noEncontrados: []
     });
@@ -306,5 +307,21 @@ describe('procesarLista (líneas ambiguas)', () => {
     const out = await procesarLista({ tipo: 'texto', texto: '3 lavandinas 5L' });
 
     expect(out.ambiguas).toEqual([]);
+  });
+
+  it('si la misma línea vuelve en items y en ambiguas, gana el match', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [{ textoOriginal: '3 lavandinas 5L', idproducto: 8001, cantidad: 3 }],
+      ambiguas: [{ textoOriginal: '3 lavandinas 5L', cantidad: 3, sugerido: 8002, candidatos: [8001, 8002] }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 lavandinas 5L' });
+
+    expect(out.ambiguas).toEqual([]);
+    expect(out.grupos).toHaveLength(1);
+    expect(out.grupos[0].items[0]).toEqual({
+      textoOriginal: '3 lavandinas 5L', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3
+    });
   });
 });

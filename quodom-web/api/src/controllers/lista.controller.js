@@ -118,7 +118,11 @@ async function procesarLista(entrada) {
 
     for (const a of Array.isArray(reply.ambiguas) ? reply.ambiguas : []) {
         const textoOriginal = String(a.textoOriginal || '').trim();
-        vistos.add(clave(textoOriginal));
+        const key = clave(textoOriginal);
+        // Mismo criterio que items/noEncontrados: si el modelo mandó la misma línea
+        // en "items" y en "ambiguas", gana el match, no se le vuelve a preguntar.
+        if (vistos.has(key)) continue;
+        vistos.add(key);
 
         // Se validan primero y se recorta después: si el modelo manda cinco y
         // los dos primeros no existen, igual quedan tres candidatos reales.
