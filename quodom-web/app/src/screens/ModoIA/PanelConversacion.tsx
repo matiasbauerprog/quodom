@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AppBarBack } from '../../components/layout/AppBarBack';
+import { Link } from 'react-router-dom';
 import { iaApi, type IaMessage, type IaProposalItem } from '../../api/ia';
 import { quodom as quodomApi } from '../../api/quodom';
 import { quodomLines } from '../../api/quodom_lines';
 import { ApiError } from '../../api/client';
 import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
 import { nombreRubro } from '../../quodom/rubros';
+import { useAuth } from '../../auth/AuthContext';
+import { AvisoLogin } from '../../components/AvisoLogin';
 import { MensajeChat } from './MensajeChat';
 import { PropuestaEditable } from './PropuestaEditable';
 import './ModoIA.css';
@@ -19,8 +20,10 @@ type UiMessage =
 
 type PendienteRubro = { idrubro: number; items: IaProposalItem[] };
 
-export function ModoIA() {
-  const navigate = useNavigate();
+export function PanelConversacion() {
+  const { user } = useAuth();
+  const [agregadoEn, setAgregadoEn] = useState<string | null>(null);
+  const [necesitaLogin, setNecesitaLogin] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([{ role: 'assistant', text: WELCOME }]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,6 +40,7 @@ export function ModoIA() {
   }
 
   async function send() {
+    if (!user) { setNecesitaLogin(true); return; }
     const text = input.trim();
     if (busy || text.length < 2) return;
 
@@ -96,7 +100,7 @@ export function ModoIA() {
         return;
       }
       await agregarItemsAlQuodom(activo.id, items);
-      navigate('/quodom?id=' + encodeURIComponent(activo.id));
+      setAgregadoEn(activo.id);
     } catch (e) {
       const msg = e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo agregar al Quodom.';
       setMessages(m => [...m, { role: 'assistant', text: msg }]);
@@ -112,7 +116,7 @@ export function ModoIA() {
       const created = await quodomApi.create({ descripcion: descripcionIa(), idrubro: pendiente.idrubro });
       await agregarItemsAlQuodom(created.idquodom, pendiente.items);
       setPendiente(null);
-      navigate('/quodom?id=' + encodeURIComponent(created.idquodom));
+      setAgregadoEn(created.idquodom);
     } catch (e) {
       const msg = e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo crear el Quodom.';
       setMessages(m => [...m, { role: 'assistant', text: msg }]);
@@ -126,54 +130,60 @@ export function ModoIA() {
   }
 
   return (
-    <>
-      <AppBarBack title="Modo IA" rightSlot={
+    <section className="mia">
+      <header className="mia-header">
+        <h2 className="mia-titulo">Conversando</h2>
         <button type="button" className="mia-reset" aria-label="Nueva conversación" onClick={resetChat}>↺</button>
-      } />
-      <section className="container mia">
-        <div className="mia-messages">
-          {messages.map((m, i) => (
-            <div key={i}>
-              <MensajeChat role={m.role} text={m.text} />
-              {'proposal' in m && m.proposal && m.idrubro !== undefined && (
-                <PropuestaEditable
-                  items={m.proposal}
-                  onConfirm={items => confirmProposal(items, m.idrubro as number)}
-                  busy={confirming}
-                />
-              )}
-            </div>
-          ))}
-          {busy && <p className="mia-typing">Pensando…</p>}
-          <div ref={bottomRef} />
-        </div>
-        <div className="mia-inputbar">
-          <input
-            className="input mia-input"
-            placeholder="Escribí acá…"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            maxLength={500}
-            disabled={busy || confirming}
-          />
-          <button
-            className="btn btn-exito mia-send"
-            onClick={send}
-            disabled={busy || confirming || input.trim().length < 2}
-          >
-            {busy ? '…' : 'Enviar'}
-          </button>
-        </div>
-        {pendiente && (
-          <DialogoNuevoRubro
-            nombreRubro={nombreRubro(pendiente.idrubro)}
-            onConfirmar={crearYConfirmar}
-            onCancelar={cancelarPendiente}
-            ocupado={confirming}
-          />
-        )}
-      </section>
-    </>
+      </header>
+
+      {agregadoEn && (
+        <p className="mia-agregado">
+          Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregadoEn)}>ver Quodom</Link>
+        </p>
+      )}
+      {necesitaLogin && <AvisoLogin />}
+      <div className="mia-messages">
+        {messages.map((m, i) => (
+          <div key={i}>
+            <MensajeChat role={m.role} text={m.text} />
+            {'proposal' in m && m.proposal && m.idrubro !== undefined && (
+              <PropuestaEditable
+                items={m.proposal}
+                onConfirm={items => confirmProposal(items, m.idrubro as number)}
+                busy={confirming}
+              />
+            )}
+          </div>
+        ))}
+        {busy && <p className="mia-typing">Pensando…</p>}
+        <div ref={bottomRef} />
+      </div>
+      <div className="mia-inputbar">
+        <input
+          className="input mia-input"
+          placeholder="Escribí acá…"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          maxLength={500}
+          disabled={busy || confirming}
+        />
+        <button
+          className="btn btn-exito mia-send"
+          onClick={send}
+          disabled={busy || confirming || input.trim().length < 2}
+        >
+          {busy ? '…' : 'Enviar'}
+        </button>
+      </div>
+      {pendiente && (
+        <DialogoNuevoRubro
+          nombreRubro={nombreRubro(pendiente.idrubro)}
+          onConfirmar={crearYConfirmar}
+          onCancelar={cancelarPendiente}
+          ocupado={confirming}
+        />
+      )}
+    </section>
   );
 }

@@ -14,12 +14,10 @@ function montar() {
 }
 
 describe('Drawer', () => {
-  it('linkea a Buscar y a Modo IA', () => {
+  it('linkea a Buscar', () => {
     montar();
 
     expect(screen.getByRole('link', { name: /buscar/i })).toHaveAttribute('href', '/busqueda');
-    // Modo IA vive acá porque el header del home lo esconde al elegir un rubro.
-    expect(screen.getByRole('link', { name: /modo ia/i })).toHaveAttribute('href', '/modo-ia');
   });
 
   it('linkea a Subí tu lista', () => {

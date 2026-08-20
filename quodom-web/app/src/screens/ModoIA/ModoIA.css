@@ -1,13 +1,16 @@
 .mia {
   display: flex;
   flex-direction: column;
-  padding: 12px 16px 96px 16px;
+  padding: 0;
 }
 .mia-messages {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
   padding-bottom: var(--sp-3);
+  max-height: 55vh;
+  max-height: 55dvh;
+  overflow-y: auto;
 }
 .mia-msg {
   max-width: 82%;
@@ -65,3 +68,27 @@
 .mia-proposal-qty button { width: 28px; height: 28px; }
 .mia-proposal-qty input { width: 48px; text-align: center; }
 .mia-proposal-remove { color: #b00; }
+
+.mia-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
+}
+
+.mia-titulo {
+  font-family: var(--font-prompt);
+  font-size: 1.05rem;
+  margin: 0;
+  color: var(--color-texto);
+}
+
+.mia-agregado {
+  color: var(--color-exito);
+  font-family: var(--font-jaldi);
+  margin: 0 0 var(--sp-2) 0;
+}
+
+@media (min-width: 1025px) {
+  .mia-messages { max-height: 60dvh; }
+}

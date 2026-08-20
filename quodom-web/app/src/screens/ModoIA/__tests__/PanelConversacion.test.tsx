@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { ModoIA } from '../ModoIA';
+import { PanelConversacion } from '../PanelConversacion';
 import { iaApi } from '../../../api/ia';
 import { quodom } from '../../../api/quodom';
 import { quodomLines } from '../../../api/quodom_lines';
+import { useAuth } from '../../../auth/AuthContext';
 
 vi.mock('../../../api/ia', () => ({
   iaApi: { chat: vi.fn() }
@@ -15,6 +16,7 @@ vi.mock('../../../api/quodom', () => ({
 vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { add: vi.fn() }
 }));
+vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -23,7 +25,10 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderWith() {
-  return render(<MemoryRouter><ModoIA /></MemoryRouter>);
+  vi.mocked(useAuth).mockReturnValue(
+    { user: { id: 'u1', nombre: 'Ana' }, signout: vi.fn() } as unknown as ReturnType<typeof useAuth>
+  );
+  return render(<MemoryRouter><PanelConversacion /></MemoryRouter>);
 }
 
 const PROPOSAL_REPLY = {
@@ -105,7 +110,9 @@ describe('ModoIA (confirming a proposal, reuses the catalog rubro flow)', () => 
     await enviarYProponer();
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
 
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/quodom?id=Q-EXIST'));
+    await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-EXIST');
+    expect(mockNavigate).not.toHaveBeenCalled();
     expect(quodom.activoPorRubro).toHaveBeenCalledWith(5);
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-EXIST', idproducto: 300, cantidad: 2 }));
     expect(quodom.create).not.toHaveBeenCalled();
@@ -125,8 +132,27 @@ describe('ModoIA (confirming a proposal, reuses the catalog rubro flow)', () => 
 
     fireEvent.click(screen.getByRole('button', { name: /crear quodom de pintura/i }));
 
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/quodom?id=Q-NEW'));
+    await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-NEW');
+    expect(mockNavigate).not.toHaveBeenCalled();
     expect(quodom.create).toHaveBeenCalledWith(expect.objectContaining({ idrubro: 5 }));
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-NEW', idproducto: 300, cantidad: 2 }));
+  });
+});
+
+describe('PanelConversacion (invitado)', () => {
+  beforeEach(() => { (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockClear(); });
+
+  it('pide login al enviar y no llama al API', async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      { user: null, signout: vi.fn() } as unknown as ReturnType<typeof useAuth>
+    );
+    render(<MemoryRouter><PanelConversacion /></MemoryRouter>);
+
+    fireEvent.change(screen.getByPlaceholderText(/escrib/i), { target: { value: 'quiero pintar' } });
+    fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/iniciar sesión/i));
+    expect(iaApi.chat).not.toHaveBeenCalled();
   });
 });

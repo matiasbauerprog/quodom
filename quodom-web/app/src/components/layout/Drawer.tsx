@@ -15,7 +15,6 @@ export function Drawer({ open, onClose }: { open: boolean; onClose: () => void }
         <nav className="drawer-nav">
           <NavLink to="/" end onClick={onClose}>Inicio</NavLink>
           <NavLink to="/busqueda" onClick={onClose}>Buscar</NavLink>
-          <NavLink to="/modo-ia" onClick={onClose}>Modo IA</NavLink>
           <NavLink to="/lista" onClick={onClose}>Subí tu lista</NavLink>
           {user && <NavLink to="/mis-quodoms" onClick={onClose}>Mis Quodoms</NavLink>}
           {user && <NavLink to="/perfil" onClick={onClose}>Perfil</NavLink>}
