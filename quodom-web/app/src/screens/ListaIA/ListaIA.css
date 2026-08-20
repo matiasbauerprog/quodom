@@ -1,0 +1,29 @@
+.lia { padding-bottom: 24px; }
+
+.lia-cargando { color: #1A1A1A; font-family: Jaldi, sans-serif; }
+.lia-error { color: #E63946; font-family: Jaldi, sans-serif; }
+.lia-aviso { color: #1A1A1A; background: #FFFFFF; padding: 8px 12px; font-family: Jaldi, sans-serif;
+  border-top-left-radius: 8px; border-bottom-right-radius: 8px; }
+
+.cl { display: flex; flex-direction: column; gap: 8px; padding: 16px; margin-bottom: 16px; }
+.cl-ayuda { font-family: Jaldi, sans-serif; color: #1A1A1A; margin: 0; }
+.cl-label { font-family: Montserrat, sans-serif; font-size: 0.85rem; font-weight: 600; }
+.cl-texto { font-family: Jaldi, sans-serif; resize: vertical; }
+.cl-error { color: #E63946; font-family: Jaldi, sans-serif; margin: 0; }
+.cl-enviar { align-self: flex-start; }
+
+.gr { padding: 16px; margin-bottom: 16px; }
+.gr-titulo { font-family: Prompt, sans-serif; font-size: 1.05rem; margin: 0 0 8px; color: #1A1A1A; }
+.gr-agregado { color: #2DAB66; font-family: Jaldi, sans-serif; }
+.gr-error { color: #E63946; font-family: Jaldi, sans-serif; }
+
+.ne { padding: 16px; }
+.ne-titulo { font-family: Prompt, sans-serif; font-size: 1rem; margin: 0 0 8px; }
+.ne-lista { list-style: none; margin: 0; padding: 0; }
+.ne-item { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid #F1F1F1; }
+.ne-motivo { font-family: Jaldi, sans-serif; font-size: 0.85rem; color: #1A1A1A; opacity: 0.7; }
+.ne-ayuda { font-family: Jaldi, sans-serif; margin: 8px 0 0; }
+
+@media (min-width: 1025px) {
+  .cl-texto { max-width: 640px; }
+}
