@@ -133,3 +133,43 @@ describe('GrupoRubro', () => {
     expect(llamadasItem1).toHaveLength(1);
   });
 });
+
+describe('GrupoRubro (le llega un producto después de confirmar)', () => {
+  it('vuelve a mostrar la propuesta y sólo agrega lo nuevo', async () => {
+    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    const { rerender } = render(<MemoryRouter><GrupoRubro grupo={GRUPO} /></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
+    expect(mockAdd).toHaveBeenCalledTimes(1);
+
+    const conMas = {
+      ...GRUPO,
+      items: [
+        ...GRUPO.items,
+        { textoOriginal: '3 platos', idproducto: 8009, nombreProducto: 'Plato por 10 unidades', cantidad: 3 }
+      ]
+    };
+    rerender(<MemoryRouter><GrupoRubro grupo={conMas} /></MemoryRouter>);
+
+    expect(screen.getByText(/agregado/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+
+    await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(2));
+    expect(mockAdd).toHaveBeenLastCalledWith(expect.objectContaining({ idproducto: 8009 }));
+  });
+
+  it('avisa cuántas líneas quedaron sin resolver arriba', () => {
+    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    render(<MemoryRouter><GrupoRubro grupo={GRUPO} pendientesSinResolver={2} /></MemoryRouter>);
+
+    expect(screen.getByText(/2 líneas .*sin resolver/i)).toBeInTheDocument();
+  });
+
+  it('no avisa nada si no quedan líneas sin resolver', () => {
+    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    render(<MemoryRouter><GrupoRubro grupo={GRUPO} pendientesSinResolver={0} /></MemoryRouter>);
+
+    expect(screen.queryByText(/sin resolver/i)).toBeNull();
+  });
+});

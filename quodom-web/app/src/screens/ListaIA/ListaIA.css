@@ -16,6 +16,12 @@
 .gr-titulo { font-family: Prompt, sans-serif; font-size: 1.05rem; margin: 0 0 8px; color: #1A1A1A; }
 .gr-agregado { color: #2DAB66; font-family: Jaldi, sans-serif; }
 .gr-error { color: #E63946; font-family: Jaldi, sans-serif; }
+.gr-pendientes {
+  font-family: var(--font-jaldi);
+  color: var(--color-texto);
+  opacity: 0.75;
+  margin: var(--sp-2) 0 0 0;
+}
 
 .ne { padding: 16px; }
 .ne-titulo { font-family: Prompt, sans-serif; font-size: 1rem; margin: 0 0 8px; }

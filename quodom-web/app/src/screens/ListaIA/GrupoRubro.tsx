@@ -16,7 +16,13 @@ function descripcionLista() {
     + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
 }
 
-export function GrupoRubro({ grupo }: { grupo: ListaGrupo }) {
+export function GrupoRubro({
+  grupo,
+  pendientesSinResolver = 0
+}: {
+  grupo: ListaGrupo;
+  pendientesSinResolver?: number;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [pendiente, setPendiente] = useState<IaProposalItem[] | null>(null);
   const [agregadoEn, setAgregadoEn] = useState<string | null>(null);
@@ -35,6 +41,12 @@ export function GrupoRubro({ grupo }: { grupo: ListaGrupo }) {
   // Recordamos qué idproducto ya se agregó al servidor para que un reintento
   // tras un error parcial no vuelva a agregar las líneas que sí se guardaron.
   const agregadosRef = useRef<Set<number>>(new Set());
+
+  // Lo que todavía no se mandó al servidor. Un grupo ya confirmado puede recibir
+  // productos nuevos si el usuario resuelve una línea ambigua de este rubro
+  // después de haber confirmado.
+  const pendientes = items.filter(it => !agregadosRef.current.has(it.idproducto));
+  const todoAgregado = agregadoEn !== null && pendientes.length === 0;
 
   async function agregarLineas(idquodom: string, elegidos: IaProposalItem[]) {
     for (const it of elegidos) {
@@ -95,13 +107,22 @@ export function GrupoRubro({ grupo }: { grupo: ListaGrupo }) {
     <section className="gr card hoja">
       <h2 className="gr-titulo">{titulo}</h2>
 
-      {agregadoEn
-        ? (
-          <p className="gr-agregado">
-            Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregadoEn)}>ver Quodom</Link>
-          </p>
-        )
-        : <PropuestaEditable items={items} onConfirm={confirmar} busy={confirming} />}
+      {agregadoEn && (
+        <p className="gr-agregado">
+          Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregadoEn)}>ver Quodom</Link>
+        </p>
+      )}
+
+      {!todoAgregado && (
+        <PropuestaEditable items={pendientes} onConfirm={confirmar} busy={confirming} />
+      )}
+
+      {pendientesSinResolver > 0 && (
+        <p className="gr-pendientes">
+          Quedan {pendientesSinResolver}{' '}
+          {pendientesSinResolver === 1 ? 'línea' : 'líneas'} sin resolver arriba.
+        </p>
+      )}
 
       {error && <p className="gr-error" role="alert">{error}</p>}
 
