@@ -122,22 +122,6 @@
   .cat-card-name { font-size: 15px; }
 }
 
-.home-modo-ia {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto var(--sp-3) auto;
-  background: var(--color-acento);
-  color: #fff;
-  font-family: var(--font-prompt);
-  font-weight: 600;
-  padding: 12px 16px;
-}
-.home-modo-ia:hover { filter: brightness(1.05); }
-
 /* Con un rubro elegido el bloque de arriba se achica para que el primer
    producto quede cerca del borde superior en un teléfono. Aun así rubros,
    subcategorías y productos necesitan aire entre sí: con sp-3 los tres

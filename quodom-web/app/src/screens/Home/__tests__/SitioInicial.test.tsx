@@ -13,6 +13,8 @@ vi.mock('../../../quodom/useAgregarProducto', () => ({
     confirmar: vi.fn(), cancelar: vi.fn()
   })
 }));
+vi.mock('../../ModoIA/PanelConversacion', () => ({ PanelConversacion: () => <p>panel chat</p> }));
+vi.mock('../../ListaIA/PanelLista', () => ({ PanelLista: () => <p>panel lista</p> }));
 
 const raiz = categorias.raiz as unknown as ReturnType<typeof vi.fn>;
 const subs = categorias.subs as unknown as ReturnType<typeof vi.fn>;
@@ -107,5 +109,68 @@ describe('SitioInicial', () => {
 
     await waitFor(() => expect(porCategoria).toHaveBeenCalledWith(70));
     expect(porCategoria).not.toHaveBeenCalledWith(999);
+  });
+});
+
+describe('SitioInicial (pestañas de IA)', () => {
+  it('muestra las dos pestañas en el home raíz', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    expect(screen.getByRole('button', { name: /conversando/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /subí tu lista/i })).toBeInTheDocument();
+  });
+
+  it('no muestra las pestañas con un rubro elegido', async () => {
+    montar('/?rubro=7&sub=70');
+    await screen.findByText('Coca Cola 2L');
+
+    expect(screen.queryByRole('button', { name: /conversando/i })).toBeNull();
+  });
+
+  it('abrir una pestaña reemplaza el catálogo por su panel', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /conversando/i }));
+
+    expect(await screen.findByText('panel chat')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /bebidas/i })).toBeNull();
+  });
+
+  it('tocar la pestaña activa devuelve el catálogo', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /conversando/i }));
+    await screen.findByText('panel chat');
+    fireEvent.click(screen.getByRole('button', { name: /conversando/i }));
+
+    expect(await screen.findByRole('link', { name: /bebidas/i })).toBeInTheDocument();
+    expect(screen.queryByText('panel chat')).toBeNull();
+  });
+
+  it('cambia de un panel al otro sin pasar por el catálogo', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /conversando/i }));
+    await screen.findByText('panel chat');
+    fireEvent.click(screen.getByRole('button', { name: /subí tu lista/i }));
+
+    expect(await screen.findByText('panel lista')).toBeInTheDocument();
+    expect(screen.queryByText('panel chat')).toBeNull();
+    expect(screen.queryByRole('link', { name: /bebidas/i })).toBeNull();
+  });
+
+  it('el wordmark se esconde con un panel abierto', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+    expect(screen.getByText('QUODOM')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /subí tu lista/i }));
+
+    await screen.findByText('panel lista');
+    expect(screen.queryByText('QUODOM')).toBeNull();
   });
 });

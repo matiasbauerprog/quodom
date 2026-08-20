@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { categorias } from '../../api/categorias';
 import type { Category } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -8,6 +8,9 @@ import { ErrorState } from '../../components/ErrorState';
 import { RubroSelector } from './RubroSelector';
 import { SubcategoriaTabs } from './SubcategoriaTabs';
 import { ListaProductos } from './ListaProductos';
+import { PestanasIA, type ModoIa } from './PestanasIA';
+import { PanelConversacion } from '../ModoIA/PanelConversacion';
+import { PanelLista } from '../ListaIA/PanelLista';
 import './SitioInicial.css';
 
 // Devuelve el número del param o null: "", "abc" y "0" son todos "sin valor".
@@ -20,6 +23,7 @@ export function SitioInicial() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
+  const [modoIa, setModoIa] = useState<ModoIa | null>(null);
   const rubroParam = numParam(params.get('rubro'));
   const subParam = numParam(params.get('sub'));
 
@@ -80,7 +84,7 @@ export function SitioInicial() {
 
   return (
     <section className={'container home-inicial' + (idrubro !== null ? ' home-compacto' : '')}>
-      {idrubro === null && <h1 className="home-wordmark">QUODOM</h1>}
+      {idrubro === null && modoIa === null && <h1 className="home-wordmark">QUODOM</h1>}
 
       {/* El buscador queda fuera del bloque que se oculta: con un rubro
           elegido sigue siendo la salida más rápida a otra cosa, y verlo
@@ -92,26 +96,29 @@ export function SitioInicial() {
         <input className="input home-search-input" type="search" placeholder="¿Qué necesitás?" aria-label="Buscar productos" value={q} onChange={e => setQ(e.target.value)} />
       </form>
 
-      {idrubro === null && (
-        <Link to="/modo-ia" className="btn home-modo-ia">
-          Modo IA — armá tu Quodom conversando
-        </Link>
-      )}
+      {idrubro === null && <PestanasIA activo={modoIa} onElegir={setModoIa} />}
 
-      {!rubros ? <Loader /> : <RubroSelector rubros={rubros} idSeleccionado={idrubro} />}
+      {modoIa === 'chat' && <PanelConversacion />}
+      {modoIa === 'lista' && <PanelLista />}
 
-      {idrubro !== null && errSubs && (
-        <ErrorState message={errSubs} onRetry={() => setNonceSubs(n => n + 1)} />
-      )}
-      {idrubro !== null && !errSubs && !subs && <Loader />}
-      {idrubro !== null && subs && subs.length > 0 && (
-        <SubcategoriaTabs idrubro={idrubro} subs={subs} idSeleccionada={idsub} />
-      )}
-      {idrubro !== null && subs && subs.length === 0 && (
-        <p className="prods-empty">Este rubro todavía no tiene subcategorías.</p>
-      )}
+      {modoIa === null && (
+        <>
+          {!rubros ? <Loader /> : <RubroSelector rubros={rubros} idSeleccionado={idrubro} />}
 
-      {idsub !== null && <ListaProductos idsubcategoria={idsub} />}
+          {idrubro !== null && errSubs && (
+            <ErrorState message={errSubs} onRetry={() => setNonceSubs(n => n + 1)} />
+          )}
+          {idrubro !== null && !errSubs && !subs && <Loader />}
+          {idrubro !== null && subs && subs.length > 0 && (
+            <SubcategoriaTabs idrubro={idrubro} subs={subs} idSeleccionada={idsub} />
+          )}
+          {idrubro !== null && subs && subs.length === 0 && (
+            <p className="prods-empty">Este rubro todavía no tiene subcategorías.</p>
+          )}
+
+          {idsub !== null && <ListaProductos idsubcategoria={idsub} />}
+        </>
+      )}
     </section>
   );
 }
