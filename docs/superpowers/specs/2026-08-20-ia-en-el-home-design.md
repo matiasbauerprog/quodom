@@ -76,16 +76,20 @@ Se acepta a cambio de no sumar un tercer parámetro al home ni la maquinaria de
 sincronizarlo con los otros dos. Si más adelante molesta, agregarlo es un cambio
 chico y aislado.
 
-### Abrir un panel limpia el rubro y la subcategoría
-
-Si el usuario venía navegando un rubro y abre el chat, al cerrarlo vuelve al
-home limpio. Conservar el rubro haría que "cerrar" lo devuelva a un lugar que ya
-no recuerda haber elegido.
-
 ### Las pestañas sólo en el home raíz
 
 Igual que el botón "Modo IA" de hoy: con un rubro elegido no se muestran, para
 que la pantalla quede compacta mientras el usuario está comprando.
+
+De ahí se sigue algo que conviene decir explícitamente, porque el diseño lo
+tentaba: **no hace falta limpiar `?rubro=` y `?sub=` al abrir un panel.** Si las
+pestañas sólo se ven sin rubro elegido, en el momento de abrir un panel no hay
+rubro que limpiar. Escribir esa limpieza sería código que no se puede alcanzar
+desde la UI, y un test que lo cubriera pasaría igual con la limpieza borrada.
+
+Para volver al catálogo desde un rubro, el usuario ya tiene el propio selector:
+tocar el rubro activo lo deselecciona y devuelve al home raíz, donde las
+pestañas reaparecen.
 
 ### El invitado entra, y el login aparece cuando hace falta
 
@@ -181,7 +185,6 @@ servidor": un mensaje que no le explica nada al usuario.
 - abrir una pestaña oculta el selector de rubros y muestra su panel
 - tocar la pestaña activa cierra el panel y devuelve el catálogo
 - tocar la otra pestaña cambia de panel sin pasar por el catálogo
-- abrir un panel limpia `?rubro=` y `?sub=`
 
 Sobre los paneles:
 
