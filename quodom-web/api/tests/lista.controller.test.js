@@ -16,7 +16,8 @@ beforeAll(async () => {
   await db.Products.bulkCreate([
     { id: 8001, nombreproducto: 'Lavandina 5L', categoria: 92, categoriaPadre: 1 },
     { id: 8002, nombreproducto: 'Resma A4 75g', categoria: 93, categoriaPadre: 2 },
-    { id: 8003, nombreproducto: 'Casco obra', categoria: 94, categoriaPadre: 8 }
+    { id: 8003, nombreproducto: 'Casco obra', categoria: 94, categoriaPadre: 8 },
+    { id: 8004, nombreproducto: 'Resma A4 90g', categoria: 93, categoriaPadre: 2 }
   ], { ignoreDuplicates: true });
 });
 
@@ -184,5 +185,126 @@ describe('procesarLista', () => {
 
     expect(out.grupos).toHaveLength(1);
     expect(out.lineasIgnoradas).toBe(1);
+  });
+});
+
+describe('procesarLista (líneas ambiguas)', () => {
+  it('devuelve la línea en ambiguas y no en ningún grupo', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [],
+      ambiguas: [{ textoOriginal: '3 platos', cantidad: 3, sugerido: 8002, candidatos: [8001, 8002] }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 platos' });
+
+    expect(out.grupos).toEqual([]);
+    expect(out.noEncontrados).toEqual([]);
+    expect(out.ambiguas).toEqual([{
+      textoOriginal: '3 platos',
+      cantidad: 3,
+      sugerido: 8002,
+      candidatos: [
+        { idproducto: 8001, nombreProducto: 'Lavandina 5L', idrubro: 1, rubro: 'Limpieza' },
+        { idproducto: 8002, nombreProducto: 'Resma A4 75g', idrubro: 2, rubro: 'Librería' }
+      ]
+    }]);
+  });
+
+  it('descarta un candidato inventado y conserva los válidos', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [],
+      ambiguas: [{ textoOriginal: '3 platos', cantidad: 3, sugerido: 8001, candidatos: [8001, 999999, 8002] }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 platos' });
+
+    expect(out.ambiguas[0].candidatos.map(c => c.idproducto)).toEqual([8001, 8002]);
+  });
+
+  it('una ambigua que queda con un solo candidato deja de serlo y baja a su grupo', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [],
+      ambiguas: [{ textoOriginal: '3 lavandinas', cantidad: 3, sugerido: 8001, candidatos: [8001, 999999] }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 lavandinas' });
+
+    expect(out.ambiguas).toEqual([]);
+    expect(out.grupos).toHaveLength(1);
+    expect(out.grupos[0].items[0]).toEqual({
+      textoOriginal: '3 lavandinas', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3
+    });
+  });
+
+  it('una ambigua sin candidatos válidos va a noEncontrados', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [],
+      ambiguas: [{ textoOriginal: 'un unicornio', cantidad: 1, sugerido: 999999, candidatos: [999999] }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: 'un unicornio' });
+
+    expect(out.ambiguas).toEqual([]);
+    expect(out.grupos).toEqual([]);
+    expect(out.noEncontrados).toEqual([
+      { textoOriginal: 'un unicornio', motivo: 'no está en el catálogo' }
+    ]);
+  });
+
+  it('si el sugerido no sobrevivió, sugiere el primer candidato válido', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [],
+      ambiguas: [{ textoOriginal: '3 platos', cantidad: 3, sugerido: 999999, candidatos: [8001, 8002] }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 platos' });
+
+    expect(out.ambiguas[0].sugerido).toBe(8001);
+  });
+
+  it('recorta a tres candidatos', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [],
+      ambiguas: [{
+        textoOriginal: '3 platos', cantidad: 3, sugerido: 8001,
+        candidatos: [8001, 8002, 8004, 8001, 8002]
+      }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 platos' });
+
+    expect(out.ambiguas[0].candidatos).toHaveLength(3);
+  });
+
+  it('una línea ambigua cuenta para la cobertura y no se pierde', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [{ textoOriginal: '3 lavandinas 5L', idproducto: 8001, cantidad: 3 }],
+      ambiguas: [{ textoOriginal: '2 resmas A4', cantidad: 2, sugerido: 8002, candidatos: [8002, 8004] }],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 lavandinas 5L\n2 resmas A4' });
+
+    expect(out.noEncontrados).toEqual([]);
+    expect(out.grupos).toHaveLength(1);
+    expect(out.ambiguas).toHaveLength(1);
+  });
+
+  it('sin ambiguas devuelve la lista vacía, no undefined', async () => {
+    callGemini.mockResolvedValueOnce({
+      items: [{ textoOriginal: '3 lavandinas 5L', idproducto: 8001, cantidad: 3 }],
+      ambiguas: [],
+      noEncontrados: []
+    });
+
+    const out = await procesarLista({ tipo: 'texto', texto: '3 lavandinas 5L' });
+
+    expect(out.ambiguas).toEqual([]);
   });
 });
