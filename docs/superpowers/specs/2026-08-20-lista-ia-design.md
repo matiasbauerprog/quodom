@@ -71,6 +71,33 @@ El Modo IA conversacional resuelve lo mismo repreguntando por cuál arrancar; ac
 no aplica, porque la lista ya está escrita y partirla en varias pasadas sería
 trabajo inventado.
 
+### El rubro de un producto se calcula, no se lee
+
+`productos.categoriaPadre` y `categorias.idcategoriapadre` no coinciden en 24 de
+los 644 productos, por dos motivos distintos:
+
+- 19 productos de Construcción cuelgan **directo del rubro**: su `categoria` es
+  el rubro 4, no una subcategoría. Ahí `categoriaPadre = 4` es correcto y el
+  join contra `categorias` es el que devuelve 0.
+- 5 productos de la subcategoría "Accesorios" (rubro 8, Seguridad Industrial)
+  tienen `categoriaPadre = 1`, Limpieza. Ese dato está mal.
+
+El segundo caso es peligroso porque el rubro 8 está desactivado y el 1 no: si se
+filtrara el catálogo por `categoriaPadre` y se agrupara por el join, esos cinco
+productos entrarían a la propuesta como Limpieza y terminarían en un Quodom de
+un rubro desactivado.
+
+Regla única, usada **tanto para filtrar como para agrupar**: el rubro de un
+producto es el `idcategoriapadre` de su categoría, salvo que esa categoría sea
+ella misma un rubro (`idcategoriapadre = 0`), en cuyo caso el rubro es el `id`
+de la categoría. Vive en `api/src/helpers/catalogoActivo.js` y no se lee nunca
+`productos.categoriaPadre`.
+
+Los cinco "Accesorios" quedan así en el rubro 8 (desactivado) y no aparecen en
+ninguna propuesta, que es lo correcto: son artículos de seguridad industrial. No
+se corrigen los datos acá: `quodom.sqlite` se commitea y un cambio de datos no
+se revisa en el diff (CLAUDE.md §6).
+
 ### Sin multer y sin archivos en disco
 
 `express.json` ya acepta 50 MB (`api/src/server.js:13`), así que el archivo
@@ -114,6 +141,10 @@ Response:
 ```
 
 ### Módulos
+
+**`api/src/helpers/catalogoActivo.js`** — devuelve los productos de rubros
+activos con su rubro ya resuelto (`{ id, nombre, idrubro, rubro }`), aplicando la
+regla de arriba. Es la única fuente de rubro para filtrar y para agrupar.
 
 **`api/src/helpers/listaEntrada.js`** — la única pieza que sabe de formatos.
 Normaliza la entrada a lo que va al modelo:
@@ -212,7 +243,7 @@ abajo el resultado. Los grupos que sí matchearon se muestran igual.
 | Excel corrupto, PDF ilegible | `400 archivo_ilegible` — "No pude abrir el archivo. Probá exportarlo de nuevo o pegá la lista como texto." |
 | Foto borrosa: el modelo no lee nada | Respuesta normal con `grupos: []` y todo en `noEncontrados`; la pantalla sugiere sacar otra foto o pegar el texto |
 | Más de 150 líneas | Se procesan las primeras 150 y se informa cuántas quedaron afuera en `lineasIgnoradas`. No se trunca callado (ver abajo) |
-| Ítem de un rubro desactivado | Cae en `noEncontrados` con motivo "no disponible por ahora": nunca estuvo en el catálogo que vio el modelo |
+| Ítem de un rubro desactivado | Cae en `noEncontrados` con motivo "no está en el catálogo", igual que un id inventado. El producto nunca estuvo en la lista que vio el modelo, así que para el server los dos casos son el mismo: un id que no está en el índice. No se distinguen, porque distinguirlos obligaría a consultar productos que el usuario no puede comprar |
 | Gemini 429 / 5xx / timeout | `429 ia_quota` / `503 ia_busy` / `500 ia_unavailable`, vía `iaErrores.js` |
 | Límite diario alcanzado | `429 limit_exceeded`, compartido con el chat vía `ia_usage` |
 
@@ -227,6 +258,14 @@ mockeado, siguiendo el patrón de `tests/ia.controller.test.js:1`.
 - texto pegado pasa tal cual
 - archivo corrupto lanza el error esperado
 - imagen y PDF producen `inlineData` bien formado
+
+`catalogoActivo.js`:
+
+- un producto de una subcategoría toma el rubro del padre
+- un producto cuya categoría es el rubro mismo toma esa categoría como rubro
+- un producto de rubro desactivado no aparece
+- un producto cuyo `categoriaPadre` contradice a `categorias` se resuelve por
+  `categorias` (el caso de los cinco "Accesorios")
 
 `lista.controller.js`:
 
