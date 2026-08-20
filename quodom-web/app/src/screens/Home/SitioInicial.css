@@ -61,8 +61,8 @@
   flex: 0 0 calc((100% - 2 * var(--sp-3)) / 3);
   /* Sin esto una tarjeta no baja del ancho de su contenido y desborda la fila. */
   min-width: 0;
-  gap: var(--sp-2);
-  padding: var(--sp-4) var(--sp-3);
+  gap: var(--sp-3);
+  padding: var(--sp-4);
   text-align: center;
   background: var(--color-tarjeta);
   box-shadow: var(--shadow-card);
@@ -111,11 +111,14 @@
     grid-auto-columns: 1fr;
     gap: clamp(6px, 1.2vw, var(--sp-4));
   }
-  .cat-card { padding: clamp(8px, 1.6vw, var(--sp-4)) clamp(4px, 1vw, var(--sp-3)); }
+  /* El piso del clamp era 8px/4px y apretaba los rubros contra el borde de la
+     tarjeta justo donde entran en una sola fila. */
+  .cat-card { padding: clamp(var(--sp-3), 1.8vw, var(--sp-5)) clamp(var(--sp-2), 1.2vw, var(--sp-4)); }
   .cat-card-name { font-size: clamp(10px, 1.6vw, 13px); }
 }
 @media (min-width: 1025px) {
-  .cat-grid { max-width: 720px; }
+  .cat-grid { max-width: 720px; gap: var(--sp-4); }
+  .cat-card { padding: var(--sp-5) var(--sp-4); }
   .cat-card-name { font-size: 15px; }
 }
 
@@ -136,8 +139,10 @@
 .home-modo-ia:hover { filter: brightness(1.05); }
 
 /* Con un rubro elegido el bloque de arriba se achica para que el primer
-   producto quede cerca del borde superior en un teléfono. */
+   producto quede cerca del borde superior en un teléfono. Aun así rubros,
+   subcategorías y productos necesitan aire entre sí: con sp-3 los tres
+   bloques se leían como uno solo. */
 .container.home-inicial.home-compacto {
-  gap: var(--sp-3);
-  margin-top: var(--sp-3);
+  gap: var(--sp-5);
+  margin-top: var(--sp-4);
 }

@@ -10,6 +10,7 @@ import { nombreRubro } from '../../quodom/rubros';
 import { useAuth } from '../../auth/AuthContext';
 import { Loader } from '../../components/Loader';
 import { ProductImage } from '../../components/ProductImage';
+import { IconoMas } from '../../components/icons/IconoMas';
 import './BusquedaScreen.css';
 
 export function BusquedaScreen() {
@@ -76,10 +77,14 @@ export function BusquedaScreen() {
           : (
             <ul className="busqueda-list">
               {results.map(r => (
-                <li key={r.id} className="prod-item card hoja">
-                  <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
-                  <span className="prod-name">{r.nombre}</span>
-                  <button className="btn btn-exito prod-add" aria-label={'Agregar ' + r.nombre} disabled={agregando} onClick={() => agregar(r)}>+</button>
+                <li key={r.id} className="prod-item prod-item-row">
+                  <span className="prod-info">
+                    <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
+                    <span className="prod-name">{r.nombre}</span>
+                  </span>
+                  <button className="prod-add" aria-label={'Agregar ' + r.nombre} disabled={agregando} onClick={() => agregar(r)}>
+                    <IconoMas />
+                  </button>
                 </li>
               ))}
             </ul>

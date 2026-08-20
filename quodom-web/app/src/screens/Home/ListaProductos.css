@@ -7,61 +7,173 @@
 }
 .prod-list {
   display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-2);
+  grid-template-columns: repeat(3, 1fr);
   width: 100%;
   max-width: 640px;
 }
+
+/* Tarjeta. Antes era transparente y la imagen flotaba sobre el fondo gris;
+   con superficie propia la grilla se lee como una grilla y no como recortes
+   sueltos. */
 .prod-item {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: var(--sp-2);
-  padding: var(--sp-3);
-  text-align: center;
-  background: transparent;
-  transition: transform .15s ease;
+  padding: var(--sp-2);
+  background: var(--color-tarjeta);
+  box-shadow: var(--shadow-card);
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+  transition: transform .15s ease, box-shadow .15s ease;
 }
-.prod-item:hover { transform: translateY(-2px); }
+.prod-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.10);
+}
 .prod-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
   gap: var(--sp-2);
   width: 100%;
-  text-align: center;
+  text-align: left;
   padding: 0;
 }
-.prod-name {
-  display: block;
-  font-family: var(--font-work);
-  font-weight: 400;
-  color: var(--color-texto);
-  font-size: 14px;
-  line-height: 1.2;
+
+/* Caja cuadrada para la foto: los PNG del catálogo vienen en proporciones
+   distintas, y sin un alto fijo cada fila de la grilla mide otra cosa. */
+.prod-media {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
 }
+.prod-media .prod-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+.prod-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--font-work);
+  font-weight: 500;
+  color: var(--color-texto);
+  font-size: 12px;
+  line-height: 1.3;
+  /* Dos líneas siempre reservadas: con nombres de 1 y de 3 líneas mezclados,
+     el borde inferior de las tarjetas quedaba escalonado. */
+  min-height: calc(2 * 1.3em);
+}
+
+/* Pie de la tarjeta: los selectores de atributo ocupan el hueco que dejaba el
+   botón, así que un producto con un solo atributo no suma altura. Con dos, el
+   + baja y queda alineado al pie de la columna. */
+.prod-foot {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+}
+.prod-attrs {
+  /* Empuja el + contra el borde derecho aunque el producto no tenga atributos
+     y esta columna quede vacía. */
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.prod-attr {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 26px;
+  padding: 0 18px 0 8px;
+  border: 1px solid #DCDCDC;
+  border-radius: 999px;
+  background-color: var(--color-tarjeta);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5' fill='none'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23898989' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  font-family: var(--font-work);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--color-texto);
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+/* Sin elegir muestra el nombre del grupo ("MEDIDAS"): se lee como etiqueta y
+   no como un valor ya seleccionado. */
+.prod-attr-vacio {
+  color: var(--color-texto-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+.prod-attr:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 1px; }
+.prod-attr:hover { border-color: var(--color-texto-muted); }
+
 .prod-add {
-  position: absolute;
-  top: var(--sp-2);
-  right: var(--sp-2);
-  width: 32px;
-  height: 32px;
+  align-self: flex-end;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   border-radius: 50%;
-  background: var(--color-exito);
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-exito);
+  color: var(--color-exito);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,.15);
+  transition: background-color .15s ease, color .15s ease;
 }
-.prod-add:hover { filter: brightness(1.08); }
+.prod-add:hover:not(:disabled),
+.prod-add:focus-visible {
+  background: var(--color-exito);
+  color: #fff;
+}
+.prod-add:disabled { opacity: .45; cursor: not-allowed; }
+
 .prods-empty { text-align: center; color: var(--color-texto-muted); padding: var(--sp-6) 0; }
 .prods-add-error { color: var(--color-error); font-size: var(--fs-small); margin: 0 0 var(--sp-3) 0; }
 
-@media (min-width: 601px) { .prod-list { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 1025px) { .prod-list { grid-template-columns: repeat(4, 1fr); max-width: 720px; } }
+/* Variante horizontal, para los resultados de búsqueda: misma tarjeta y mismo
+   botón que la grilla, en fila. */
+.prod-item-row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+}
+.prod-item-row:hover { transform: none; }
+.prod-item-row .prod-info {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.prod-item-row .prod-name {
+  min-height: 0;
+  font-size: var(--fs-small);
+}
+.prod-item-row .prod-add { align-self: center; }
+
+@media (min-width: 601px) {
+  .prod-list { grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); max-width: 720px; }
+  .prod-item { padding: var(--sp-3); }
+  .prod-name { font-size: 13px; }
+}
+@media (min-width: 1025px) {
+  /* 960px en 4 columnas daban tarjetas de ~240px: demasiado grandes para una
+     foto de catálogo y muy poco producto visible sin scrollear. */
+  .prod-list { grid-template-columns: repeat(6, 1fr); max-width: 1040px; }
+}

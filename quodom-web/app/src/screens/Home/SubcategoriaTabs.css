@@ -9,25 +9,32 @@
   justify-content: center;
   justify-content: safe center;
   overflow-x: auto;
-  padding-bottom: var(--sp-2);
+  /* Aire propio para que la sombra de las píldoras no quede cortada contra el
+     borde del área scrolleable. */
+  padding: var(--sp-1) var(--sp-1) var(--sp-2);
   /* Sin esto la barra de scroll tapa las tabs en Windows. */
   scrollbar-width: thin;
 }
 .subtab {
   flex: 0 0 auto;
-  padding: 6px 14px;
+  padding: 10px 18px;
   border-radius: 999px;
   background: var(--color-tarjeta);
   color: var(--color-texto);
   font-family: var(--font-work);
+  font-weight: 500;
   font-size: var(--fs-small);
+  line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
   box-shadow: var(--shadow-card);
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
+.subtab:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
 .subtab-sel {
   background: var(--color-acento);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(230,57,70,0.28);
 }
 
 @media (min-width: 1025px) {

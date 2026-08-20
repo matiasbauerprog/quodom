@@ -29,8 +29,12 @@ export type Product = {
   categoriaPadre: number;
   imagen: string | null;
   refreshImagen: string | null;
+  // atributo1/atributo2 son el NOMBRE del grupo ("MEDIDAS"); los valores
+  // elegibles de cada uno vienen en valoresAtributoN.
   atributo1: string | null;
   atributo2: string | null;
+  valoresAtributo1: string[];
+  valoresAtributo2: string[];
 };
 
 export type ProductWithExiste = {
