@@ -148,8 +148,8 @@
   font-family: var(--font-prompt);
   font-weight: 600;
   cursor: pointer;
-  border-top-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
 }
 
 .home-ia-tab:hover { filter: brightness(0.98); }

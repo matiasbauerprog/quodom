@@ -57,7 +57,7 @@ function renderYEnviar(respuesta: unknown = RESPUESTA) {
   fireEvent.click(screen.getByRole('button', { name: /buscar en el catálogo/i }));
 }
 
-describe('ListaIA', () => {
+describe('PanelLista', () => {
   it('muestra un grupo por rubro', async () => {
     renderYEnviar();
     await waitFor(() => expect(screen.getByText(/Limpieza/)).toBeInTheDocument());

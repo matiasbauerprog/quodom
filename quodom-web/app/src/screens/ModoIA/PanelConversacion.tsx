@@ -31,7 +31,7 @@ export function PanelConversacion() {
   const [pendiente, setPendiente] = useState<PendienteRubro | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, busy]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [messages, busy]);
 
   function resetChat() {
     if (!confirm('¿Empezar una nueva conversación?')) return;
@@ -130,9 +130,8 @@ export function PanelConversacion() {
   }
 
   return (
-    <section className="mia">
+    <section className="mia" aria-label="Conversando">
       <header className="mia-header">
-        <h2 className="mia-titulo">Conversando</h2>
         <button type="button" className="mia-reset" aria-label="Nueva conversación" onClick={resetChat}>↺</button>
       </header>
 

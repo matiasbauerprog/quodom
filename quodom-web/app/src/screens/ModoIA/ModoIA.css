@@ -1,7 +1,9 @@
 .mia {
   display: flex;
   flex-direction: column;
-  padding: 0;
+  width: 100%;
+  max-width: 640px;
+  padding: 0 0 var(--sp-6);
 }
 .mia-messages {
   display: flex;
@@ -46,6 +48,7 @@
   font-size: 20px;
   cursor: pointer;
   padding: 4px 8px;
+  margin-left: auto;
 }
 
 .mia-proposal {
@@ -74,13 +77,6 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--sp-2);
-}
-
-.mia-titulo {
-  font-family: var(--font-prompt);
-  font-size: 1.05rem;
-  margin: 0;
-  color: var(--color-texto);
 }
 
 .mia-agregado {

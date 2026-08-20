@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { SitioInicial } from '../SitioInicial';
 import { categorias } from '../../../api/categorias';
 import { productos } from '../../../api/productos';
@@ -172,5 +172,26 @@ describe('SitioInicial (pestañas de IA)', () => {
 
     await screen.findByText('panel lista');
     expect(screen.queryByText('QUODOM')).toBeNull();
+  });
+
+  it('el botón Atrás a un rubro sin remount cierra el panel y devuelve el catálogo', async () => {
+    // Mismo componente de ruta ('/') para las dos entradas del historial: al
+    // volver con navigate(-1) sólo cambian los search params, sin remount,
+    // igual que hace el navegador real con el botón Atrás.
+    const router = createMemoryRouter(
+      [{ path: '/', element: <SitioInicial /> }],
+      { initialEntries: ['/?rubro=7&sub=70', '/'], initialIndex: 1 }
+    );
+    render(<RouterProvider router={router} />);
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /conversando/i }));
+    await screen.findByText('panel chat');
+
+    await act(async () => { router.navigate(-1); });
+
+    expect(await screen.findByText('Coca Cola 2L')).toBeInTheDocument();
+    expect(screen.queryByText('panel chat')).toBeNull();
+    expect(screen.queryByRole('button', { name: /conversando/i })).toBeNull();
   });
 });

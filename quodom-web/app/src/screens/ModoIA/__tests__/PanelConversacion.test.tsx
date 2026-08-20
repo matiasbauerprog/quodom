@@ -47,7 +47,7 @@ async function enviarYProponer() {
   await waitFor(() => expect(screen.getByText('Latex premium 10L')).toBeInTheDocument());
 }
 
-describe('ModoIA (base chat)', () => {
+describe('PanelConversacion (base chat)', () => {
   beforeEach(() => { (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockReset(); });
 
   it('renders the hardcoded welcome message on mount', () => {
@@ -91,7 +91,7 @@ describe('ModoIA (base chat)', () => {
   });
 });
 
-describe('ModoIA (confirming a proposal, reuses the catalog rubro flow)', () => {
+describe('PanelConversacion (confirming a proposal, reuses the catalog rubro flow)', () => {
   beforeEach(() => {
     (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockReset();
     vi.mocked(quodom.activoPorRubro).mockReset();

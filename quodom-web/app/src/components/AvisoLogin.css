@@ -5,8 +5,8 @@
   padding: 12px 16px;
   margin: 0;
   border-left: 3px solid var(--color-acento);
-  border-top-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
 }
 
 .aviso-login a {

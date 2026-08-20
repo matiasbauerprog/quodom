@@ -32,8 +32,7 @@ export function PanelLista() {
   const vacio = resultado && resultado.grupos.length === 0 && resultado.noEncontrados.length === 0;
 
   return (
-    <section className="lia">
-      <h2 className="lia-titulo">Subí tu lista</h2>
+    <section className="lia" aria-label="Subí tu lista">
       <CargarLista onEnviar={procesar} ocupado={busy} />
 
       {necesitaLogin && <AvisoLogin />}

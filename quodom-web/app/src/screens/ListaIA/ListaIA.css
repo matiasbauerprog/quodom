@@ -1,4 +1,4 @@
-.lia { padding-bottom: 24px; }
+.lia { width: 100%; max-width: 640px; padding-bottom: 24px; }
 
 .lia-cargando { color: #1A1A1A; font-family: Jaldi, sans-serif; }
 .lia-error { color: #E63946; font-family: Jaldi, sans-serif; }
@@ -26,11 +26,4 @@
 
 @media (min-width: 1025px) {
   .cl-texto { max-width: 640px; }
-}
-
-.lia-titulo {
-  font-family: var(--font-prompt);
-  font-size: 1.05rem;
-  margin: 0 0 var(--sp-2) 0;
-  color: var(--color-texto);
 }

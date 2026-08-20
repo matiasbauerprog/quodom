@@ -73,6 +73,12 @@ export function SitioInicial() {
 
   const idsub = subValida ? subParam : null;
 
+  // Un ?rubro= puede volver sin remount (botón Atrás entre entradas de
+  // historial que matchean la misma ruta): sin este derivado el panel
+  // quedaría abierto con las pestañas y el catálogo ocultos, sin forma de
+  // cerrarlo.
+  const modo = idrubro === null ? modoIa : null;
+
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
     const term = q.trim();
@@ -98,10 +104,10 @@ export function SitioInicial() {
 
       {idrubro === null && <PestanasIA activo={modoIa} onElegir={setModoIa} />}
 
-      {modoIa === 'chat' && <PanelConversacion />}
-      {modoIa === 'lista' && <PanelLista />}
+      {modo === 'chat' && <PanelConversacion />}
+      {modo === 'lista' && <PanelLista />}
 
-      {modoIa === null && (
+      {modo === null && (
         <>
           {!rubros ? <Loader /> : <RubroSelector rubros={rubros} idSeleccionado={idrubro} />}
 
