@@ -289,7 +289,17 @@ El resto del cuerpo (mensajes, barra de input, `DialogoNuevoRubro`) queda igual,
 
 - [ ] **Step 5: Bound the message list height**
 
-En `quodom-web/app/src/screens/ModoIA/ModoIA.css`, en la regla `.mia-messages`, agregar el alto acotado y el scroll. `vh` va primero como fallback: los navegadores que no entienden `dvh` ignoran la segunda línea y se quedan con la primera.
+En `quodom-web/app/src/screens/ModoIA/ModoIA.css`, primero corregir el padding de `.mia`. Hoy es `padding: 12px 16px 96px 16px`: los 96px de abajo existían para librar la barra inferior fija cuando esto era una pantalla completa, y los 16px laterales los aportaba la propia pantalla. Embebido en el home, el contenedor ya da el padding lateral y el espacio de la barra, así que ese padding deja un hueco enorme. Queda:
+
+```css
+.mia {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+```
+
+Después, en la regla `.mia-messages`, agregar el alto acotado y el scroll. `vh` va primero como fallback: los navegadores que no entienden `dvh` ignoran la segunda línea y se quedan con la primera.
 
 ```css
   max-height: 55vh;
@@ -614,7 +624,7 @@ export function PestanasIA({
 
 - [ ] **Step 4: Style the tabs**
 
-En `quodom-web/app/src/screens/Home/SitioInicial.css`, **borrar** las reglas `.home-modo-ia` y `.home-modo-ia:hover` (el botón que reemplazan) y agregar en su lugar:
+En `quodom-web/app/src/screens/Home/SitioInicial.css`, agregar las reglas de las pestañas. **No borres todavía `.home-modo-ia`**: el botón que usa esa clase sigue en el TSX hasta la Task 5, y dejarlo sin estilos en el medio haría que un commit de esta rama muestre un home roto. La Task 5 borra la clase y su uso en el mismo commit.
 
 ```css
 .home-ia-tabs {
@@ -664,6 +674,7 @@ git commit -m "feat(app): add the assistant mode tabs"
 
 **Files:**
 - Modify: `quodom-web/app/src/screens/Home/SitioInicial.tsx`
+- Modify: `quodom-web/app/src/screens/Home/SitioInicial.css`
 - Test: `quodom-web/app/src/screens/Home/__tests__/SitioInicial.test.tsx`
 
 **Interfaces:**
@@ -819,6 +830,8 @@ por:
 ```
 
 7. Si `Link` quedó sin uso en el archivo tras sacar el botón viejo, borrarlo del import de `react-router-dom`. El compilador de TypeScript lo va a marcar en `npm run build`.
+
+8. En `quodom-web/app/src/screens/Home/SitioInicial.css`, ahora sí borrar las reglas `.home-modo-ia` y `.home-modo-ia:hover`: en este mismo commit desaparece el único elemento que las usaba.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
