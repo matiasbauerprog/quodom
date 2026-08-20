@@ -21,6 +21,7 @@ import { DetalleUsuario } from '../screens/Profile/DetalleUsuario';
 import { CambiarPass } from '../screens/Profile/CambiarPass';
 import { ListaNotificaciones } from '../screens/Notificaciones/ListaNotificaciones';
 import { ModoIA } from '../screens/ModoIA/ModoIA';
+import { ListaIA } from '../screens/ListaIA/ListaIA';
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <SignIn /> },
@@ -36,6 +37,7 @@ export const routes: RouteObject[] = [
       { path: '/categoria/:id', element: <RedirectRubro /> },
       { path: '/subcategoria/:id', element: <RedirectSubcategoria /> },
       { path: '/modo-ia', element: <ProtectedRoute><ModoIA /></ProtectedRoute> },
+      { path: '/lista', element: <ProtectedRoute><ListaIA /></ProtectedRoute> },
       { path: '/quodom', element: <DetalleQuodom /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
       { path: '/perfil', element: <ProtectedRoute><ProfileScreen /></ProtectedRoute> },

@@ -21,4 +21,10 @@ describe('Drawer', () => {
     // Modo IA vive acá porque el header del home lo esconde al elegir un rubro.
     expect(screen.getByRole('link', { name: /modo ia/i })).toHaveAttribute('href', '/modo-ia');
   });
+
+  it('linkea a Subí tu lista', () => {
+    montar();
+
+    expect(screen.getByRole('link', { name: /subí tu lista/i })).toHaveAttribute('href', '/lista');
+  });
 });
