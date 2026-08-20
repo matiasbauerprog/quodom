@@ -258,32 +258,39 @@ describe('PanelLista (ambigua resuelve a un grupo existente sin confirmar)', () 
 
 // El candidato resuelve al mismo idproducto que ya está en el grupo (Lavandina
 // 5L, id 8001): tiene que fusionarse en vez de duplicar la fila.
-const CON_AMBIGUA_MISMO_PRODUCTO = {
-  res: true as const,
-  grupos: [
-    {
-      idrubro: 1, rubro: 'Limpieza',
-      items: [{ textoOriginal: '3 lavandinas', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3 }]
-    }
-  ],
-  ambiguas: [
-    {
-      textoOriginal: '2 lavandinas más',
-      cantidad: 2,
-      sugerido: 8001,
-      candidatos: [
-        { idproducto: 8001, nombreProducto: 'Lavandina 5L', idrubro: 1, rubro: 'Limpieza' },
-        { idproducto: 8020, nombreProducto: 'Lavandina 3L', idrubro: 1, rubro: 'Limpieza' }
-      ]
-    }
-  ],
-  noEncontrados: [],
-  lineasIgnoradas: 0
-};
+//
+// Es una función y no un objeto compartido porque el merge de PanelLista muta
+// en el lugar el item que ya trajo el servidor (`existente.cantidad += ...`):
+// un const reusado entre tests quedaría con la cantidad ya sumada de un test
+// anterior y el segundo test arrancaría de una base equivocada.
+function crearListaMismoProducto() {
+  return {
+    res: true as const,
+    grupos: [
+      {
+        idrubro: 1, rubro: 'Limpieza',
+        items: [{ textoOriginal: '3 lavandinas', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3 }]
+      }
+    ],
+    ambiguas: [
+      {
+        textoOriginal: '2 lavandinas más',
+        cantidad: 2,
+        sugerido: 8001,
+        candidatos: [
+          { idproducto: 8001, nombreProducto: 'Lavandina 5L', idrubro: 1, rubro: 'Limpieza' },
+          { idproducto: 8020, nombreProducto: 'Lavandina 3L', idrubro: 1, rubro: 'Limpieza' }
+        ]
+      }
+    ],
+    noEncontrados: [],
+    lineasIgnoradas: 0
+  };
+}
 
 describe('PanelLista (ambigua resuelve al mismo producto de un grupo existente)', () => {
   it('suma la cantidad en vez de duplicar la fila', async () => {
-    await enviarCon(CON_AMBIGUA_MISMO_PRODUCTO);
+    await enviarCon(crearListaMismoProducto());
     const region = await screen.findByRole('region', { name: /tenés que elegir/i });
 
     fireEvent.click(within(region).getByRole('button', { name: /lavandina 5l/i }));
@@ -293,6 +300,32 @@ describe('PanelLista (ambigua resuelve al mismo producto de un grupo existente)'
     // mismo idproducto (misma key de React) en vez de una sola fusionada.
     expect(screen.getAllByText('Lavandina 5L')).toHaveLength(1);
     expect(screen.getByText(/Limpieza — 1 producto/)).toBeInTheDocument();
+  });
+
+  it('el input de cantidad muestra la suma fusionada, y confirmar manda esa cantidad', async () => {
+    mockActivoPorRubro.mockResolvedValue({ id: 'Q-1' });
+    mockAdd.mockResolvedValue(undefined);
+
+    await enviarCon(crearListaMismoProducto());
+    const region = await screen.findByRole('region', { name: /tenés que elegir/i });
+
+    fireEvent.click(within(region).getByRole('button', { name: /lavandina 5l/i }));
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull());
+
+    // La cantidad fusionada (3 del servidor + 2 de la ambigua resuelta) tiene que
+    // llegar al input que dibuja PropuestaEditable, no quedar en su copia vieja de
+    // antes de la fusión (el título del grupo no lo distingue: sigue diciendo
+    // "1 producto" en los dos casos).
+    const input = await screen.findByLabelText(/cantidad de lavandina 5l/i) as HTMLInputElement;
+    expect(input.value).toBe('5');
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+
+    await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(1));
+    // Esto es lo que efectivamente llega al Quodom del usuario: si quedó la
+    // cantidad vieja, el Quodom se guarda con menos de lo que el usuario pidió.
+    expect(mockAdd).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 8001, cantidad: 5 }));
   });
 });
 

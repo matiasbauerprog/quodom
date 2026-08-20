@@ -121,9 +121,13 @@ export function GrupoRubro({
           {/* Una key derivada de lo pendiente fuerza una instancia nueva cuando la
               lista cambia: PropuestaEditable copia items a su propio estado al montar
               y no se resincroniza con la prop, así que sin esto un producto que llega
-              a un grupo ya existente y sin confirmar nunca se dibuja. */}
+              a un grupo ya existente y sin confirmar nunca se dibuja. La cantidad va
+              en la key además del idproducto: un candidato que resuelve al mismo
+              producto ya pendiente en el grupo no cambia el conjunto de ids, sólo
+              suma cantidad, y sin esto PropuestaEditable se queda con su copia vieja
+              y manda la cantidad de antes de la fusión. */}
           <PropuestaEditable
-            key={pendientes.map(p => p.idproducto).join('-')}
+            key={pendientes.map(p => p.idproducto + 'x' + p.cantidad).join('-')}
             items={pendientes}
             onConfirm={confirmar}
             busy={confirming}
