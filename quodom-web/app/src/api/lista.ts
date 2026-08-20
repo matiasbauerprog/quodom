@@ -18,9 +18,24 @@ export type ListaNoEncontrado = {
   motivo: string;
 };
 
+export type ListaCandidato = {
+  idproducto: number;
+  nombreProducto: string;
+  idrubro: number;
+  rubro: string;
+};
+
+export type ListaAmbigua = {
+  textoOriginal: string;
+  cantidad: number;
+  sugerido: number;
+  candidatos: ListaCandidato[];
+};
+
 export type ListaResponse = {
   res: true;
   grupos: ListaGrupo[];
+  ambiguas: ListaAmbigua[];
   noEncontrados: ListaNoEncontrado[];
   lineasIgnoradas: number;
 };
