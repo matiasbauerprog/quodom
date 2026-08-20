@@ -68,10 +68,19 @@ export function PanelLista() {
       // Mismo criterio que el servidor: dos renglones que resuelven al mismo
       // producto del mismo rubro se fusionan en un ítem en vez de duplicar la
       // key en el grupo y perder cantidad en el guardia de "ya agregado".
-      const existente = grupo.items.find(it => it.idproducto === item.idproducto);
-      if (existente) {
-        existente.cantidad += item.cantidad;
-        existente.textoOriginal += '; ' + item.textoOriginal;
+      const idx = grupo.items.findIndex(it => it.idproducto === item.idproducto);
+      if (idx >= 0) {
+        // Reemplaza el item por uno nuevo en vez de mutar el existente: esa
+        // instancia es la misma que vive en el estado 'resultado' (el .map de
+        // arriba sólo copia el array, no los items), y 'grupos' se recalcula en
+        // cada render — mutar en el lugar sumaría la cantidad de nuevo en cada
+        // re-render ajeno a esta línea, sin que el usuario tocara nada.
+        const previo = grupo.items[idx];
+        grupo.items[idx] = {
+          ...previo,
+          cantidad: previo.cantidad + item.cantidad,
+          textoOriginal: previo.textoOriginal + '; ' + item.textoOriginal
+        };
       } else {
         grupo.items.push(item);
       }

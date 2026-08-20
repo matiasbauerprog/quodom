@@ -329,6 +329,52 @@ describe('PanelLista (ambigua resuelve al mismo producto de un grupo existente)'
   });
 });
 
+// Segunda ambigua, en otro rubro, que no toca el producto fusionado: resolverla
+// sólo sirve para forzar un re-render de PanelLista sin que el usuario haga nada
+// más sobre la línea de lavandinas.
+function crearListaMismoProductoConSegundaAmbigua() {
+  const base = crearListaMismoProducto();
+  return {
+    ...base,
+    ambiguas: [
+      ...base.ambiguas,
+      {
+        textoOriginal: '1 escoba',
+        cantidad: 1,
+        sugerido: 9001,
+        candidatos: [
+          { idproducto: 9001, nombreProducto: 'Pala', idrubro: 5, rubro: 'Bazar' },
+          { idproducto: 9002, nombreProducto: 'Rastrillo', idrubro: 5, rubro: 'Bazar' }
+        ]
+      }
+    ]
+  };
+}
+
+describe('PanelLista (un re-render ajeno no vuelve a sumar la cantidad fusionada)', () => {
+  it('resolver una segunda ambigua no le suma la cantidad otra vez a la primera', async () => {
+    await enviarCon(crearListaMismoProductoConSegundaAmbigua());
+    const region = await screen.findByRole('region', { name: /tenés que elegir/i });
+
+    // Resuelve la línea que se fusiona con el producto ya pendiente en el grupo.
+    fireEvent.click(within(region).getByRole('button', { name: /lavandina 5l/i }));
+    await waitFor(async () => {
+      const input = await screen.findByLabelText(/cantidad de lavandina 5l/i) as HTMLInputElement;
+      expect(input.value).toBe('5');
+    });
+
+    // Resuelve una segunda línea, sin relación con la primera: esto re-renderiza
+    // PanelLista y vuelve a correr el merge sobre las ambiguas ya resueltas. Si el
+    // merge muta el item en el lugar, la cantidad fusionada de la lavandina sube
+    // sola a 7 (5 + 2 de vuelta) sin que el usuario haya tocado esa línea.
+    fireEvent.click(screen.getByRole('button', { name: /^pala/i }));
+    await waitFor(() => expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull());
+
+    const input = await screen.findByLabelText(/cantidad de lavandina 5l/i) as HTMLInputElement;
+    expect(input.value).toBe('5');
+  });
+});
+
 describe('PanelLista (una segunda carga no hereda el estado de la primera)', () => {
   it('un rubro y producto repetidos entre dos cargas vuelven a ser confirmables', async () => {
     mockActivoPorRubro.mockResolvedValue({ id: 'Q-1' });
