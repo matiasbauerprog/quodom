@@ -35,6 +35,7 @@ const RESPUESTA = {
       items: [{ textoOriginal: '2 resmas', idproducto: 8002, nombreProducto: 'Resma A4 75g', cantidad: 2 }]
     }
   ],
+  ambiguas: [],
   noEncontrados: [{ textoOriginal: '1 escalera', motivo: 'no está en el catálogo' }],
   lineasIgnoradas: 0
 };
@@ -211,5 +212,118 @@ describe('PanelLista (líneas ambiguas)', () => {
 
     await screen.findByText(/Limpieza/);
     expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull();
+  });
+});
+
+// El candidato cae en el rubro 1 (Limpieza), que ya trae un grupo del servidor
+// y todavía no fue confirmado. Es el caso que un mount fresco de PropuestaEditable
+// no ejercita: en CON_AMBIGUA el candidato va al rubro 3, que no tiene grupo
+// previo, así que GrupoRubro siempre se monta de cero y el bug de FIX 1 no se ve.
+const CON_AMBIGUA_MISMO_RUBRO = {
+  res: true as const,
+  grupos: [
+    {
+      idrubro: 1, rubro: 'Limpieza',
+      items: [{ textoOriginal: '3 lavandinas', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3 }]
+    }
+  ],
+  ambiguas: [
+    {
+      textoOriginal: '2 guantes',
+      cantidad: 2,
+      sugerido: 8010,
+      candidatos: [
+        { idproducto: 8010, nombreProducto: 'Guantes de látex', idrubro: 1, rubro: 'Limpieza' },
+        { idproducto: 8011, nombreProducto: 'Guantes descartables', idrubro: 3, rubro: 'Papelera' }
+      ]
+    }
+  ],
+  noEncontrados: [],
+  lineasIgnoradas: 0
+};
+
+describe('PanelLista (ambigua resuelve a un grupo existente sin confirmar)', () => {
+  it('el producto resuelto aparece en el grupo de su rubro que ya traía el servidor', async () => {
+    await enviarCon(CON_AMBIGUA_MISMO_RUBRO);
+    await screen.findByRole('region', { name: /tenés que elegir/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /guantes de látex/i }));
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull());
+    expect(screen.getByText('Guantes de látex')).toBeInTheDocument();
+    expect(screen.getByText('Lavandina 5L')).toBeInTheDocument();
+    expect(screen.getByText(/Limpieza — 2 productos/)).toBeInTheDocument();
+  });
+});
+
+// El candidato resuelve al mismo idproducto que ya está en el grupo (Lavandina
+// 5L, id 8001): tiene que fusionarse en vez de duplicar la fila.
+const CON_AMBIGUA_MISMO_PRODUCTO = {
+  res: true as const,
+  grupos: [
+    {
+      idrubro: 1, rubro: 'Limpieza',
+      items: [{ textoOriginal: '3 lavandinas', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3 }]
+    }
+  ],
+  ambiguas: [
+    {
+      textoOriginal: '2 lavandinas más',
+      cantidad: 2,
+      sugerido: 8001,
+      candidatos: [
+        { idproducto: 8001, nombreProducto: 'Lavandina 5L', idrubro: 1, rubro: 'Limpieza' },
+        { idproducto: 8020, nombreProducto: 'Lavandina 3L', idrubro: 1, rubro: 'Limpieza' }
+      ]
+    }
+  ],
+  noEncontrados: [],
+  lineasIgnoradas: 0
+};
+
+describe('PanelLista (ambigua resuelve al mismo producto de un grupo existente)', () => {
+  it('suma la cantidad en vez de duplicar la fila', async () => {
+    await enviarCon(CON_AMBIGUA_MISMO_PRODUCTO);
+    const region = await screen.findByRole('region', { name: /tenés que elegir/i });
+
+    fireEvent.click(within(region).getByRole('button', { name: /lavandina 5l/i }));
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull());
+    // Sin el merge esto sería "8001-8001" en vez de "8001": dos filas con el
+    // mismo idproducto (misma key de React) en vez de una sola fusionada.
+    expect(screen.getAllByText('Lavandina 5L')).toHaveLength(1);
+    expect(screen.getByText(/Limpieza — 1 producto/)).toBeInTheDocument();
+  });
+});
+
+describe('PanelLista (una segunda carga no hereda el estado de la primera)', () => {
+  it('un rubro y producto repetidos entre dos cargas vuelven a ser confirmables', async () => {
+    mockActivoPorRubro.mockResolvedValue({ id: 'Q-1' });
+    mockAdd.mockResolvedValue(undefined);
+
+    renderYEnviar();
+    await waitFor(() => expect(screen.getByText(/Limpieza/)).toBeInTheDocument());
+
+    const botones = screen.getAllByRole('button', { name: /agregar al quodom/i });
+    fireEvent.click(botones[0]);
+    await waitFor(() => expect(screen.getAllByText(/Agregado/)).toHaveLength(1));
+
+    mockProcesar.mockResolvedValue({
+      res: true,
+      grupos: [
+        {
+          idrubro: 1, rubro: 'Limpieza',
+          items: [{ textoOriginal: '5 lavandinas', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 5 }]
+        }
+      ],
+      ambiguas: [],
+      noEncontrados: [],
+      lineasIgnoradas: 0
+    });
+    fireEvent.change(screen.getByLabelText(/pegá tu lista/i), { target: { value: '5 lavandinas' } });
+    fireEvent.click(screen.getByRole('button', { name: /buscar en el catálogo/i }));
+
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /agregar al quodom/i })).toHaveLength(1));
+    expect(screen.queryByText(/Agregado/)).toBeNull();
   });
 });

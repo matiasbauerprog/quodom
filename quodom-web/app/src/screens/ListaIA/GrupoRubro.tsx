@@ -100,8 +100,11 @@ export function GrupoRubro({
     }
   }
 
+  // Un grupo ya confirmado sólo cuenta lo que todavía está sin mandar: si no,
+  // un producto tardío hace que el título siga contando lo ya agregado.
+  const cantidadTitulo = agregadoEn !== null ? pendientes.length : grupo.items.length;
   const titulo = (grupo.rubro || nombreRubro(grupo.idrubro))
-    + ' — ' + grupo.items.length + (grupo.items.length === 1 ? ' producto' : ' productos');
+    + ' — ' + cantidadTitulo + (cantidadTitulo === 1 ? ' producto' : ' productos');
 
   return (
     <section className="gr card hoja">
@@ -114,14 +117,25 @@ export function GrupoRubro({
       )}
 
       {!todoAgregado && (
-        <PropuestaEditable items={pendientes} onConfirm={confirmar} busy={confirming} />
-      )}
+        <>
+          {/* Una key derivada de lo pendiente fuerza una instancia nueva cuando la
+              lista cambia: PropuestaEditable copia items a su propio estado al montar
+              y no se resincroniza con la prop, así que sin esto un producto que llega
+              a un grupo ya existente y sin confirmar nunca se dibuja. */}
+          <PropuestaEditable
+            key={pendientes.map(p => p.idproducto).join('-')}
+            items={pendientes}
+            onConfirm={confirmar}
+            busy={confirming}
+          />
 
-      {pendientesSinResolver > 0 && (
-        <p className="gr-pendientes">
-          Quedan {pendientesSinResolver}{' '}
-          {pendientesSinResolver === 1 ? 'línea' : 'líneas'} sin resolver arriba.
-        </p>
+          {pendientesSinResolver > 0 && (
+            <p className="gr-pendientes">
+              Quedan {pendientesSinResolver}{' '}
+              {pendientesSinResolver === 1 ? 'línea' : 'líneas'} sin resolver arriba.
+            </p>
+          )}
+        </>
       )}
 
       {error && <p className="gr-error" role="alert">{error}</p>}
