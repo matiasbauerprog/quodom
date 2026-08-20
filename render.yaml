@@ -23,6 +23,14 @@ services:
         value: "false"
       - key: APP_URL
         sync: false
+      # Sin esto el asistente no funciona: el server contesta "El asistente no
+      # está disponible por ahora", que se lee como una falla del producto y no
+      # como una variable que falta. El valor se carga a mano en el dashboard
+      # del servicio, nunca acá — este archivo se commitea. El resto de las
+      # variables de IA (modelo, reintentos, topes, límites) tienen default en
+      # el código; están documentadas en quodom-web/api/.env.example.
+      - key: GEMINI_API_KEY
+        sync: false
 
   - type: web
     name: quodom-app
