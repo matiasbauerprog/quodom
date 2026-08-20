@@ -104,4 +104,32 @@ describe('GrupoRubro', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/no se pudo/i));
     expect(screen.getByText('Lavandina 5L')).toBeInTheDocument();
   });
+
+  it('un reintento tras un error parcial no vuelve a agregar la línea que ya se guardó', async () => {
+    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    mockAdd.mockReset();
+    mockAdd
+      .mockResolvedValueOnce({ res: true, id: 1 })
+      .mockRejectedValueOnce(new Error('Error de red'))
+      .mockResolvedValueOnce({ res: true, id: 2 });
+
+    const grupoDosItems = {
+      idrubro: 1,
+      rubro: 'Limpieza',
+      items: [
+        { textoOriginal: '3 lavandinas 5L', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3 },
+        { textoOriginal: '2 esponjas', idproducto: 8002, nombreProducto: 'Esponja', cantidad: 2 }
+      ]
+    };
+    render(<MemoryRouter><GrupoRubro grupo={grupoDosItems} /></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
+
+    const llamadasItem1 = mockAdd.mock.calls.filter(([arg]) => arg.idproducto === 8001);
+    expect(llamadasItem1).toHaveLength(1);
+  });
 });

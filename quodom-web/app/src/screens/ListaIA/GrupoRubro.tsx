@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { PropuestaEditable } from '../ModoIA/PropuestaEditable';
 import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
@@ -32,14 +32,20 @@ export function GrupoRubro({ grupo }: { grupo: ListaGrupo }) {
     motivo: 'De tu lista: ' + it.textoOriginal
   }));
 
+  // Recordamos qué idproducto ya se agregó al servidor para que un reintento
+  // tras un error parcial no vuelva a agregar las líneas que sí se guardaron.
+  const agregadosRef = useRef<Set<number>>(new Set());
+
   async function agregarLineas(idquodom: string, elegidos: IaProposalItem[]) {
     for (const it of elegidos) {
+      if (agregadosRef.current.has(it.idproducto)) continue;
       await quodomLines.add({
         idquodom,
         idproducto: it.idproducto,
         cantidad: it.cantidad,
         nombreProducto: it.nombreProducto
       });
+      agregadosRef.current.add(it.idproducto);
     }
     window.dispatchEvent(new Event('quodom:changed'));
     setAgregadoEn(idquodom);
