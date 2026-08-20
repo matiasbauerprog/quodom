@@ -146,3 +146,31 @@
   gap: var(--sp-5);
   margin-top: var(--sp-4);
 }
+
+.home-ia-tabs {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto var(--sp-3) auto;
+}
+
+.home-ia-tab {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--color-acento);
+  background: var(--color-tarjeta);
+  color: var(--color-acento);
+  font-family: var(--font-prompt);
+  font-weight: 600;
+  cursor: pointer;
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.home-ia-tab:hover { filter: brightness(0.98); }
+
+.home-ia-tab-activa {
+  background: var(--color-acento);
+  color: #fff;
+}
