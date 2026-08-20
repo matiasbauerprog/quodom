@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { ListaIA } from '../ListaIA';
+import { PanelLista } from '../PanelLista';
+import { useAuth } from '../../../auth/AuthContext';
 import { listaApi } from '../../../api/lista';
 import { quodom as quodomApi } from '../../../api/quodom';
 import { quodomLines } from '../../../api/quodom_lines';
 
+vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../../api/lista', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api/lista')>();
   return { ...actual, listaApi: { procesar: vi.fn() } };
@@ -41,11 +43,14 @@ beforeEach(() => {
   mockProcesar.mockReset();
   mockActivoPorRubro.mockReset();
   mockAdd.mockReset();
+  vi.mocked(useAuth).mockReturnValue(
+    { user: { id: 'u1', nombre: 'Ana' }, signout: vi.fn() } as unknown as ReturnType<typeof useAuth>
+  );
 });
 
 function renderYEnviar(respuesta: unknown = RESPUESTA) {
   mockProcesar.mockResolvedValue(respuesta);
-  render(<MemoryRouter><ListaIA /></MemoryRouter>);
+  render(<MemoryRouter><PanelLista /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText(/pegá tu lista/i), {
     target: { value: '3 lavandinas\n2 resmas\n1 escalera' }
   });
@@ -109,11 +114,28 @@ describe('ListaIA', () => {
 
   it('muestra el error del servidor y deja volver a intentar', async () => {
     mockProcesar.mockRejectedValue(new Error('La IA está sobrecargada en este momento.'));
-    render(<MemoryRouter><ListaIA /></MemoryRouter>);
+    render(<MemoryRouter><PanelLista /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/pegá tu lista/i), { target: { value: 'lavandina' } });
     fireEvent.click(screen.getByRole('button', { name: /buscar en el catálogo/i }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/sobrecargada/i));
     expect(screen.getByRole('button', { name: /buscar en el catálogo/i })).toBeEnabled();
+  });
+});
+
+describe('PanelLista (invitado)', () => {
+  beforeEach(() => mockProcesar.mockClear());
+
+  it('pide login al enviar la lista y no llama al API', async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      { user: null, signout: vi.fn() } as unknown as ReturnType<typeof useAuth>
+    );
+    render(<MemoryRouter><PanelLista /></MemoryRouter>);
+
+    fireEvent.change(screen.getByLabelText(/pegá tu lista/i), { target: { value: '3 lavandinas' } });
+    fireEvent.click(screen.getByRole('button', { name: /buscar en el catálogo/i }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/iniciar sesión/i));
+    expect(mockProcesar).not.toHaveBeenCalled();
   });
 });

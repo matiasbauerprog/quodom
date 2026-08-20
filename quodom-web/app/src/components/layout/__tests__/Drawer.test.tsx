@@ -19,10 +19,4 @@ describe('Drawer', () => {
 
     expect(screen.getByRole('link', { name: /buscar/i })).toHaveAttribute('href', '/busqueda');
   });
-
-  it('linkea a Subí tu lista', () => {
-    montar();
-
-    expect(screen.getByRole('link', { name: /subí tu lista/i })).toHaveAttribute('href', '/lista');
-  });
 });

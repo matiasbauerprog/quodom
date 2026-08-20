@@ -27,3 +27,10 @@
 @media (min-width: 1025px) {
   .cl-texto { max-width: 640px; }
 }
+
+.lia-titulo {
+  font-family: var(--font-prompt);
+  font-size: 1.05rem;
+  margin: 0 0 var(--sp-2) 0;
+  color: var(--color-texto);
+}
