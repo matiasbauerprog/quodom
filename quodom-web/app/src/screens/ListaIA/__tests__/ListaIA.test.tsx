@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ListaIA } from '../ListaIA';
 import { listaApi } from '../../../api/lista';
@@ -55,9 +55,10 @@ describe('ListaIA', () => {
 
   it('muestra los no encontrados con su texto original', async () => {
     renderYEnviar();
-    await waitFor(() => expect(screen.getByText(/no encontr/i)).toBeInTheDocument());
-    expect(screen.getByText(/1 escalera/)).toBeInTheDocument();
-    expect(screen.getByText(/no está en el catálogo/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('region', { name: /no encontr/i })).toBeInTheDocument());
+    const region = screen.getByRole('region', { name: /no encontr/i });
+    expect(within(region).getByText(/1 escalera/)).toBeInTheDocument();
+    expect(within(region).getByText(/no está en el catálogo/)).toBeInTheDocument();
   });
 
   it('avisa cuántas líneas quedaron afuera', async () => {

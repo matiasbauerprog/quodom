@@ -4,8 +4,8 @@ import type { ListaNoEncontrado } from '../../api/lista';
 export function NoEncontrados({ items }: { items: ListaNoEncontrado[] }) {
   if (items.length === 0) return null;
   return (
-    <section className="ne card hoja">
-      <h2 className="ne-titulo">No encontré {items.length === 1 ? 'este ítem' : 'estos ítems'}</h2>
+    <section className="ne card hoja" aria-labelledby="ne-titulo">
+      <h2 id="ne-titulo" className="ne-titulo">No encontré {items.length === 1 ? 'este ítem' : 'estos ítems'}</h2>
       <ul className="ne-lista">
         {items.map((it, i) => (
           <li key={i} className="ne-item">
