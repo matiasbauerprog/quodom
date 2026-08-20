@@ -63,10 +63,24 @@ export function LineasQuodomSidebar(props: Props) {
     return () => { alive = false; };
   }, [modo, clave, nonce]);
 
-  // Cada cambio avisa al resto de la app: el contador de la barra inferior y
-  // el porcentaje de la tarjeta se calculan en el servidor, no acá.
+  // Las líneas también cambian desde afuera: agregar un producto del catálogo
+  // pasa por agregarProducto, que avisa con `quodom:changed`. Sin esto la
+  // lista abierta se quedaba con lo que había cuando la desplegaste, mientras
+  // el contador de la tarjeta ya mostraba el producto nuevo.
+  useEffect(() => {
+    const recargar = () => setNonce(n => n + 1);
+    window.addEventListener('quodom:changed', recargar);
+    // Un carrito de invitado puede cambiar desde otra pestaña.
+    window.addEventListener('storage', recargar);
+    return () => {
+      window.removeEventListener('quodom:changed', recargar);
+      window.removeEventListener('storage', recargar);
+    };
+  }, []);
+
+  // Avisar alcanza para recargar: el efecto de arriba escucha el mismo evento,
+  // así que no hace falta subir el nonce por separado.
   const recargar = useCallback(() => {
-    setNonce(n => n + 1);
     window.dispatchEvent(new Event('quodom:changed'));
     onChange?.();
   }, [onChange]);

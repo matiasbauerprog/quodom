@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MisQuodomsSidebar } from '../MisQuodomsSidebar';
 import { quodom as quodomApi } from '../../../api/quodom';
@@ -110,6 +110,23 @@ describe('sidebar: mini editor', () => {
     expect(screen.queryByText('Coca Cola 2L')).toBeNull();
   });
 
+  it('un producto agregado desde el catálogo aparece en la lista abierta', async () => {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText('Bebidas oficina');
+    fireEvent.click(screen.getByText('Bebidas oficina'));
+    await screen.findByText('Coca Cola 2L');
+
+    // Agregar desde el catálogo pasa por agregarProducto, que avisa con este
+    // evento. La lista desplegada tiene que enterarse igual que la tarjeta.
+    porQuodom.mockResolvedValue([
+      ...LINEAS_BEBIDAS,
+      { id: 13, idquodom: 'q-7', idproducto: 702, cantidad: 1, nombreProducto: 'Tónica 1L' }
+    ]);
+    act(() => { window.dispatchEvent(new Event('quodom:changed')); });
+
+    expect(await screen.findByText('Tónica 1L')).toBeInTheDocument();
+  });
+
   it('cambiar la cantidad la guarda y recarga las líneas', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
@@ -151,6 +168,20 @@ describe('sidebar: carrito de invitado', () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
     addGuestLine(7, { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 2 });
+  });
+
+  it('un producto agregado al carrito aparece en la lista abierta', async () => {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText('Bebidas');
+    fireEvent.click(screen.getByText('Carrito'));
+    await screen.findByText('Gaseosa 2L');
+
+    act(() => {
+      addGuestLine(7, { idproducto: 701, nombreProducto: 'Agua 500ml', cantidad: 1 });
+      window.dispatchEvent(new Event('quodom:changed'));
+    });
+
+    expect(await screen.findByText('Agua 500ml')).toBeInTheDocument();
   });
 
   it('se edita contra localStorage, sin tocar la red', async () => {
