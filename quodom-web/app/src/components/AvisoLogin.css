@@ -1,0 +1,15 @@
+.aviso-login {
+  background: var(--color-tarjeta);
+  color: var(--color-texto);
+  font-family: var(--font-jaldi);
+  padding: 12px 16px;
+  margin: 0;
+  border-left: 3px solid var(--color-acento);
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.aviso-login a {
+  color: var(--color-acento);
+  font-weight: 600;
+}
