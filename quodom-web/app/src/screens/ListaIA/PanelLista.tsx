@@ -5,7 +5,9 @@ import { useAuth } from '../../auth/AuthContext';
 import { AvisoLogin } from '../../components/AvisoLogin';
 import { CargarLista } from './CargarLista';
 import { GrupoRubro } from './GrupoRubro';
+import { LineasAmbiguas } from './LineasAmbiguas';
 import { NoEncontrados } from './NoEncontrados';
+import type { ListaAmbigua, ListaCandidato, ListaGrupo, ListaItem } from '../../api/lista';
 import './ListaIA.css';
 
 export function PanelLista() {
@@ -14,12 +16,14 @@ export function PanelLista() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ListaResponse | null>(null);
+  const [resueltas, setResueltas] = useState<Record<string, ListaCandidato | null>>({});
 
   async function procesar(entrada: ListaEntrada) {
     if (!user) { setNecesitaLogin(true); return; }
     setBusy(true);
     setError(null);
     setResultado(null);
+    setResueltas({});
     try {
       setResultado(await listaApi.procesar(entrada));
     } catch (e) {
@@ -29,7 +33,43 @@ export function PanelLista() {
     }
   }
 
-  const vacio = resultado && resultado.grupos.length === 0 && resultado.noEncontrados.length === 0;
+  function elegir(linea: ListaAmbigua, candidato: ListaCandidato) {
+    setResueltas(r => ({ ...r, [linea.textoOriginal]: candidato }));
+  }
+
+  function descartar(linea: ListaAmbigua) {
+    setResueltas(r => ({ ...r, [linea.textoOriginal]: null }));
+  }
+
+  // Los grupos que se dibujan son los que trajo el servidor más lo que el
+  // usuario fue resolviendo: elegir un candidato agrega su producto al grupo de
+  // su rubro, creándolo si ese rubro todavía no tenía uno.
+  const ambiguasPendientes = (resultado?.ambiguas ?? [])
+    .filter(a => !(a.textoOriginal in resueltas));
+
+  const grupos: ListaGrupo[] = (resultado?.grupos ?? []).map(g => ({ ...g, items: [...g.items] }));
+
+  for (const ambigua of resultado?.ambiguas ?? []) {
+    const elegido = resueltas[ambigua.textoOriginal];
+    if (!elegido) continue;
+    const item: ListaItem = {
+      textoOriginal: ambigua.textoOriginal,
+      idproducto: elegido.idproducto,
+      nombreProducto: elegido.nombreProducto,
+      cantidad: ambigua.cantidad
+    };
+    const grupo = grupos.find(g => g.idrubro === elegido.idrubro);
+    if (grupo) {
+      grupo.items.push(item);
+    } else {
+      grupos.push({ idrubro: elegido.idrubro, rubro: elegido.rubro, items: [item] });
+    }
+  }
+
+  const vacio = resultado
+    && resultado.grupos.length === 0
+    && resultado.ambiguas.length === 0
+    && resultado.noEncontrados.length === 0;
 
   return (
     <section className="lia" aria-label="Subí tu lista">
@@ -54,7 +94,13 @@ export function PanelLista() {
         </p>
       )}
 
-      {resultado?.grupos.map(g => <GrupoRubro key={g.idrubro} grupo={g} />)}
+      {resultado && (
+        <LineasAmbiguas lineas={ambiguasPendientes} onElegir={elegir} onDescartar={descartar} />
+      )}
+
+      {resultado && grupos.map(g => (
+        <GrupoRubro key={g.idrubro} grupo={g} pendientesSinResolver={ambiguasPendientes.length} />
+      ))}
       {resultado && <NoEncontrados items={resultado.noEncontrados} />}
     </section>
   );

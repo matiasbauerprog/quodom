@@ -86,7 +86,7 @@ describe('PanelLista', () => {
   });
 
   it('avisa cuando no matcheó nada', async () => {
-    renderYEnviar({ res: true, grupos: [], noEncontrados: [], lineasIgnoradas: 0 });
+    renderYEnviar({ res: true, grupos: [], ambiguas: [], noEncontrados: [], lineasIgnoradas: 0 });
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/no encontré/i));
   });
 
@@ -137,5 +137,79 @@ describe('PanelLista (invitado)', () => {
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/iniciar sesión/i));
     expect(mockProcesar).not.toHaveBeenCalled();
+  });
+});
+
+const CON_AMBIGUA = {
+  res: true as const,
+  grupos: [
+    {
+      idrubro: 1, rubro: 'Limpieza',
+      items: [{ textoOriginal: '3 lavandinas', idproducto: 8001, nombreProducto: 'Lavandina 5L', cantidad: 3 }]
+    }
+  ],
+  ambiguas: [
+    {
+      textoOriginal: '3 platos descartables',
+      cantidad: 3,
+      sugerido: 493,
+      candidatos: [
+        { idproducto: 455, nombreProducto: 'Plato por 10 unidades', idrubro: 3, rubro: 'Papelera' },
+        { idproducto: 493, nombreProducto: 'Plato descartable por 100 unidades', idrubro: 3, rubro: 'Papelera' }
+      ]
+    }
+  ],
+  noEncontrados: [],
+  lineasIgnoradas: 0
+};
+
+async function enviarCon(respuesta: unknown) {
+  mockProcesar.mockResolvedValue(respuesta);
+  render(<MemoryRouter><PanelLista /></MemoryRouter>);
+  fireEvent.change(screen.getByLabelText(/pegá tu lista/i), { target: { value: '3 lavandinas\n3 platos descartables' } });
+  fireEvent.click(screen.getByRole('button', { name: /buscar en el catálogo/i }));
+}
+
+describe('PanelLista (líneas ambiguas)', () => {
+  it('muestra el bloque de elección arriba de los grupos', async () => {
+    await enviarCon(CON_AMBIGUA);
+
+    expect(await screen.findByRole('region', { name: /tenés que elegir/i })).toBeInTheDocument();
+    expect(screen.getByText(/Limpieza/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Papelera/).length).toBeGreaterThan(0);
+  });
+
+  it('elegir un candidato lo saca del bloque y crea el grupo de su rubro', async () => {
+    await enviarCon(CON_AMBIGUA);
+    await screen.findByRole('region', { name: /tenés que elegir/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /plato descartable por 100 unidades/i }));
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull());
+    expect(screen.getByText('Plato descartable por 100 unidades')).toBeInTheDocument();
+    expect(screen.getByText(/Papelera — 1 producto/)).toBeInTheDocument();
+  });
+
+  it('descartar una línea no la agrega a ningún grupo', async () => {
+    await enviarCon(CON_AMBIGUA);
+    await screen.findByRole('region', { name: /tenés que elegir/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /descartar/i }));
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull());
+    expect(screen.queryByText(/Papelera/)).toBeNull();
+  });
+
+  it('avisa en el grupo cuántas líneas quedan sin resolver', async () => {
+    await enviarCon(CON_AMBIGUA);
+
+    expect(await screen.findByText(/1 línea sin resolver/i)).toBeInTheDocument();
+  });
+
+  it('sin ambiguas no dibuja el bloque', async () => {
+    await enviarCon({ ...CON_AMBIGUA, ambiguas: [] });
+
+    await screen.findByText(/Limpieza/);
+    expect(screen.queryByRole('region', { name: /tenés que elegir/i })).toBeNull();
   });
 });
