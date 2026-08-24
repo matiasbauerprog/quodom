@@ -8,9 +8,9 @@ import { ErrorState } from '../../components/ErrorState';
 import { RubroSelector } from './RubroSelector';
 import { SubcategoriaTabs } from './SubcategoriaTabs';
 import { ListaProductos } from './ListaProductos';
-import { PestanasIA, type ModoIa } from './PestanasIA';
+import type { ModoIa } from './PestanasIA';
 import { PanelConversacion } from '../ModoIA/PanelConversacion';
-import { PanelLista } from '../ListaIA/PanelLista';
+// import { PanelLista } from '../ListaIA/PanelLista';
 import './SitioInicial.css';
 
 // Devuelve el número del param o null: "", "abc" y "0" son todos "sin valor".
@@ -102,10 +102,31 @@ export function SitioInicial() {
         <input className="input home-search-input" type="search" placeholder="¿Qué necesitás?" aria-label="Buscar productos" value={q} onChange={e => setQ(e.target.value)} />
       </form>
 
-      {idrubro === null && <PestanasIA activo={modoIa} onElegir={setModoIa} />}
+      {/* El botón es también la única forma de cerrar la conversación: la
+          pantalla de chat con su flecha de volver ya no existe, así que si
+          desapareciera al abrirse el usuario quedaría encerrado adentro. */}
+      {idrubro === null && (
+        <button
+          type="button"
+          className={'btn home-modo-ia' + (modo === 'chat' ? ' home-modo-ia-activo' : '')}
+          aria-pressed={modo === 'chat'}
+          onClick={() => setModoIa(modo === 'chat' ? null : 'chat')}
+        >
+          Modo IA — armá tu Quodom conversando
+        </button>
+      )}
 
       {modo === 'chat' && <PanelConversacion />}
-      {modo === 'lista' && <PanelLista />}
+
+      {/* Subir un archivo está apagado por pedido del usuario (2026-08-23): en
+          el home quedó sólo el botón de conversar. Para reactivarlo hay que
+          descomentar esta línea, volver a importar PanelLista arriba, y
+          reemplazar el botón de acá arriba por <PestanasIA activo={modoIa}
+          onElegir={setModoIa} />, que sigue existiendo con sus tests. El resto
+          de esa función — el endpoint, el matcheo contra el catálogo, elegir
+          entre productos parecidos y sus cuatro componentes — sigue vivo y
+          probado; lo único cortado es la entrada. */}
+      {/* {modo === 'lista' && <PanelLista />} */}
 
       {modo === null && (
         <>

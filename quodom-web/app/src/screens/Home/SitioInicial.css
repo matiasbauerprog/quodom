@@ -131,6 +131,31 @@
   margin-top: var(--sp-4);
 }
 
+.home-modo-ia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto var(--sp-3) auto;
+  background: var(--color-acento);
+  color: #fff;
+  font-family: var(--font-prompt);
+  font-weight: 600;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.home-modo-ia:hover { filter: brightness(1.05); }
+
+/* Con la conversación abierta el botón pasa a ser el control para cerrarla, y
+   se hunde para que se lea como activo y no como una invitación a entrar otra
+   vez a donde ya estás. */
+.home-modo-ia-activo { filter: brightness(0.92); }
+
+/* Las pestañas siguen acá porque PestanasIA sigue existiendo: vuelven juntas
+   el día que se reactive subir un archivo. */
 .home-ia-tabs {
   display: flex;
   gap: 8px;
