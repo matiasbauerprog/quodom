@@ -18,7 +18,15 @@ const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const whatsapp = quodomApi.whatsapp as unknown as ReturnType<typeof vi.fn>;
 
 const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, createdBy: 'u-1', iddireccion: null };
-const ENVIADA = { ...BEBIDAS, estado: 'ENVIADO', fechaenvio: '2026-08-19T12:00:00Z' };
+// La fecha va relativa a ahora, no fija: QuodomCard marca VENCIDO a las 72hs de
+// enviado, así que una fecha absoluta hace que estos tests pasen sólo durante
+// los tres días siguientes al día en que se escribieron y después fallen sin
+// que nadie haya tocado el código.
+const ENVIADA = {
+  ...BEBIDAS,
+  estado: 'ENVIADO',
+  fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+};
 
 function tarjetaBebidas(): HTMLElement {
   return screen.getByText('Bebidas oficina').closest('article') as HTMLElement;
