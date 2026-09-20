@@ -63,19 +63,59 @@
   gap: 12px;
 }
 .mia-proposal-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-/* Nombre y cantidad comparten la primera fila; cada atributo baja entero
-   debajo (flex-basis 100%), que en mobile es la única forma legible. */
-.mia-proposal-item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.mia-proposal-item { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
 .mia-proposal-item:last-child { border-bottom: none; }
-.mia-proposal-name { display: flex; flex-direction: column; gap: 2px; }
+.mia-proposal-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.mia-proposal-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mia-proposal-motivo { font-size: 12px; color: rgba(0,0,0,0.6); }
-.mia-proposal-qty { display: flex; align-items: center; gap: 4px; }
+.mia-proposal-qty { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
 .mia-proposal-qty button { width: 28px; height: 28px; }
 .mia-proposal-qty input { width: 48px; text-align: center; }
 .mia-proposal-remove { color: #b00; }
-.mia-proposal-attr { flex: 0 0 100%; display: flex; align-items: center; gap: 8px; }
-.mia-proposal-attr > span { font-size: 12px; color: rgba(0,0,0,0.6); min-width: 76px; }
-.mia-proposal-attr select { flex: 1; min-width: 0; padding: 4px 8px; font-size: 13px; }
+
+/* Los atributos van como chips al ancho de su contenido, no estirados: uno al
+   lado del otro mientras entren y bajando de línea cuando no. El div existe
+   siempre; :empty lo saca del layout para que no deje el gap del padre. */
+.mia-proposal-attrs { display: flex; flex-wrap: wrap; gap: 6px; }
+.mia-proposal-attrs:empty { display: none; }
+
+/* Gris sobre la tarjeta blanca: sin esto el desplegable se pierde contra el
+   fondo y no se lee como algo que se puede tocar. */
+.mia-proposal-attr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-fondo);
+  border: 1px solid rgba(0,0,0,0.12);
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding: 2px 4px 2px 8px;
+  cursor: pointer;
+}
+.mia-proposal-attr > span {
+  font-family: var(--font-prompt);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.5);
+}
+.mia-proposal-attr select {
+  width: auto;
+  border: none;
+  background: transparent;
+  padding: 2px 2px 2px 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-texto);
+  cursor: pointer;
+}
+.mia-proposal-attr select:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 2px; }
+
+/* Todavía sin elegir: borde punteado y texto apagado, para que se distinga de
+   un golpe de vista del atributo que el asistente ya resolvió. */
+.mia-proposal-attr-vacio { background: transparent; border-style: dashed; }
+.mia-proposal-attr-vacio select { font-weight: 400; color: rgba(0,0,0,0.55); }
 
 .mia-header {
   display: flex;

@@ -44,7 +44,9 @@ const CHAT_SCHEMA = {
 };
 
 async function chat(userId, messages) {
-  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  // Ver DEFAULT_FALLBACKS en helpers/gemini.js: el default no es el modelo más
+  // nuevo sino el que efectivamente contesta en el free tier.
+  const model = process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
   // The intent step is plain classification: run it on a lighter model so a chat
   // turn only puts one request on the (often congested) main model.
   const intentModel = process.env.GEMINI_MODEL_INTENT || 'gemini-flash-lite-latest';

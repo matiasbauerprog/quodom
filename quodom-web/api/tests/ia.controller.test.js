@@ -228,3 +228,25 @@ describe('ia.chat (atributos del producto)', () => {
     });
   });
 });
+
+// El modelo principal también tiene su default en el código y producción corre
+// con él: render.yaml no declara GEMINI_MODEL. Si ese default apunta a un modelo
+// saturado, el asistente no funciona para nadie y ningún test lo avisa.
+describe('ia.chat (modelo por defecto)', () => {
+  it('uses the deployed default model when GEMINI_MODEL is unset', async () => {
+    const previo = process.env.GEMINI_MODEL;
+    delete process.env.GEMINI_MODEL;
+    try {
+      callGemini
+        .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+        .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+
+      await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar' }]);
+
+      expect(callGemini.mock.calls[1][0].model).toBe('gemini-3-flash-preview');
+    } finally {
+      if (previo === undefined) delete process.env.GEMINI_MODEL;
+      else process.env.GEMINI_MODEL = previo;
+    }
+  });
+});
