@@ -10,7 +10,12 @@ const DEFAULT_ATTEMPTS_PER_MODEL = 2;
 // en un modelo lite, que es el menos disputado.
 // Ojo: el primario es un modelo preview y Google puede retirarlo sin aviso; el
 // helper trata un 404 como "pasá al siguiente", así que eso degrada, no rompe.
-const DEFAULT_FALLBACKS = 'gemini-3.7-flash,gemini-flash-lite-latest';
+// La cadena es larga a propósito. El free tier lleva cuota POR MODELO, así que
+// un 429 en uno no dice nada del siguiente, y tanto el 429 como el 404 y el 503
+// fallan en menos de un segundo: sumar candidatos casi no gasta presupuesto y
+// multiplica las chances de encontrar uno con cupo. Lo caro es el timeout, y de
+// eso se ocupa tiempoParaEsteIntento repartiendo el presupuesto.
+const DEFAULT_FALLBACKS = 'gemini-3.7-flash,gemini-flash-lite-latest,gemini-3.5-flash,gemini-3.6-flash';
 
 function envInt(name, fallback) {
   const v = parseInt(process.env[name] || '', 10);
@@ -36,6 +41,20 @@ function sleep(ms) {
 function backoffMs(attempt) {
   const base = Math.min(600 * Math.pow(2, attempt - 1), 4000);
   return Math.round(base * (0.75 + Math.random() * 0.5));
+}
+
+/**
+ * Cuánto esperar a un modelo sin dejar sin tiempo a los que vienen detrás. El
+ * timeout configurado es un techo, no una reserva: si se lo queda entero el
+ * primero, el presupuesto total se agota antes de llegar a la cadena de
+ * respaldo y los modelos sanos nunca se prueban. Se reparte lo que queda entre
+ * los modelos que faltan, con un piso para que un presupuesto casi agotado no
+ * degenere en llamadas que nacen muertas.
+ */
+function tiempoParaEsteIntento(budget, modelosRestantes, timeoutMs) {
+  const parte = Math.floor(budget / Math.max(1, modelosRestantes));
+  const piso = Math.min(1000, timeoutMs);
+  return Math.max(piso, Math.min(timeoutMs, parte));
 }
 
 function isRetryable(e) {
@@ -105,23 +124,28 @@ async function callGemini({ model, systemPrompt, contents, responseSchema }) {
 
   for (let mi = 0; mi < chain.length; mi++) {
     const modelName = chain[mi];
+    const esUltimoModelo = mi === chain.length - 1;
     for (let attempt = 1; attempt <= attemptsPerModel; attempt++) {
       const budget = deadline - Date.now();
       if (budget <= 0 && lastErr) break;
       calls += 1;
       try {
-        return await doFetch(modelName, Math.max(1000, Math.min(timeoutMs, budget)));
+        return await doFetch(modelName, tiempoParaEsteIntento(budget, chain.length - mi, timeoutMs));
       } catch (e) {
         lastErr = e;
         const skipModel = isModelUnavailable(e);
         if (!skipModel && !isRetryable(e)) throw e;
 
-        const reason = e.name === 'AbortError' ? 'timeout' : e.message;
-        const isLastOverall = mi === chain.length - 1 && attempt === attemptsPerModel;
+        const esTimeout = e.name === 'AbortError';
+        const reason = esTimeout ? 'timeout' : e.message;
+        const isLastOverall = esUltimoModelo && attempt === attemptsPerModel;
         if (isLastOverall) break;
         // A 429 is a quota/rate ceiling on this model and a 404 means it is gone:
-        // waiting will not clear either, but another model may still work.
-        if (skipModel || e.status === 429 || attempt === attemptsPerModel) {
+        // waiting will not clear either, but another model may still work. A
+        // timeout says the same thing: a model that went silent under load does
+        // not usually answer the immediate retry, and insisting spends the
+        // budget that the healthy models behind it still need.
+        if (skipModel || e.status === 429 || (esTimeout && !esUltimoModelo) || attempt === attemptsPerModel) {
           console.warn('gemini: ' + modelName + ' failed (' + reason + '), falling back to next model');
           break;
         }

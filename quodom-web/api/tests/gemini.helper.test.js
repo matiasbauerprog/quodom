@@ -10,6 +10,8 @@ describe('gemini helper', () => {
   afterEach(() => {
     global.fetch = originalFetch;
     delete process.env.GEMINI_MODEL_FALLBACKS;
+    delete process.env.GEMINI_TIMEOUT_MS;
+    delete process.env.GEMINI_DEADLINE_MS;
     if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = originalKey;
   });
@@ -195,6 +197,42 @@ describe('gemini helper', () => {
     const llamados = global.fetch.mock.calls.map(c => decodeURIComponent(String(c[0])));
     expect(llamados[0]).toContain('gemini-3-flash-preview');
     expect(llamados[2]).toContain('gemini-3.7-flash');
+  });
+
+  // El bug que dejó el chat muerto aunque hubiera modelos sanos detrás: con el
+  // timeout por intento (30s) y el presupuesto total (55s) de producción, dos
+  // esperas agotadas consumían todo el tiempo y el bucle cortaba por deadline
+  // antes de llamar al segundo modelo. El log lo decía con todas las letras:
+  // "timeout after 2 attempt(s) across 3 model(s)". Cada modelo de la cadena
+  // tiene que recibir su parte del presupuesto.
+  it('tries the rest of the chain when a model times out instead of spending the whole budget on it', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    process.env.GEMINI_MODEL_FALLBACKS = 'model-b,model-c';
+    process.env.GEMINI_TIMEOUT_MS = '200';
+    process.env.GEMINI_DEADLINE_MS = '500';
+
+    // Un modelo que no contesta hasta que lo cortan, como la red de verdad. Con
+    // mockRejectedValue el tiempo no transcurre y el agotamiento del
+    // presupuesto — que es exactamente el bug — no se reproduce.
+    const cuelgaHastaQueLoCorten = (signal) => new Promise((_, reject) => {
+      signal.addEventListener('abort', () => {
+        const e = new Error('The operation was aborted.');
+        e.name = 'AbortError';
+        reject(e);
+      });
+    });
+
+    global.fetch = jest.fn((url, opts) =>
+      String(url).includes('model-c')
+        ? Promise.resolve({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] }) })
+        : cuelgaHastaQueLoCorten(opts.signal));
+
+    const out = await callGemini({ model: 'model-a', systemPrompt: 's', contents: [], responseSchema: {} });
+
+    expect(out).toEqual({ ok: true });
+    const usados = global.fetch.mock.calls.map(c => String(c[0]));
+    expect(usados.some(u => u.includes('model-b'))).toBe(true);
+    expect(usados.some(u => u.includes('model-c'))).toBe(true);
   });
 
   it('does not retry on a non-retryable 4xx', async () => {
