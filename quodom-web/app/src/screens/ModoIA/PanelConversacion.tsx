@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { iaApi, type IaMessage, type IaProposalItem } from '../../api/ia';
 import { quodom as quodomApi } from '../../api/quodom';
-import { quodomLines } from '../../api/quodom_lines';
 import { ApiError } from '../../api/client';
+import { agregarAlServidor } from '../../quodom/agregarProducto';
 import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
 import { nombreRubro } from '../../quodom/rubros';
 import { useAuth } from '../../auth/AuthContext';
@@ -79,11 +79,12 @@ export function PanelConversacion() {
 
   async function agregarItemsAlQuodom(idquodom: string, items: IaProposalItem[]) {
     for (const it of items) {
-      await quodomLines.add({
-        idquodom,
+      await agregarAlServidor(idquodom, {
         idproducto: it.idproducto,
         cantidad: it.cantidad,
-        nombreProducto: it.nombreProducto
+        nombreProducto: it.nombreProducto,
+        ...(it.atributo1 ? { atributo1: it.atributo1 } : {}),
+        ...(it.atributo2 ? { atributo2: it.atributo2 } : {})
       });
     }
     window.dispatchEvent(new Event('quodom:changed'));

@@ -87,7 +87,7 @@ async function procesarLista(entrada) {
     const porId = new Map(catalogo.map(p => [p.id, p]));
 
     const reply = await callGemini({
-        model: process.env.GEMINI_MODEL || 'gemini-flash-latest',
+        model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
         systemPrompt: systemPrompt(catalogo),
         contents: [{ role: 'user', parts }],
         responseSchema: LISTA_SCHEMA

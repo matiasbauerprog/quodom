@@ -48,4 +48,57 @@ describe('PropuestaEditable', () => {
       { idproducto: 2, cantidad: 1, motivo: 'b', nombreProducto: 'Prod B' }
     ]);
   });
+
+  it('renders no attribute selector for a product without attributes', () => {
+    render(<PropuestaEditable items={items} onConfirm={() => {}} />);
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+});
+
+const conAtributos: IaProposalItem[] = [
+  {
+    idproducto: 302, cantidad: 3, motivo: '60m² a 2 manos', nombreProducto: 'Latex Mate',
+    nombreAtributo1: 'LITROS', atributo1: '20 litros',
+    opcionesAtributo1: ['1 litro', '4 litros', '10 litros', '20 litros'],
+    nombreAtributo2: 'MARCA', atributo2: null,
+    opcionesAtributo2: ['Alba', 'Colorin']
+  }
+];
+
+describe('PropuestaEditable (atributos)', () => {
+  it('preselects the value the assistant chose', () => {
+    render(<PropuestaEditable items={conAtributos} onConfirm={() => {}} />);
+    expect(screen.getByLabelText(/litros de latex mate/i)).toHaveValue('20 litros');
+  });
+
+  it('leaves the selector on "Elegir" when the assistant chose nothing', () => {
+    render(<PropuestaEditable items={conAtributos} onConfirm={() => {}} />);
+    expect(screen.getByLabelText(/marca de latex mate/i)).toHaveValue('');
+  });
+
+  it('offers every value the catalogue has for that product', () => {
+    render(<PropuestaEditable items={conAtributos} onConfirm={() => {}} />);
+    const select = screen.getByLabelText(/litros de latex mate/i);
+    expect(Array.from(select.querySelectorAll('option')).map(o => o.textContent))
+      .toEqual(['Elegir', '1 litro', '4 litros', '10 litros', '20 litros']);
+  });
+
+  it('confirms the value the user picked, not the one the assistant proposed', () => {
+    const spy = vi.fn();
+    render(<PropuestaEditable items={conAtributos} onConfirm={spy} />);
+    fireEvent.change(screen.getByLabelText(/litros de latex mate/i), { target: { value: '4 litros' } });
+    fireEvent.change(screen.getByLabelText(/marca de latex mate/i), { target: { value: 'Alba' } });
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    expect(spy).toHaveBeenCalledWith([
+      expect.objectContaining({ idproducto: 302, atributo1: '4 litros', atributo2: 'Alba' })
+    ]);
+  });
+
+  it('clears the attribute again when the user goes back to "Elegir"', () => {
+    const spy = vi.fn();
+    render(<PropuestaEditable items={conAtributos} onConfirm={spy} />);
+    fireEvent.change(screen.getByLabelText(/litros de latex mate/i), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    expect(spy).toHaveBeenCalledWith([expect.objectContaining({ atributo1: null })]);
+  });
 });

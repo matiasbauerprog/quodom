@@ -48,7 +48,12 @@ export async function confirmarYAgregar(
   return { idquodom: creado.idquodom };
 }
 
-async function agregarAlServidor(idquodom: string, line: GuestLine): Promise<void> {
+/**
+ * Único lugar donde se arma una línea para el servidor. El Modo IA también lo
+ * usa: si el atributo elegido no se manda acá, la línea llega sin formato y el
+ * usuario tiene que volver a elegirlo en el detalle del Quodom.
+ */
+export async function agregarAlServidor(idquodom: string, line: GuestLine): Promise<void> {
   await quodomLines.add({
     idquodom,
     idproducto: line.idproducto,

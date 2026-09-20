@@ -175,6 +175,28 @@ describe('gemini helper', () => {
     expect(global.fetch.mock.calls[1][0]).toContain('gemini-3.5-flash');
   });
 
+  // Producción no define GEMINI_MODEL_FALLBACKS (render.yaml no la declara), así
+  // que corre con este default. Cuando los modelos del default se saturaron, el
+  // chat falló entero y no había test que lo notara: el resto de los casos fija
+  // la variable a mano y nunca ejercita la cadena que realmente se despliega.
+  it('falls back to the deployed default chain when GEMINI_MODEL_FALLBACKS is unset', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    delete process.env.GEMINI_MODEL_FALLBACKS;
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503, text: async () => 'high demand' })
+      .mockResolvedValueOnce({ ok: false, status: 503, text: async () => 'high demand' })
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }] })
+      });
+
+    await callGemini({ model: 'gemini-3-flash-preview', systemPrompt: 's', contents: [], responseSchema: {} });
+
+    const llamados = global.fetch.mock.calls.map(c => decodeURIComponent(String(c[0])));
+    expect(llamados[0]).toContain('gemini-3-flash-preview');
+    expect(llamados[2]).toContain('gemini-3.7-flash');
+  });
+
   it('does not retry on a non-retryable 4xx', async () => {
     process.env.GEMINI_API_KEY = 'test-key';
     global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400, text: async () => 'bad request' });

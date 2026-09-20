@@ -15,8 +15,32 @@ export function PropuestaEditable({
   function setCantidad(idx: number, cantidad: number) {
     setItems(items.map((it, i) => i === idx ? { ...it, cantidad: Math.max(1, cantidad) } : it));
   }
+  function setAtributo(idx: number, slot: 1 | 2, valor: string) {
+    const campo = slot === 1 ? 'atributo1' : 'atributo2';
+    setItems(items.map((it, i) => i === idx ? { ...it, [campo]: valor || null } : it));
+  }
   function remove(idx: number) {
     setItems(items.filter((_, i) => i !== idx));
+  }
+
+  function selector(it: IaProposalItem, idx: number, slot: 1 | 2) {
+    const nombre = slot === 1 ? it.nombreAtributo1 : it.nombreAtributo2;
+    const opciones = slot === 1 ? it.opcionesAtributo1 : it.opcionesAtributo2;
+    if (!nombre || !opciones || opciones.length === 0) return null;
+    const valor = (slot === 1 ? it.atributo1 : it.atributo2) ?? '';
+    return (
+      <label className={'mia-proposal-attr' + (valor ? '' : ' mia-proposal-attr-vacio')}>
+        <span>{nombre}</span>
+        <select
+          aria-label={nombre + ' de ' + it.nombreProducto}
+          value={valor}
+          onChange={e => setAtributo(idx, slot, e.target.value)}
+        >
+          <option value="">Elegir</option>
+          {opciones.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </label>
+    );
   }
 
   return (
@@ -24,21 +48,27 @@ export function PropuestaEditable({
       <ul className="mia-proposal-list">
         {items.map((it, idx) => (
           <li key={it.idproducto} className="mia-proposal-item">
-            <div className="mia-proposal-name">
-              <strong>{it.nombreProducto}</strong>
-              {it.motivo ? <span className="mia-proposal-motivo">{it.motivo}</span> : null}
+            <div className="mia-proposal-row">
+              <div className="mia-proposal-name">
+                <strong>{it.nombreProducto}</strong>
+                {it.motivo ? <span className="mia-proposal-motivo">{it.motivo}</span> : null}
+              </div>
+              <div className="mia-proposal-qty">
+                <button type="button" aria-label={'Quitar uno de ' + it.nombreProducto} onClick={() => setCantidad(idx, it.cantidad - 1)}>−</button>
+                <input
+                  type="number"
+                  min={1}
+                  aria-label={'Cantidad de ' + it.nombreProducto}
+                  value={it.cantidad}
+                  onChange={e => setCantidad(idx, Number(e.target.value) || 1)}
+                />
+                <button type="button" aria-label={'Sumar uno a ' + it.nombreProducto} onClick={() => setCantidad(idx, it.cantidad + 1)}>+</button>
+                <button type="button" aria-label={'Quitar ' + it.nombreProducto} className="mia-proposal-remove" onClick={() => remove(idx)}>×</button>
+              </div>
             </div>
-            <div className="mia-proposal-qty">
-              <button type="button" aria-label={'Quitar uno de ' + it.nombreProducto} onClick={() => setCantidad(idx, it.cantidad - 1)}>−</button>
-              <input
-                type="number"
-                min={1}
-                aria-label={'Cantidad de ' + it.nombreProducto}
-                value={it.cantidad}
-                onChange={e => setCantidad(idx, Number(e.target.value) || 1)}
-              />
-              <button type="button" aria-label={'Sumar uno a ' + it.nombreProducto} onClick={() => setCantidad(idx, it.cantidad + 1)}>+</button>
-              <button type="button" aria-label={'Quitar ' + it.nombreProducto} className="mia-proposal-remove" onClick={() => remove(idx)}>×</button>
+            <div className="mia-proposal-attrs">
+              {selector(it, idx, 1)}
+              {selector(it, idx, 2)}
             </div>
           </li>
         ))}

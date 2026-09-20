@@ -2,9 +2,15 @@ const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_DEADLINE_MS = 55000;
 const DEFAULT_ATTEMPTS_PER_MODEL = 2;
 // Newest models get the most traffic and are the first to answer 503 UNAVAILABLE
-// on the free tier. When that happens we retry on progressively older (and far
-// less congested) flash models instead of failing the user's chat.
-const DEFAULT_FALLBACKS = 'gemini-3.6-flash,gemini-3.5-flash';
+// on the free tier. Retrying on the next-newest is not enough: el 2026-09-20
+// toda la cadena (3.7 -> 3.6 -> 3.5) contestaba 503 a la vez y el chat fallaba
+// entero tras 55s. Midiendo los nueve modelos flash habilitados con el payload
+// real, el único que respondía era gemini-3-flash-preview. La cadena mezcla
+// entonces generaciones distintas en vez de bajar un escalón por vez, y termina
+// en un modelo lite, que es el menos disputado.
+// Ojo: el primario es un modelo preview y Google puede retirarlo sin aviso; el
+// helper trata un 404 como "pasá al siguiente", así que eso degrada, no rompe.
+const DEFAULT_FALLBACKS = 'gemini-3.7-flash,gemini-flash-lite-latest';
 
 function envInt(name, fallback) {
   const v = parseInt(process.env[name] || '', 10);
