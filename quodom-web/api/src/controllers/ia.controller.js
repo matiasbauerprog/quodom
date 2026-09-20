@@ -29,7 +29,12 @@ const CHAT_SCHEMA = {
         properties: {
           idproducto: { type: 'integer' },
           cantidad: { type: 'integer' },
-          motivo: { type: 'string' }
+          motivo: { type: 'string' },
+          // El valor elegido para cada grupo de atributos del producto
+          // ("20 litros" para LITROS). Opcional: una línea sin atributo es
+          // válida y se completa después en el detalle del Quodom.
+          atributo1: { type: 'string' },
+          atributo2: { type: 'string' }
         },
         required: ['idproducto', 'cantidad']
       }
@@ -99,12 +104,26 @@ async function chat(userId, messages) {
   }
 
   const productoIndex = new Map(productos.map(p => [p.id, p]));
-  const productList = productos.map(p => ({
-    idproducto: p.id,
-    nombre: p.nombreproducto,
-    atributo1: p.atributo1 || null,
-    atributo2: p.atributo2 || null
-  }));
+
+  // Los valores elegibles de cada atributo viven en productos_atributos, no en
+  // productos: `productos.atributo1` es sólo el NOMBRE del grupo ("LITROS").
+  // Sin esto el modelo no tiene forma de saber que existe la lata de 20 litros.
+  // Se agrupa por nombreatributo, nunca por idatributo (el mismo id es MEDIDAS
+  // en un producto y PESO en otro).
+  const opcionesPorProducto = await cargarOpcionesAtributos(productos.map(p => p.id));
+  const opcionesDe = (p, slot) => {
+    const nombre = slot === 1 ? p.atributo1 : p.atributo2;
+    if (!nombre) return null;
+    const valores = opcionesPorProducto.get(p.id)?.get(nombre);
+    return valores && valores.length > 0 ? { nombre, valores } : null;
+  };
+
+  const productList = productos.map(p => {
+    const entry = { idproducto: p.id, nombre: p.nombreproducto };
+    const atributos = [opcionesDe(p, 1), opcionesDe(p, 2)].filter(Boolean);
+    if (atributos.length > 0) entry.atributos = atributos;
+    return entry;
+  });
 
   const geminiContents = messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -122,8 +141,13 @@ async function chat(userId, messages) {
       '1. NUNCA propongas productos en tu primera respuesta. Empezá siempre con una repregunta.\n' +
       '2. Antes de proponer, tenés que hacer al menos DOS repreguntas útiles cubriendo: ' +
       'alcance del proyecto (medidas, cantidad, superficie), estado actual del sustrato, condiciones (interior/exterior, húmedo/seco), y preferencias del usuario.\n' +
-      '3. NUNCA adivines atributos del usuario como color, tamaño, marca, terminación o categoría de precio. ' +
-      'Si un producto tiene atributos (los verás como "atributo1" y "atributo2" en la lista), esos DEBE elegirlos el usuario — preguntáselo.\n' +
+      '3. ATRIBUTOS: cada producto de la lista puede traer "atributos", con el nombre del grupo (ej. "LITROS") ' +
+      'y sus valores posibles. Al proponer podés completar "atributo1" y/o "atributo2" con UNO de esos valores, ' +
+      'copiado EXACTAMENTE como figura en la lista. Completalo sólo cuando se desprende de la conversación: ' +
+      'el formato o la medida que surge de tu propio cálculo (proponés 20 litros porque calculaste 20L de rendimiento), ' +
+      'o lo que el usuario ya dijo. NUNCA adivines lo que es preferencia del usuario y no te dijo ' +
+      '(marca, color, terminación, categoría de precio): dejá ese atributo vacío o preguntáselo. ' +
+      'Dejar un atributo vacío es válido, el usuario lo completa después.\n' +
       '4. Hacé UNA sola pregunta por turno, clara y concreta. No amontones varias preguntas.\n' +
       '5. Cuando finalmente propongas, en "motivo" incluí el cálculo o razón concreta ' +
       '(ej. "3 latas de 4L para cubrir 36m² a 2 manos, cada lata rinde 12m² por mano").\n' +
@@ -138,7 +162,8 @@ async function chat(userId, messages) {
       '- Otros rubros: usá criterio experto pero SIEMPRE preguntá antes de asumir.\n\n' +
       'FORMATO DE RESPUESTA (siempre uno de dos):\n' +
       '- Repregunta: { "type":"question", "text":"UNA sola pregunta concreta" }\n' +
-      '- Propuesta: { "type":"proposal", "text":"resumen breve", "items":[{"idproducto":<id>,"cantidad":<n>,"motivo":"<cálculo/razón>"}] }\n\n' +
+      '- Propuesta: { "type":"proposal", "text":"resumen breve", "items":[{"idproducto":<id>,"cantidad":<n>,' +
+      '"motivo":"<cálculo/razón>","atributo1":"<valor exacto o vacío>","atributo2":"<valor exacto o vacío>"}] }\n\n' +
       'CONTEXTO DE ESTA CONVERSACIÓN: llevás ' + assistantTurns + ' respuesta(s) previa(s) en este chat. ' +
       (assistantTurns < 2 ? 'Aún NO estás autorizado a proponer productos: solo repreguntá.' : 'Ya podés proponer si tenés información suficiente.') + '\n\n' +
       'REGLA CRÍTICA DE PRODUCTOS: los idproducto deben ser exclusivamente de esta lista. No inventes IDs ni nombres. ' +
@@ -153,12 +178,23 @@ async function chat(userId, messages) {
     for (const it of rawItems) {
       const p = productoIndex.get(it.idproducto);
       if (!p) continue;
-      filtered.push({
+      const item = {
         idproducto: p.id,
         cantidad: Math.max(1, Number(it.cantidad) || 1),
         motivo: typeof it.motivo === 'string' ? it.motivo : '',
         nombreProducto: p.nombreproducto
-      });
+      };
+      // Mismo criterio que con los idproducto inventados: un valor que el
+      // producto no ofrece se descarta en silencio y la línea queda sin
+      // atributo, que es un estado válido.
+      for (const slot of [1, 2]) {
+        const grupo = opcionesDe(p, slot);
+        if (!grupo) continue;
+        item['nombreAtributo' + slot] = grupo.nombre;
+        item['atributo' + slot] = valorValido(it['atributo' + slot], grupo.valores);
+        item['opcionesAtributo' + slot] = grupo.valores;
+      }
+      filtered.push(item);
     }
     if (filtered.length === 0) {
       return {
@@ -170,6 +206,36 @@ async function chat(userId, messages) {
   }
 
   return { type: 'question', text: reply.text };
+}
+
+/**
+ * Valores elegibles por producto y por nombre de grupo, en el orden del
+ * catálogo. Los `esvendedor: '1'` quedan afuera: son del lado vendedor, que en
+ * esta webapp no existe.
+ */
+async function cargarOpcionesAtributos(idsProducto) {
+  const filas = await db.productos_atributos.findAll({
+    where: { idproducto: { [db.Sequelize.Op.in]: idsProducto }, esvendedor: '0' },
+    order: [['orden', 'ASC']],
+    attributes: ['idproducto', 'nombreatributo', 'valoratributo']
+  });
+  const porProducto = new Map();
+  for (const f of filas) {
+    if (!f.nombreatributo || !f.valoratributo) continue;
+    if (!porProducto.has(f.idproducto)) porProducto.set(f.idproducto, new Map());
+    const grupos = porProducto.get(f.idproducto);
+    if (!grupos.has(f.nombreatributo)) grupos.set(f.nombreatributo, []);
+    grupos.get(f.nombreatributo).push(f.valoratributo);
+  }
+  return porProducto;
+}
+
+/** Devuelve el valor tal cual figura en el catálogo, o null si no es uno de ellos. */
+function valorValido(elegido, valores) {
+  if (typeof elegido !== 'string') return null;
+  const buscado = elegido.trim().toLowerCase();
+  if (buscado === '') return null;
+  return valores.find(v => v.trim().toLowerCase() === buscado) || null;
 }
 
 async function incrementDaily(userId) {

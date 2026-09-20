@@ -138,6 +138,40 @@ describe('PanelConversacion (confirming a proposal, reuses the catalog rubro flo
     expect(quodom.create).toHaveBeenCalledWith(expect.objectContaining({ idrubro: 5 }));
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-NEW', idproducto: 300, cantidad: 2 }));
   });
+
+  // El atributo elegido en el chat tiene que llegar a la línea; si no, el
+  // Quodom queda con "LITROS: Elegir" y el usuario lo completa de nuevo a mano.
+  it('sends the chosen attribute values along with the line', async () => {
+    (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      type: 'proposal' as const,
+      text: 'Listo, esto te propongo:',
+      idrubro: 5,
+      items: [{
+        idproducto: 302, cantidad: 3, motivo: '60m² a 2 manos', nombreProducto: 'Latex Mate',
+        nombreAtributo1: 'LITROS', atributo1: '20 litros',
+        opcionesAtributo1: ['4 litros', '20 litros'],
+        nombreAtributo2: 'MARCA', atributo2: null, opcionesAtributo2: ['Alba']
+      }]
+    });
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue({
+      id: 'Q-EXIST', descripcion: 'Mi Quodom', estado: 'CREADO', nro: 'Q-1',
+      createdBy: 'u1', iddireccion: null, idrubro: 5
+    });
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+
+    renderWith();
+    fireEvent.change(screen.getByPlaceholderText(/escrib/i), { target: { value: 'quiero pintar 60m2' } });
+    fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
+    await waitFor(() => expect(screen.getByText('Latex Mate')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+
+    await waitFor(() => expect(quodomLines.add).toHaveBeenCalled());
+    expect(quodomLines.add).toHaveBeenCalledWith({
+      idquodom: 'Q-EXIST', idproducto: 302, cantidad: 3,
+      nombreProducto: 'Latex Mate', atributo1: '20 litros'
+    });
+  });
 });
 
 describe('PanelConversacion (invitado)', () => {
