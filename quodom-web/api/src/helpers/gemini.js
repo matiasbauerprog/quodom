@@ -1,6 +1,7 @@
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_DEADLINE_MS = 55000;
 const DEFAULT_ATTEMPTS_PER_MODEL = 2;
+const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
 // Newest models get the most traffic and are the first to answer 503 UNAVAILABLE
 // on the free tier. Retrying on the next-newest is not enough: el 2026-09-20
 // toda la cadena (3.7 -> 3.6 -> 3.5) contestaba 503 a la vez y el chat fallaba
@@ -77,7 +78,13 @@ async function callGemini({ model, systemPrompt, contents, responseSchema }) {
     contents,
     generationConfig: {
       responseMimeType: 'application/json',
-      responseSchema
+      responseSchema,
+      // Cortafuegos de costo, no un límite de diseño. Una vez el modelo entró
+      // en un bucle degenerado dentro de un campo de texto y siguió escribiendo
+      // hasta el tope del modelo; con esto ese desborde cuesta acotado. Tiene
+      // que sobrar para la respuesta más larga legítima (una propuesta de una
+      // docena de productos), así que se ajusta sólo con evidencia.
+      maxOutputTokens: envInt('GEMINI_MAX_OUTPUT_TOKENS', DEFAULT_MAX_OUTPUT_TOKENS)
     }
   };
 

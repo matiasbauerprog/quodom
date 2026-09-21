@@ -29,7 +29,10 @@ const CHAT_SCHEMA = {
         properties: {
           idproducto: { type: 'integer' },
           cantidad: { type: 'integer' },
-          motivo: { type: 'string' },
+          // Una línea para el usuario. El largo va declarado acá además de
+          // pedirse en el prompt, pero el corte que manda es el del servidor
+          // (motivoAcotado): el modelo ya desbordó este campo una vez.
+          motivo: { type: 'string', maxLength: 160 },
           // El valor elegido para cada grupo de atributos del producto
           // ("20 litros" para LITROS). Opcional: una línea sin atributo es
           // válida y se completa después en el detalle del Quodom.
@@ -152,9 +155,15 @@ async function chat(userId, messages) {
       'o lo que el usuario ya dijo. NUNCA adivines lo que es preferencia del usuario y no te dijo ' +
       '(marca, color, terminación, categoría de precio): dejá ese atributo vacío o preguntáselo. ' +
       'Dejar un atributo vacío es válido, el usuario lo completa después.\n' +
+      '3bis. La misma regla vale cuando el catálogo separa el gusto en productos DISTINTOS, no en atributos: ' +
+      'si dos productos se diferencian sólo en algo que elige el usuario — terminación (mate o satinado), ' +
+      'color, variedad, sabor — no elijas vos, preguntá cuál quiere. Si el catálogo ofrece una sola ' +
+      'variante, usala sin preguntar: no es una elección.\n' +
       '4. Hacé UNA sola pregunta por turno, clara y concreta. No amontones varias preguntas.\n' +
-      '5. Cuando finalmente propongas, en "motivo" incluí el cálculo o razón concreta ' +
-      '(ej. "3 latas de 4L para cubrir 36m² a 2 manos, cada lata rinde 12m² por mano").\n' +
+      '5. "motivo" es UNA sola oración corta (máximo 160 caracteres) que el usuario lee debajo del producto: ' +
+      'la cuenta ya resuelta, en limpio (ej. "3 latas de 4L para 36m² a 2 manos; cada lata rinde 12m² por mano"). ' +
+      'NO es un borrador: no escribas ahí tu razonamiento, ni alternativas, ni "recalculando", ni te corrijas. ' +
+      'Decidí antes y escribí sólo la conclusión. Un "motivo" largo te deja sin espacio para el resto de los ítems.\n' +
       '6. Esta conversación es sólo del rubro "' + (rubroById.get(idrubro) || '') + '": si el proyecto que ' +
       'describe el usuario abarca además otros rubros (ej. pintura y bebidas para la misma obra), NO los mezcles ' +
       'en la propuesta. Repreguntá por cuál rubro arrancar primero y seguí sólo con ese.\n\n' +
@@ -162,7 +171,7 @@ async function chat(userId, messages) {
       'FORMATO DE RESPUESTA (siempre uno de dos):\n' +
       '- Repregunta: { "type":"question", "text":"UNA sola pregunta concreta" }\n' +
       '- Propuesta: { "type":"proposal", "text":"resumen breve", "items":[{"idproducto":<id>,"cantidad":<n>,' +
-      '"motivo":"<cálculo/razón>","atributo1":"<valor exacto o vacío>","atributo2":"<valor exacto o vacío>"}] }\n\n' +
+      '"motivo":"<una oración corta>","atributo1":"<valor exacto o vacío>","atributo2":"<valor exacto o vacío>"}] }\n\n' +
       'CONTEXTO DE ESTA CONVERSACIÓN: llevás ' + assistantTurns + ' respuesta(s) previa(s) en este chat. ' +
       (assistantTurns < 2 ? 'Aún NO estás autorizado a proponer productos: solo repreguntá.' : 'Ya podés proponer si tenés información suficiente.') + '\n\n' +
       'REGLA CRÍTICA DE PRODUCTOS: los idproducto deben ser exclusivamente de esta lista. No inventes IDs ni nombres.\n\n' +
@@ -180,7 +189,7 @@ async function chat(userId, messages) {
       const item = {
         idproducto: p.id,
         cantidad: Math.max(1, Number(it.cantidad) || 1),
-        motivo: typeof it.motivo === 'string' ? it.motivo : '',
+        motivo: motivoAcotado(it.motivo),
         nombreProducto: p.nombreproducto
       };
       // Mismo criterio que con los idproducto inventados: un valor que el
@@ -217,7 +226,7 @@ async function chat(userId, messages) {
 // aplicarla.
 const GUIAS_POR_RUBRO = {
   5: 'Pintura.\n'
-    + 'CÓMO DIMENSIONAR (usalo y mostrá la cuenta en "motivo"):\n'
+    + 'CÓMO DIMENSIONAR (la cuenta resolvela vos; en "motivo" va sólo el resultado, en una línea):\n'
     + '- Si el usuario da la superficie del piso y no la de pared, estimá la pared como piso x 2,8 '
     + '(altura estándar 2,60 m). El cielorraso es la superficie del piso.\n'
     + '- Descontá aberturas: puerta 1,60 m², ventana 1,44 m², ventanal 4,20 m².\n'
@@ -308,6 +317,23 @@ async function cargarOpcionesAtributos(idsProducto) {
     grupos.get(f.nombreatributo).push(f.valoratributo);
   }
   return porProducto;
+}
+
+// "motivo" es una línea que el usuario lee debajo del producto, no un borrador.
+// El modelo lo usó una vez para deliberar en voz alta — alternativas,
+// recálculos y al final un bucle degenerado — y con eso agotó su presupuesto de
+// salida en el primer ítem, así que la propuesta llegó con un producto en vez
+// de once. El prompt pide una sola oración y el esquema declara el largo, pero
+// ninguna de las dos cosas es una garantía del lado del modelo: el corte acá sí.
+const MOTIVO_MAX = 200;
+
+function motivoAcotado(motivo) {
+  if (typeof motivo !== 'string') return '';
+  const limpio = motivo.replace(/\s+/g, ' ').trim();
+  if (limpio.length <= MOTIVO_MAX) return limpio;
+  const cortado = limpio.slice(0, MOTIVO_MAX - 1);
+  const ultimoEspacio = cortado.lastIndexOf(' ');
+  return (ultimoEspacio > MOTIVO_MAX / 2 ? cortado.slice(0, ultimoEspacio) : cortado).trimEnd() + '…';
 }
 
 /** Devuelve el valor tal cual figura en el catálogo, o null si no es uno de ellos. */

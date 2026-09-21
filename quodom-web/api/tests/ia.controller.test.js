@@ -393,3 +393,70 @@ describe('ia.chat (guía de Pintura)', () => {
     expect(p).toMatch(/departamento/i);
   });
 });
+
+// El modelo se puso a deliberar dentro de "motivo" — alternativas, recálculos,
+// y al final un bucle degenerado de mil palabras — y con eso agotó su
+// presupuesto de salida en el PRIMER ítem: la propuesta llegó con un solo
+// producto en vez de once. El campo es una línea para el usuario, no un
+// borrador: el servidor lo acota pase lo que pase.
+describe('ia.chat (motivo acotado)', () => {
+  it('trims a runaway motivo instead of passing it through', async () => {
+    const delirio = 'Recalculando con envase de 10 litros: '.repeat(60);
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({
+        type: 'proposal', text: 'Listo',
+        items: [{ idproducto: 302, cantidad: 1, motivo: delirio }]
+      });
+
+    const out = await ia.chat(USER_ID, [{ role: 'user', text: 'pintar' }]);
+
+    expect(out.items[0].motivo.length).toBeLessThanOrEqual(200);
+    expect(out.items[0].motivo).toMatch(/…$/);
+  });
+
+  it('leaves a motivo that is already short untouched', async () => {
+    const corto = '1 lata de 10L para 40m² a dos manos (rinde 10 m²/L por mano).';
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({
+        type: 'proposal', text: 'Listo',
+        items: [{ idproducto: 302, cantidad: 1, motivo: corto }]
+      });
+
+    const out = await ia.chat(USER_ID, [{ role: 'user', text: 'pintar' }]);
+
+    expect(out.items[0].motivo).toBe(corto);
+  });
+
+  it('tells the model that motivo is one sentence and not a scratchpad', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+
+    await ia.chat(USER_ID, [{ role: 'user', text: 'pintar' }]);
+
+    const prompt = callGemini.mock.calls[1][0].systemPrompt;
+    expect(prompt).toMatch(/UNA sola oración/);
+    // La instrucción que causó el desborde: invitaba a mostrar la cuenta ahí.
+    expect(prompt).not.toMatch(/mostrá la cuenta en "motivo"/);
+  });
+});
+
+// El catálogo separa en productos distintos lo que es gusto del usuario: el
+// látex interior viene Mate (137) y Satinado (138). Eligiendo el producto, el
+// asistente elige la terminación — la regla de no adivinar preferencias sólo
+// cubría los atributos, así que por ese hueco decidía sin preguntar.
+describe('ia.chat (elegir entre productos que difieren en gusto)', () => {
+  it('tells the model to ask when two products differ only in a matter of taste', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+
+    await ia.chat(USER_ID, [{ role: 'user', text: 'pintar' }]);
+
+    const prompt = callGemini.mock.calls[1][0].systemPrompt;
+    expect(prompt).toMatch(/terminación/i);
+    expect(prompt).toMatch(/preguntá cuál/i);
+  });
+});
