@@ -120,12 +120,7 @@ async function chat(userId, messages) {
     return valores && valores.length > 0 ? { nombre, valores } : null;
   };
 
-  const productList = productos.map(p => {
-    const entry = { idproducto: p.id, nombre: p.nombreproducto };
-    const atributos = [opcionesDe(p, 1), opcionesDe(p, 2)].filter(Boolean);
-    if (atributos.length > 0) entry.atributos = atributos;
-    return entry;
-  });
+  const catalogo = catalogoParaPrompt(productos, opcionesDe);
 
   const geminiContents = messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -156,20 +151,15 @@ async function chat(userId, messages) {
       '6. Esta conversación es sólo del rubro "' + (rubroById.get(idrubro) || '') + '": si el proyecto que ' +
       'describe el usuario abarca además otros rubros (ej. pintura y bebidas para la misma obra), NO los mezcles ' +
       'en la propuesta. Repreguntá por cuál rubro arrancar primero y seguí sólo con ese.\n\n' +
-      'GUÍAS POR RUBRO (adaptá al proyecto del usuario):\n' +
-      '- Pintura: preguntá si las paredes están enduidas/preparadas, si es cocina/baño (necesita antihongo), interior o exterior, cuántas manos, color deseado, si tiene humedad.\n' +
-      '- Construcción en seco (Durlock/placas): tipo de proyecto (tabique/cielorraso/revestimiento), medidas totales, si necesita aislación térmica o acústica.\n' +
-      '- Electricidad: tipo de instalación, cantidad de bocas/puntos, longitud aproximada de cableado, potencia esperada.\n' +
-      '- Plomería: tipo de instalación (agua fría/caliente/cloacal), diámetros necesarios, longitud de la tirada, tipo de uniones.\n' +
-      '- Otros rubros: usá criterio experto pero SIEMPRE preguntá antes de asumir.\n\n' +
+      'GUÍA DEL RUBRO DE ESTA CONVERSACIÓN: ' + guiaDeRubro(idrubro) + '\n\n' +
       'FORMATO DE RESPUESTA (siempre uno de dos):\n' +
       '- Repregunta: { "type":"question", "text":"UNA sola pregunta concreta" }\n' +
       '- Propuesta: { "type":"proposal", "text":"resumen breve", "items":[{"idproducto":<id>,"cantidad":<n>,' +
       '"motivo":"<cálculo/razón>","atributo1":"<valor exacto o vacío>","atributo2":"<valor exacto o vacío>"}] }\n\n' +
       'CONTEXTO DE ESTA CONVERSACIÓN: llevás ' + assistantTurns + ' respuesta(s) previa(s) en este chat. ' +
       (assistantTurns < 2 ? 'Aún NO estás autorizado a proponer productos: solo repreguntá.' : 'Ya podés proponer si tenés información suficiente.') + '\n\n' +
-      'REGLA CRÍTICA DE PRODUCTOS: los idproducto deben ser exclusivamente de esta lista. No inventes IDs ni nombres. ' +
-      'Productos disponibles: ' + JSON.stringify(productList),
+      'REGLA CRÍTICA DE PRODUCTOS: los idproducto deben ser exclusivamente de esta lista. No inventes IDs ni nombres.\n\n' +
+      catalogo,
     contents: geminiContents,
     responseSchema: CHAT_SCHEMA
   });
@@ -208,6 +198,66 @@ async function chat(userId, messages) {
   }
 
   return { type: 'question', text: reply.text };
+}
+
+// Una conversación es siempre de un solo rubro, así que mandar las guías de
+// todos es pagar tokens por instrucciones que no aplican. Se manda la del rubro
+// detectado y nada más.
+const GUIAS_POR_RUBRO = {
+  5: 'Pintura. Preguntá si las paredes están enduidas/preparadas, si es cocina/baño '
+    + '(necesita antihongo), interior o exterior, cuántas manos, color deseado, si tiene humedad.'
+};
+const GUIA_GENERICA = 'Usá criterio experto del rubro, pero SIEMPRE preguntá antes de asumir.';
+
+function guiaDeRubro(idrubro) {
+  return GUIAS_POR_RUBRO[idrubro] || GUIA_GENERICA;
+}
+
+/**
+ * El catálogo para el prompt, en texto plano y con los valores de atributos
+ * declarados una sola vez.
+ *
+ * En JSON, y repitiendo la lista de valores en cada producto, los atributos se
+ * llevaban casi la mitad del prompt: muchos productos comparten exactamente el
+ * mismo juego ("1 litro|4 litros|10 litros|20 litros" se repetía en cada
+ * pintura). Declararlo una vez y referenciarlo por código recorta ~70% esa
+ * parte, y se paga por token en cada turno.
+ *
+ * El separador es "|": el catálogo real tiene valores con barra (1 1/2") y con
+ * coma decimal (3,8 mts), así que usar "/" o "," partiría esos valores al medio
+ * y el modelo elegiría algo que después el servidor descarta. JSON tampoco
+ * servía tal cual, porque escapa las comillas de las pulgadas.
+ */
+function catalogoParaPrompt(productos, opcionesDe) {
+  const codigoPorJuego = new Map();
+  const declaraciones = [];
+  const lineas = [];
+
+  for (const p of productos) {
+    const codigos = [];
+    for (const slot of [1, 2]) {
+      const grupo = opcionesDe(p, slot);
+      if (!grupo) continue;
+      const juego = grupo.nombre + ': ' + grupo.valores.join('|');
+      if (!codigoPorJuego.has(juego)) {
+        const codigo = 'A' + (codigoPorJuego.size + 1);
+        codigoPorJuego.set(juego, codigo);
+        declaraciones.push(codigo + '=' + juego);
+      }
+      codigos.push(codigoPorJuego.get(juego));
+    }
+    lineas.push(p.id + '|' + p.nombreproducto + '|' + codigos.join(' '));
+  }
+
+  const cabecera = declaraciones.length > 0
+    ? 'ATRIBUTOS (cada código agrupa los valores posibles de un atributo):\n'
+      + declaraciones.join('\n') + '\n\n'
+    : '';
+
+  return cabecera
+    + 'PRODUCTOS (idproducto|nombre|códigos de atributos que aplican, en orden: '
+    + 'el primero es "atributo1" y el segundo "atributo2"):\n'
+    + lineas.join('\n');
 }
 
 /**

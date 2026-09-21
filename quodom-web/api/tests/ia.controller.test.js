@@ -14,6 +14,7 @@ beforeAll(async () => {
     { id: 11, nombrecategoria: 'Pinturas', idcategoriapadre: 5, activa: true, orden: 1 },
     { id: 12, nombrecategoria: 'Rodillos', idcategoriapadre: 5, activa: true, orden: 2 },
     { id: 35, nombrecategoria: 'Látex', idcategoriapadre: 5, activa: true, orden: 1 },
+    { id: 36, nombrecategoria: 'Accesorios', idcategoriapadre: 5, activa: true, orden: 3 },
     { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, activa: true, orden: 1 },
     { id: 70, nombrecategoria: 'Gaseosas', idcategoriapadre: 7, activa: true, orden: 1 }
   ], { ignoreDuplicates: true });
@@ -22,7 +23,11 @@ beforeAll(async () => {
     { id: 201, nombreproducto: 'Rodillo lana 22cm', categoria: 12, categoriaPadre: 5, atributo1: null, atributo2: null },
     { id: 300, nombreproducto: 'Latex premium 10L', categoria: 35, categoriaPadre: 5, atributo1: null, atributo2: null },
     { id: 301, nombreproducto: 'Gaseosa cola 2L', categoria: 70, categoriaPadre: 7, atributo1: null, atributo2: null },
-    { id: 302, nombreproducto: 'Latex Interior Blanco Mate', categoria: 35, categoriaPadre: 5, atributo1: 'LITROS', atributo2: 'MARCA' }
+    { id: 302, nombreproducto: 'Latex Interior Blanco Mate', categoria: 35, categoriaPadre: 5, atributo1: 'LITROS', atributo2: 'MARCA' },
+    // Comparte los LITROS con el 302: es el caso que el diccionario comprime.
+    { id: 303, nombreproducto: 'Latex Interior Blanco Satinado', categoria: 35, categoriaPadre: 5, atributo1: 'LITROS', atributo2: null },
+    // Valores con barra y con coma decimal, como los del catálogo real.
+    { id: 304, nombreproducto: 'Cinta de papel', categoria: 36, categoriaPadre: 5, atributo1: 'MEDIDAS', atributo2: null }
   ], { ignoreDuplicates: true });
   await db.productos_atributos.bulkCreate([
     { idproducto: 302, idatributo: 3, nombreatributo: 'LITROS', valoratributo: '1 litro', orden: 1, esvendedor: '0' },
@@ -32,7 +37,13 @@ beforeAll(async () => {
     { idproducto: 302, idatributo: 9, nombreatributo: 'MARCA', valoratributo: 'Alba', orden: 1, esvendedor: '0' },
     { idproducto: 302, idatributo: 9, nombreatributo: 'MARCA', valoratributo: 'Colorin', orden: 2, esvendedor: '0' },
     // Sólo para vendedores: el Modo IA no lo puede proponer ni ofrecer.
-    { idproducto: 302, idatributo: 9, nombreatributo: 'MARCA', valoratributo: 'MarcaDeVendedor', orden: 3, esvendedor: '1' }
+    { idproducto: 302, idatributo: 9, nombreatributo: 'MARCA', valoratributo: 'MarcaDeVendedor', orden: 3, esvendedor: '1' },
+    { idproducto: 303, idatributo: 3, nombreatributo: 'LITROS', valoratributo: '1 litro', orden: 1, esvendedor: '0' },
+    { idproducto: 303, idatributo: 3, nombreatributo: 'LITROS', valoratributo: '4 litros', orden: 2, esvendedor: '0' },
+    { idproducto: 303, idatributo: 3, nombreatributo: 'LITROS', valoratributo: '10 litros', orden: 3, esvendedor: '0' },
+    { idproducto: 303, idatributo: 3, nombreatributo: 'LITROS', valoratributo: '20 litros', orden: 4, esvendedor: '0' },
+    { idproducto: 304, idatributo: 3, nombreatributo: 'MEDIDAS', valoratributo: '1 1/2"', orden: 1, esvendedor: '0' },
+    { idproducto: 304, idatributo: 3, nombreatributo: 'MEDIDAS', valoratributo: '3,8 mts', orden: 2, esvendedor: '0' }
   ]);
 });
 
@@ -248,5 +259,56 @@ describe('ia.chat (modelo por defecto)', () => {
       if (previo === undefined) delete process.env.GEMINI_MODEL;
       else process.env.GEMINI_MODEL = previo;
     }
+  });
+});
+
+// El prompt se paga por token en cada turno. Dos cosas lo inflaban sin aportar:
+// los valores de atributos repetidos producto por producto (casi la mitad del
+// prompt) y las guías de todos los rubros cuando la charla es de uno solo.
+describe('ia.chat (tamaño del prompt)', () => {
+  async function promptDelAsistente(idsSubcategoria = [35]) {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+    await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar' }]);
+    return callGemini.mock.calls[1][0].systemPrompt;
+  }
+
+  it('declares each set of attribute values once instead of repeating it per product', async () => {
+    // 302 y 303 comparten exactamente los mismos LITROS: el bloque de atributos
+    // tiene que nombrarlos una sola vez y que los dos productos lo referencien.
+    // Se mira sólo ese bloque porque las instrucciones también dicen "20 litros",
+    // en el ejemplo de la regla de atributos.
+    const prompt = await promptDelAsistente();
+    const bloque = prompt.slice(prompt.indexOf('ATRIBUTOS ('), prompt.indexOf('PRODUCTOS ('));
+    expect(bloque.split('20 litros')).toHaveLength(2);
+
+    const lineasProducto = prompt.slice(prompt.indexOf('PRODUCTOS (')).split('\n');
+    expect(lineasProducto.filter(l => l.startsWith('302|'))[0]).toMatch(/\|A\d A\d$/);
+    expect(lineasProducto.filter(l => l.startsWith('303|'))[0]).toMatch(/\|A\d$/);
+  });
+
+  it('still names every selectable value, so the model can choose one', async () => {
+    const prompt = await promptDelAsistente();
+    for (const v of ['1 litro', '4 litros', '10 litros', '20 litros', 'Alba', 'Colorin']) {
+      expect(prompt).toContain(v);
+    }
+    expect(prompt).not.toContain('MarcaDeVendedor');
+  });
+
+  it('keeps values that contain a slash or a comma intact', async () => {
+    // El catálogo real tiene medidas como 1 1/2" y decimales como 3,8 mts: si
+    // el separador fuera "/" o "," esos valores se partirían al medio y el
+    // modelo elegiría algo que el servidor después descarta.
+    const prompt = await promptDelAsistente([36]);
+    expect(prompt).toContain('1 1/2"');
+    expect(prompt).toContain('3,8 mts');
+  });
+
+  it('sends only the guidance of the detected rubro', async () => {
+    const prompt = await promptDelAsistente();
+    expect(prompt).toContain('antihongo');       // la guía de Pintura
+    expect(prompt).not.toContain('cielorraso');  // la de Construcción
+    expect(prompt).not.toContain('bocas');       // la de Electricidad
   });
 });
