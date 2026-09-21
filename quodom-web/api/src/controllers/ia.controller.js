@@ -96,8 +96,15 @@ async function chat(userId, messages) {
     return { type: 'question', text: '¿De qué rubro es tu proyecto? Contame un poco más para poder ayudarte.' };
   }
 
+  // Las subcategorías del clasificador sirven para saber que entendió el rubro,
+  // NO para recortar el catálogo: al pedir "pintar una casa" devolvía Látex y
+  // Superficie, y como los pinceles y rodillos viven en Accesorios, la propuesta
+  // salía sin con qué aplicar la pintura. Se manda el rubro entero, que desde
+  // que el catálogo va comprimido cuesta menos que lo que costaba el recorte.
+  const idsDelRubro = subcatList.filter(s => s.idrubro === idrubro).map(s => s.id);
+
   const productos = await db.Products.findAll({
-    where: { categoria: { [db.Sequelize.Op.in]: ids } },
+    where: { categoria: { [db.Sequelize.Op.in]: idsDelRubro } },
     attributes: ['id', 'nombreproducto', 'atributo1', 'atributo2', 'categoria']
   });
 
@@ -203,9 +210,30 @@ async function chat(userId, messages) {
 // Una conversación es siempre de un solo rubro, así que mandar las guías de
 // todos es pagar tokens por instrucciones que no aplican. Se manda la del rubro
 // detectado y nada más.
+// La guía de Pintura sale del listado de referencia armado a mano en
+// docs/referencias/Listado_Pintura_Depto_Casa.xlsx. Sin los rendimientos el
+// asistente proponía 10 litros para una casa entera, cuando ese listado pide 4
+// latas de 20; y sin la regla de completitud proponía pintura sin nada con qué
+// aplicarla.
 const GUIAS_POR_RUBRO = {
-  5: 'Pintura. Preguntá si las paredes están enduidas/preparadas, si es cocina/baño '
-    + '(necesita antihongo), interior o exterior, cuántas manos, color deseado, si tiene humedad.'
+  5: 'Pintura.\n'
+    + 'CÓMO DIMENSIONAR (usalo y mostrá la cuenta en "motivo"):\n'
+    + '- Si el usuario da la superficie del piso y no la de pared, estimá la pared como piso x 2,8 '
+    + '(altura estándar 2,60 m). El cielorraso es la superficie del piso.\n'
+    + '- Descontá aberturas: puerta 1,60 m², ventana 1,44 m², ventanal 4,20 m².\n'
+    + '- Calculá siempre a dos manos salvo que el usuario diga otra cosa.\n'
+    + '- Rendimientos: látex ~10 m² por litro por mano; esmalte sintético ~12 m² por litro por mano.\n'
+    + '- Elegí el envase que menos sobre y menos falte: conviene una lata grande a muchas chicas.\n'
+    + 'QUÉ NO PUEDE FALTAR: una propuesta de pintura nunca es sólo pintura. Incluí también '
+    + 'la preparación que corresponda (fijador/sellador, enduido, masilla para grietas) y los '
+    + 'accesorios para aplicarla (pincel, rodillo, bandeja, cinta de enmascarar, espátula, lijas, '
+    + 'y escalera si el techo es alto). Sin eso el presupuesto no sirve.\n'
+    + 'QUÉ PREGUNTAR: si las paredes están enduidas o ya pintadas y en buen estado (si lo están, '
+    + 'se puede prescindir del fijador), si hay grietas o humedad, si es cocina o baño (necesita '
+    + 'antihongo), interior o exterior, y el color.\n'
+    + 'SEGÚN LA VIVIENDA: si es un departamento NO preguntes por pintura exterior. Si es una casa, '
+    + 'preguntá si además hay que pintar la pileta, el exterior y las rejas — cada uno lleva su '
+    + 'pintura específica.'
 };
 const GUIA_GENERICA = 'Usá criterio experto del rubro, pero SIEMPRE preguntá antes de asumir.';
 

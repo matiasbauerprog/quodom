@@ -27,7 +27,10 @@ beforeAll(async () => {
     // Comparte los LITROS con el 302: es el caso que el diccionario comprime.
     { id: 303, nombreproducto: 'Latex Interior Blanco Satinado', categoria: 35, categoriaPadre: 5, atributo1: 'LITROS', atributo2: null },
     // Valores con barra y con coma decimal, como los del catálogo real.
-    { id: 304, nombreproducto: 'Cinta de papel', categoria: 36, categoriaPadre: 5, atributo1: 'MEDIDAS', atributo2: null }
+    { id: 304, nombreproducto: 'Cinta de papel', categoria: 36, categoriaPadre: 5, atributo1: 'MEDIDAS', atributo2: null },
+    // Accesorio: el clasificador nunca nombra esta subcategoría cuando el
+    // usuario dice "quiero pintar", y sin él la propuesta queda sin con qué aplicar.
+    { id: 305, nombreproducto: 'Pincel para Latex', categoria: 36, categoriaPadre: 5, atributo1: null, atributo2: null }
   ], { ignoreDuplicates: true });
   await db.productos_atributos.bulkCreate([
     { idproducto: 302, idatributo: 3, nombreatributo: 'LITROS', valoratributo: '1 litro', orden: 1, esvendedor: '0' },
@@ -307,8 +310,86 @@ describe('ia.chat (tamaño del prompt)', () => {
 
   it('sends only the guidance of the detected rubro', async () => {
     const prompt = await promptDelAsistente();
-    expect(prompt).toContain('antihongo');       // la guía de Pintura
-    expect(prompt).not.toContain('cielorraso');  // la de Construcción
-    expect(prompt).not.toContain('bocas');       // la de Electricidad
+    expect(prompt).toContain('antihongo');      // la guía de Pintura
+    // "cielorraso" no sirve de marcador: la guía de Pintura lo nombra con razón.
+    expect(prompt).not.toContain('aislación');  // la de Construcción
+    expect(prompt).not.toContain('bocas');      // la de Electricidad
+  });
+});
+
+// Un presupuesto de pintura no es sólo pintura: lleva preparación y accesorios.
+// El clasificador devolvía dos o tres subcategorías y los accesorios viven en
+// otra, así que los pinceles y rodillos ni siquiera llegaban a la lista que ve
+// el asistente — no es que no los quisiera proponer, no los tenía.
+// Referencia del resultado esperado: docs/referencias/Listado_Pintura_Depto_Casa.xlsx
+describe('ia.chat (catálogo completo del rubro)', () => {
+  it('offers every active subcategory of the rubro, not only the ones the classifier picked', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+
+    await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar una casa' }]);
+
+    const prompt = callGemini.mock.calls[1][0].systemPrompt;
+    expect(prompt).toContain('Latex Interior Blanco Mate'); // subcategoría 35, la elegida
+    expect(prompt).toContain('Pincel para Latex');          // subcategoría 39, la que faltaba
+    expect(prompt).toContain('Rodillo lana 22cm');          // subcategoría 12
+  });
+
+  it('still keeps the conversation inside its rubro', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+
+    await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar' }]);
+
+    expect(callGemini.mock.calls[1][0].systemPrompt).not.toContain('Gaseosa');
+  });
+
+  it('accepts a product of a subcategory the classifier never named', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({
+        type: 'proposal', text: 'Listo',
+        items: [{ idproducto: 305, cantidad: 2, motivo: 'para aplicar' }]
+      });
+
+    const out = await ia.chat(USER_ID, [{ role: 'user', text: 'pintar una casa' }]);
+
+    expect(out.items.map(i => i.idproducto)).toEqual([305]);
+  });
+});
+
+// El conocimiento del rubro sale de docs/referencias/Listado_Pintura_Depto_Casa.xlsx.
+// Sin los rendimientos el asistente propuso 10 litros para una casa entera,
+// cuando el listado de referencia pide 4 latas de 20.
+describe('ia.chat (guía de Pintura)', () => {
+  async function guia() {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+    await ia.chat(USER_ID, [{ role: 'user', text: 'pintar' }]);
+    return callGemini.mock.calls[1][0].systemPrompt;
+  }
+
+  it('gives the coverage figures needed to size the paint', async () => {
+    const p = await guia();
+    expect(p).toContain('10 m² por litro por mano');
+    expect(p).toContain('2,8');
+    expect(p).toContain('dos manos');
+  });
+
+  it('demands preparation and accessories, not only paint', async () => {
+    const p = await guia();
+    expect(p).toMatch(/fijador/i);
+    expect(p).toMatch(/rodillo/i);
+    expect(p).toMatch(/bandeja/i);
+  });
+
+  it('asks the house-only questions and skips them for an apartment', async () => {
+    const p = await guia();
+    expect(p).toMatch(/pileta/i);
+    expect(p).toMatch(/rejas/i);
+    expect(p).toMatch(/departamento/i);
   });
 });
