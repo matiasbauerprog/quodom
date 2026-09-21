@@ -164,7 +164,11 @@ async function chat(userId, messages) {
       'la cuenta ya resuelta, en limpio (ej. "3 latas de 4L para 36m² a 2 manos; cada lata rinde 12m² por mano"). ' +
       'NO es un borrador: no escribas ahí tu razonamiento, ni alternativas, ni "recalculando", ni te corrijas. ' +
       'Decidí antes y escribí sólo la conclusión. Un "motivo" largo te deja sin espacio para el resto de los ítems.\n' +
-      '6. Esta conversación es sólo del rubro "' + (rubroById.get(idrubro) || '') + '": si el proyecto que ' +
+      '6. NUNCA sustituyas en silencio. Si el usuario pidió algo concreto — un color, una marca, una ' +
+      'medida, un formato — y el catálogo no lo tiene, decílo con todas las letras en "text" y ofrecé la ' +
+      'alternativa más parecida o repreguntá. Entregarle otra cosa parecida sin avisar es el peor error ' +
+      'que podés cometer: el usuario cree que le diste lo que pidió.\n' +
+      '7. Esta conversación es sólo del rubro "' + (rubroById.get(idrubro) || '') + '": si el proyecto que ' +
       'describe el usuario abarca además otros rubros (ej. pintura y bebidas para la misma obra), NO los mezcles ' +
       'en la propuesta. Repreguntá por cuál rubro arrancar primero y seguí sólo con ese.\n\n' +
       'GUÍA DEL RUBRO DE ESTA CONVERSACIÓN: ' + guiaDeRubro(idrubro) + '\n\n' +
@@ -237,9 +241,14 @@ const GUIAS_POR_RUBRO = {
     + 'la preparación que corresponda (fijador/sellador, enduido, masilla para grietas) y los '
     + 'accesorios para aplicarla (pincel, rodillo, bandeja, cinta de enmascarar, espátula, lijas, '
     + 'y escalera si el techo es alto). Sin eso el presupuesto no sirve.\n'
+    + 'COLOR: el látex de paredes y cielorrasos de este catálogo existe SÓLO EN BLANCO, y no hay '
+    + 'entonadores ni tintes para teñirlo. No preguntes de qué color quiere pintar las paredes y no le '
+    + 'prometas ninguno. Si el usuario pide un color (beige, gris, el que sea), decíle de entrada que en '
+    + 'látex sólo hay blanco y preguntale si quiere seguir igual — los esmaltes sintéticos, que son para '
+    + 'aberturas y metal, sí vienen en varios colores y ahí el color se elige como atributo.\n'
     + 'QUÉ PREGUNTAR: si las paredes están enduidas o ya pintadas y en buen estado (si lo están, '
     + 'se puede prescindir del fijador), si hay grietas o humedad, si es cocina o baño (necesita '
-    + 'antihongo), interior o exterior, y el color.\n'
+    + 'antihongo), e interior o exterior.\n'
     + 'SEGÚN LA VIVIENDA: si es un departamento NO preguntes por pintura exterior. Si es una casa, '
     + 'preguntá si además hay que pintar la pileta, el exterior y las rejas — cada uno lleva su '
     + 'pintura específica.'

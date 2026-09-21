@@ -460,3 +460,28 @@ describe('ia.chat (elegir entre productos que difieren en gusto)', () => {
     expect(prompt).toMatch(/preguntá cuál/i);
   });
 });
+
+// El usuario pidió látex beige y recibió Blanco Mate sin una palabra. El
+// catálogo no tiene látex de pared en ningún color salvo blanco — beige sólo
+// existe como COLOR de los esmaltes sintéticos, que son para aberturas —, así
+// que la respuesta correcta era decirlo, no entregar otra cosa parecida.
+describe('ia.chat (nunca sustituir en silencio)', () => {
+  async function prompt() {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+    await ia.chat(USER_ID, [{ role: 'user', text: 'quiero pintar de beige' }]);
+    return callGemini.mock.calls[1][0].systemPrompt;
+  }
+
+  it('forbids handing over something else when the catalogue lacks what was asked', async () => {
+    const p = await prompt();
+    expect(p).toMatch(/nunca sustituyas en silencio/i);
+    expect(p).toMatch(/decílo|decilo/i);
+  });
+
+  it('tells the model that wall latex has no colour to offer', async () => {
+    const p = await prompt();
+    expect(p).toMatch(/látex.*sólo en blanco|sólo existe en blanco/i);
+  });
+});
