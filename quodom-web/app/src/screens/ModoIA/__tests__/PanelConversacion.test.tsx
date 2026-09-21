@@ -11,7 +11,7 @@ vi.mock('../../../api/ia', () => ({
   iaApi: { chat: vi.fn() }
 }));
 vi.mock('../../../api/quodom', () => ({
-  quodom: { activoPorRubro: vi.fn(), create: vi.fn() }
+  quodom: { activoPorRubro: vi.fn(), create: vi.fn(), eliminar: vi.fn() }
 }));
 vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { add: vi.fn() }
@@ -96,27 +96,91 @@ describe('PanelConversacion (confirming a proposal, reuses the catalog rubro flo
     (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockReset();
     vi.mocked(quodom.activoPorRubro).mockReset();
     vi.mocked(quodom.create).mockReset();
+    vi.mocked(quodom.eliminar).mockReset();
     vi.mocked(quodomLines.add).mockReset();
     mockNavigate.mockReset();
   });
 
-  it('adds straight to the open Quodom of the rubro when one already exists', async () => {
-    vi.mocked(quodom.activoPorRubro).mockResolvedValue({
-      id: 'Q-EXIST', descripcion: 'Mi Quodom', estado: 'CREADO', nro: 'Q-1',
-      createdBy: 'u1', iddireccion: null, idrubro: 5
-    });
-    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+  const ABIERTO = {
+    id: 'Q-EXIST', descripcion: 'Mi Quodom', estado: 'CREADO' as const, nro: 'Q-1',
+    createdBy: 'u1', iddireccion: null, idrubro: 5
+  };
+
+  // Antes sumaba sin preguntar, y el usuario se encontraba la propuesta metida
+  // dentro del Quodom que ya venía armando. Un Quodom abierto por rubro sigue
+  // siendo la regla, así que "uno nuevo" significa reemplazar al anterior.
+  it('asks instead of adding when the rubro already has an open Quodom', async () => {
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue(ABIERTO);
 
     await enviarYProponer();
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
 
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    expect(quodom.activoPorRubro).toHaveBeenCalledWith(5);
+    expect(quodomLines.add).not.toHaveBeenCalled();
+    expect(quodom.create).not.toHaveBeenCalled();
+    expect(quodom.eliminar).not.toHaveBeenCalled();
+  });
+
+  it('adds to the existing Quodom when the user chooses to integrate', async () => {
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue(ABIERTO);
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+
+    await enviarYProponer();
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /integrar/i }));
+
     await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-EXIST');
-    expect(mockNavigate).not.toHaveBeenCalled();
-    expect(quodom.activoPorRubro).toHaveBeenCalledWith(5);
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-EXIST', idproducto: 300, cantidad: 2 }));
+    expect(quodom.eliminar).not.toHaveBeenCalled();
     expect(quodom.create).not.toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('discards the old Quodom and starts a new one when the user chooses to replace', async () => {
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue(ABIERTO);
+    vi.mocked(quodom.eliminar).mockResolvedValue({ res: true });
+    vi.mocked(quodom.create).mockResolvedValue({ res: true, idquodom: 'Q-NUEVO' });
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 3 });
+
+    await enviarYProponer();
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /reemplazar/i }));
+
+    await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
+    expect(quodom.eliminar).toHaveBeenCalledWith('Q-EXIST');
+    expect(quodom.create).toHaveBeenCalledWith(expect.objectContaining({ idrubro: 5 }));
+    expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-NUEVO', idproducto: 300, cantidad: 2 }));
+    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-NUEVO');
+  });
+
+  it('touches nothing when the user cancels the dialog', async () => {
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue(ABIERTO);
+
+    await enviarYProponer();
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /ahora no|cancelar/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(quodomLines.add).not.toHaveBeenCalled();
+    expect(quodom.eliminar).not.toHaveBeenCalled();
+    expect(quodom.create).not.toHaveBeenCalled();
+    // La propuesta sigue en pantalla para poder decidir de nuevo.
+    expect(screen.getByRole('button', { name: /agregar al quodom/i })).toBeEnabled();
+  });
+
+  it('names the proposal, not a guest cart, in the dialog', async () => {
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue(ABIERTO);
+
+    await enviarYProponer();
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    expect(screen.getByRole('dialog')).toHaveTextContent(/asistente te propuso 1 producto/i);
+    expect(screen.getByRole('dialog')).not.toHaveTextContent(/sin iniciar sesión/i);
   });
 
   it('asks before creating a Quodom when the rubro has none open, then creates and adds on confirm', async () => {
@@ -165,6 +229,8 @@ describe('PanelConversacion (confirming a proposal, reuses the catalog rubro flo
     await waitFor(() => expect(screen.getByText('Latex Mate')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /integrar/i }));
 
     await waitFor(() => expect(quodomLines.add).toHaveBeenCalled());
     expect(quodomLines.add).toHaveBeenCalledWith({

@@ -14,10 +14,16 @@ type Props = {
   // dejar entrar al usuario igual.
   permitirCancelar?: boolean;
   etiquetaCancelar?: string;
+  // Qué es lo que entra. El mismo conflicto —un Quodom abierto de ese rubro—
+  // llega desde dos lados: el carrito de invitado al iniciar sesión y la
+  // propuesta del asistente al confirmarla. Las salidas son idénticas, sólo
+  // cambia cómo nombrar lo que está por entrar.
+  descripcionEntrante?: string;
 };
 
 export function DialogoConflictoRubro({
-  conflicto, onElegir, ocupado, permitirCancelar, etiquetaCancelar = 'Ahora no'
+  conflicto, onElegir, ocupado, permitirCancelar, etiquetaCancelar = 'Ahora no',
+  descripcionEntrante = `armaste ${conflicto.lineasInvitado} producto(s) sin iniciar sesión`
 }: Props) {
   useEffect(() => {
     if (!permitirCancelar) return;
@@ -48,8 +54,7 @@ export function DialogoConflictoRubro({
         <h2 id="dcr-titulo" className="dcr-titulo">Quodom de {nombreRubro(conflicto.idrubro)} ya abierto</h2>
         <p className="dcr-texto">
           Ya tenés un Quodom abierto de <strong>{nombreRubro(conflicto.idrubro)}</strong> ({conflicto.quodomExistente.nro},
-          {' '}{conflicto.quodomExistente.cantproductos ?? 0} productos) y armaste {conflicto.lineasInvitado} producto(s) sin
-          iniciar sesión.
+          {' '}{conflicto.quodomExistente.cantproductos ?? 0} productos) y {descripcionEntrante}.
         </p>
         <div className="dcr-acciones">
           <button type="button" className="btn btn-exito" onClick={() => elegir('integrar')} disabled={ocupado}>

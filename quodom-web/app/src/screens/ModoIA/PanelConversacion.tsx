@@ -5,6 +5,9 @@ import { quodom as quodomApi } from '../../api/quodom';
 import { ApiError } from '../../api/client';
 import { agregarAlServidor } from '../../quodom/agregarProducto';
 import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
+import type { AccionRubro } from '../../guest/migrateGuestQuodom';
+import type { Quodom } from '../../api/types';
 import { nombreRubro } from '../../quodom/rubros';
 import { useAuth } from '../../auth/AuthContext';
 import { AvisoLogin } from '../../components/AvisoLogin';
@@ -19,6 +22,7 @@ type UiMessage =
   | { role: 'assistant'; text: string; proposal?: IaProposalItem[]; idrubro?: number };
 
 type PendienteRubro = { idrubro: number; items: IaProposalItem[] };
+type ConflictoIa = PendienteRubro & { quodomExistente: Quodom };
 
 export function PanelConversacion() {
   const { user } = useAuth();
@@ -29,6 +33,7 @@ export function PanelConversacion() {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [pendiente, setPendiente] = useState<PendienteRubro | null>(null);
+  const [conflicto, setConflicto] = useState<ConflictoIa | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [messages, busy]);
@@ -90,8 +95,11 @@ export function PanelConversacion() {
     window.dispatchEvent(new Event('quodom:changed'));
   }
 
-  // Reuses the same open-Quodom-of-the-rubro flow as the catalog: if there is
-  // one already, add there; if not, ask before creating (DialogoNuevoRubro).
+  // Sin Quodom abierto del rubro, pide confirmación antes de crearlo
+  // (DialogoNuevoRubro). Con uno abierto, tampoco decide solo: antes sumaba ahí
+  // en silencio y el usuario se encontraba la propuesta mezclada con lo que
+  // venía armando. Un Quodom abierto por rubro sigue siendo la regla, así que
+  // las salidas son integrar o reemplazar, no tener dos.
   async function confirmProposal(items: IaProposalItem[], idrubro: number) {
     setConfirming(true);
     try {
@@ -100,10 +108,35 @@ export function PanelConversacion() {
         setPendiente({ idrubro, items });
         return;
       }
-      await agregarItemsAlQuodom(activo.id, items);
-      setAgregadoEn(activo.id);
+      setConflicto({ idrubro, items, quodomExistente: activo });
     } catch (e) {
       const msg = e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo agregar al Quodom.';
+      setMessages(m => [...m, { role: 'assistant', text: msg }]);
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  async function resolverConflicto(accion: AccionRubro | null) {
+    if (!conflicto) return;
+    if (!accion) { setConflicto(null); return; }
+    setConfirming(true);
+    try {
+      let idquodom = conflicto.quodomExistente.id;
+      if (accion === 'reemplazar') {
+        // Reemplazar descarta el Quodom entero, no sólo sus líneas: el DELETE
+        // se lleva cabecera y líneas mientras el estado sea CREADO. Se borra
+        // antes de crear porque el backend no admite dos abiertos del rubro.
+        await quodomApi.eliminar(conflicto.quodomExistente.id);
+        const creado = await quodomApi.create({ descripcion: descripcionIa(), idrubro: conflicto.idrubro });
+        idquodom = creado.idquodom;
+      }
+      await agregarItemsAlQuodom(idquodom, conflicto.items);
+      setConflicto(null);
+      setAgregadoEn(idquodom);
+    } catch (e) {
+      const msg = e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo agregar al Quodom.';
+      setConflicto(null);
       setMessages(m => [...m, { role: 'assistant', text: msg }]);
     } finally {
       setConfirming(false);
@@ -176,6 +209,23 @@ export function PanelConversacion() {
           {busy ? '…' : 'Enviar'}
         </button>
       </div>
+      {conflicto && (
+        <DialogoConflictoRubro
+          conflicto={{
+            idrubro: conflicto.idrubro,
+            quodomExistente: conflicto.quodomExistente,
+            lineasInvitado: conflicto.items.length
+          }}
+          descripcionEntrante={'el asistente te propuso ' + conflicto.items.length + ' producto(s)'}
+          ocupado={confirming}
+          // Acá el diálogo lo abrió el propio usuario al confirmar, así que
+          // cancelar es una salida legítima: la propuesta sigue en pantalla.
+          permitirCancelar
+          etiquetaCancelar="Cancelar"
+          onElegir={resolverConflicto}
+        />
+      )}
+
       {pendiente && (
         <DialogoNuevoRubro
           nombreRubro={nombreRubro(pendiente.idrubro)}
