@@ -518,7 +518,11 @@ describe('guías por rubro', () => {
     expect(prompt).toMatch(/no son plantillas|no plantillas|no son plantillas|no para copiar/i);
   });
 
-  it('keeps the catalogue notes that do not live in the spreadsheet', async () => {
+  // Estas dos vivían en código, duplicadas: describen el catálogo y no el
+  // oficio. Ahora están en la hoja Supuestos, bajo "Datos de este catálogo", y
+  // llegan por la misma vía que el resto. El test sigue porque son las que
+  // evitan el papelón de ofrecer látex beige.
+  it('carries the catalogue facts now that they live in the spreadsheet', async () => {
     callGemini
       .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
       .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });

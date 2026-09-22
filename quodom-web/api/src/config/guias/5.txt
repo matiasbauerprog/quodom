@@ -16,6 +16,12 @@ Agregados por mi
 - En caso de ser casa consultar si tiene que pintar la pileta
 - En caso de ser casa consultar si tiene que pintar el exterior
 - En caso de ser casa consultar si tiene que pintar rejas
+Datos de este catálogo
+- Verificado sobre el catálogo de Quodom el 22/09/2026.
+- COLOR: el látex de paredes y cielorrasos existe SÓLO EN BLANCO, y no hay entonadores ni tintes para teñirlo. No preguntar de qué color quiere pintar las paredes ni prometer ninguno. Si el usuario pide un color, decírselo de entrada y preguntarle si quiere seguir igual.
+- Los esmaltes sintéticos (para aberturas y metal) sí vienen en varios colores, beige incluido, y ahí el color se elige como atributo del producto.
+- Consultar si es cocina o baño, porque necesita antihongo.
+- Elegir el envase que menos sobre y menos falte: conviene una lata grande a muchas chicas.
 
 EJEMPLOS RESUELTOS DE REFERENCIA. Son casos concretos, no plantillas: recalculá siempre para lo que dijo el usuario, TAMBIÉN las cantidades de accesorios. Sirven para ver qué no puede faltar en un presupuesto de este rubro, no para copiar números.
 

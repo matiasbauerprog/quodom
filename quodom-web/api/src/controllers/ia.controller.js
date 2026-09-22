@@ -226,30 +226,17 @@ async function chat(userId, messages) {
 // de todos es pagar tokens por instrucciones que no aplican. Se manda el del
 // rubro detectado y nada más.
 //
-// La guía tiene dos fuentes y conviene no mezclarlas:
+// Todo sale de src/config/guias/<idrubro>.txt, que genera `npm run guias` desde
+// "informacion para la ia/<Rubro>/Listado_*.xlsx". La planilla es la única
+// fuente: los supuestos de cálculo, los ejemplos resueltos y también lo que es
+// propio de este catálogo (que el látex viene sólo en blanco, el antihongo de
+// cocina y baño), que durante un tiempo estuvo duplicado acá en código.
 //
-// 1. src/config/guias/<idrubro>.txt — el conocimiento del negocio, que escribe
-//    el usuario en "informacion para la ia/<Rubro>/Listado_*.xlsx" y se
-//    convierte con `npm run guias`. Trae los supuestos de cálculo y los
-//    ejemplos resueltos. Medido: sin los ejemplos el asistente se olvidaba el
-//    esmalte de las aberturas y la mitad de los accesorios; con UNO solo
-//    copiaba su escala, y con dos de distinto tamaño interpola bien.
-//
-// 2. NOTAS_DEL_CATALOGO — hechos de ESTE catálogo que no están en las planillas
-//    del usuario y que el asistente no puede deducir de los nombres de los
-//    productos. Vive en código porque describe los datos, no el oficio. Si
-//    alguna vez pasa a las planillas, se borra de acá.
+// Medido sobre un caso que no coincide con ningún ejemplo: sin los ejemplos el
+// asistente se olvidaba el esmalte de las aberturas y la mitad de los
+// accesorios; con UNO solo copiaba su escala; con dos de distinto tamaño
+// interpola bien.
 const GUIA_GENERICA = 'Usá criterio experto del rubro, pero SIEMPRE preguntá antes de asumir.';
-
-const NOTAS_DEL_CATALOGO = {
-  5: 'NOTAS DE ESTE CATÁLOGO (además de lo anterior):\n'
-    + '- COLOR: el látex de paredes y cielorrasos existe SÓLO EN BLANCO y no hay entonadores ni '
-    + 'tintes para teñirlo. No preguntes de qué color quiere las paredes y no le prometas ninguno. '
-    + 'Si pide un color, decíselo de entrada y preguntale si quiere seguir igual. Los esmaltes '
-    + 'sintéticos sí vienen en varios colores, y ahí el color se elige como atributo del producto.\n'
-    + '- Preguntá también si es cocina o baño, porque necesita antihongo.\n'
-    + '- Elegí el envase que menos sobre y menos falte: conviene una lata grande a muchas chicas.'
-};
 
 const GUIAS = cargarGuias();
 
@@ -271,8 +258,7 @@ function cargarGuias() {
 }
 
 function guiaDeRubro(idrubro) {
-  const partes = [GUIAS[idrubro], NOTAS_DEL_CATALOGO[idrubro]].filter(Boolean);
-  return partes.length > 0 ? partes.join('\n\n') : GUIA_GENERICA;
+  return GUIAS[idrubro] || GUIA_GENERICA;
 }
 
 /**
