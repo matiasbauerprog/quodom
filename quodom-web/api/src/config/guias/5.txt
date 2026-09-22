@@ -1,0 +1,72 @@
+SUPUESTOS Y REGLAS DE ESTE RUBRO:
+Supuestos utilizados para estimar cantidades
+- Altura de techo estándar considerada: 2,60 m
+- Superficie de pared estimada a partir del piso: superficie de pared ≈ superficie de piso x 2,8 (regla práctica para plantas rectangulares compactas)
+- Descuento de aberturas: puerta 0,80x2,00 m = 1,60 m² | ventana 1,20x1,20 m = 1,44 m² | ventanal 2,00x2,10 m = 4,20 m²
+- Cálculo realizado a 2 manos de pintura
+- Rendimiento estimado: Látex interior ~10 m²/L por mano | Esmalte sintético ~12 m²/L por mano
+- No se incluyeron productos de la sección Madera (impregnantes, barnices) ni Impermeabilizantes/Piscinas, salvo que haya superficies de madera vista o exteriores
+- Si las paredes ya están pintadas y en buen estado, se puede prescindir del Fijador/Sellador
+- Estimaciones a ajustar con las medidas reales de las paredes de cada ambiente
+Pileta 4x3 m: se asumió una profundidad promedio de 1,3 m (dato no provisto) -> superficie a pintar (paredes+piso) ≈ 30 m². Cálculo a 2 manos, rendimiento ~6 m²/L por mano (pintura para piscinas).
+Jardín (paredes exteriores) 30 m², altura 2 m: al no contar con el perímetro real, se asumió una forma cuadrada (lado = raíz de 30 ≈ 5,48 m) -> perímetro ≈ 22 m -> superficie de pared ≈ 44 m². Cálculo a 2 manos, rendimiento ~10 m²/L por mano (látex exterior).
+Reparación de paredes: se incluyó Masilla Elástica para grietas/fisuras y Enduído para parches e imperfecciones puntuales, más espátula de detalle y lijas al agua para el alisado previo a pintar. Cantidades estimadas para reparaciones puntuales, no para paredes con daño estructural extenso (ajustar según el estado real de las paredes).
+Agregados por mi
+- En caso de ser departamento no preguntar si necesita pintura exterior
+- En caso de ser casa consultar si tiene que pintar la pileta
+- En caso de ser casa consultar si tiene que pintar el exterior
+- En caso de ser casa consultar si tiene que pintar rejas
+
+EJEMPLOS RESUELTOS DE REFERENCIA. Son casos concretos, no plantillas: recalculá siempre para lo que dijo el usuario, TAMBIÉN las cantidades de accesorios. Sirven para ver qué no puede faltar en un presupuesto de este rubro, no para copiar números.
+
+Departamento 40 m² - Listado de pintura
+Depto 40 m² - 3 puertas, 1 ventanal, 1 ventana | Estimado con paredes netas ~100 m2 y cielorraso 40 m2 (2 manos)
+Categoría | Producto | Terminación / Detalle | Cantidad sugerida
+Látex (paredes) | Latex Interior Blanco Mate (o Satinado) | Interior | 1 x 20 lts
+Látex (cielorraso) | Cielorrasos Blanco Mate | - | 1 x 10 lts
+Esmalte (puertas y marcos) | Esmalte Sintético Satinado (o Brillante) | Color a elección | 1 x 4 lts
+Preparación | Fijador/Sellador | - | 1 x 4 lts
+Preparación | Enduído | Interior | 1 x 4 kg
+Accesorios | Pincel para Latex | N°20 | 2
+Accesorios | Pincel para Esmalte | N°15 | 1
+Accesorios | Rodillo de Lana | 22 cm | 2
+Accesorios | Rodillo de fibra Sitética | 22 cm (para cielorraso) | 1
+Accesorios | Bandeja Plana | Chica | 1
+Accesorios | Cinta azul | 24 mm (x5 u.) | 1
+Accesorios | Cartón corrugado | 0,80 x 30 mts | 1
+Accesorios | Escalera de Aluminio | 5 peldaños | 1
+Accesorios | Espátula Metálica | N°6 | 1
+Reparación de paredes
+Preparación | Masilla Elástica | Grietas y fisuras | 1 x 1 kg
+Preparación | Enduído | Parches e imperfecciones | 1 x 1 kg
+Accesorios | Espátula Metálica | N°4 (detalle) | 1
+Accesorios | Lijas al agua por 10 unidades | Grano 120 / 150 | 1
+
+Casa 150 m² - Listado de pintura
+Casa 150 m² - 6 puertas, 2 ventanales, 3 ventanas | Estimado con paredes netas ~400 m2 y cielorraso 150 m2 (2 manos)
+Categoría | Producto | Terminación / Detalle | Cantidad sugerida
+Látex (paredes) | Latex Interior Blanco Mate (o Satinado) | Interior | 4 x 20 lts
+Látex (cielorraso) | Cielorrasos Blanco Mate | - | 1 x 20 lts + 1 x 10 lts
+Esmalte (puertas, marcos y ventanas) | Esmalte Sintético Satinado (o Brillante) | Color a elección | 2 x 4 lts
+Preparación | Fijador/Sellador | - | 2 x 4 lts
+Preparación | Enduído | Interior | 1 x 10 kg
+Accesorios | Pincel para Latex | N°20 | 3
+Accesorios | Pincel para Esmalte | N°15 / N°20 | 2
+Accesorios | Rodillo de Lana | 22 cm | 4
+Accesorios | Rodillo de fibra Sitética | 22 cm (para cielorraso) | 1
+Accesorios | Bandeja Plana | Grande | 2
+Accesorios | Cinta azul | 36 mm (x5 u.) | 2
+Accesorios | Cartón corrugado | 0,80 x 30 mts | 2
+Accesorios | Escalera de Aluminio (o extensible si el techo es alto) | 6-7 peldaños | 1
+Accesorios | Espátula Metálica | N°6 / N°8 | 2
+Reparación de paredes
+Preparación | Masilla Elástica | Grietas y fisuras | 1 x 5 kg
+Preparación | Enduído | Parches e imperfecciones | 1 x 4 kg
+Accesorios | Espátula Metálica | N°4 (detalle) | 2
+Accesorios | Lijas al agua por 10 unidades | Grano 120 / 150 | 2
+Jardín - Paredes exteriores (30 m², altura 2 m)
+Látex (paredes exteriores) | Latex Exterior Blanco Mate | Exterior | 1 x 10 lts
+Preparación | Fijador/Sellador | - | 1 x 4 lts
+Accesorios | Rodillo de Lana | 22 cm | 2
+Accesorios | Pincel para Latex | N°20 | 1
+Accesorios | Bandeja Plana | Grande | 1

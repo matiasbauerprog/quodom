@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const db = require('../helpers/db');
 const { callGemini } = require('../helpers/gemini');
 const { RUBROS_ACTIVOS } = require('../config/rubros');
@@ -220,43 +222,57 @@ async function chat(userId, messages) {
   return { type: 'question', text: reply.text };
 }
 
-// Una conversación es siempre de un solo rubro, así que mandar las guías de
-// todos es pagar tokens por instrucciones que no aplican. Se manda la del rubro
-// detectado y nada más.
-// La guía de Pintura sale del listado de referencia armado a mano en
-// docs/referencias/Listado_Pintura_Depto_Casa.xlsx. Sin los rendimientos el
-// asistente proponía 10 litros para una casa entera, cuando ese listado pide 4
-// latas de 20; y sin la regla de completitud proponía pintura sin nada con qué
-// aplicarla.
-const GUIAS_POR_RUBRO = {
-  5: 'Pintura.\n'
-    + 'CÓMO DIMENSIONAR (la cuenta resolvela vos; en "motivo" va sólo el resultado, en una línea):\n'
-    + '- Si el usuario da la superficie del piso y no la de pared, estimá la pared como piso x 2,8 '
-    + '(altura estándar 2,60 m). El cielorraso es la superficie del piso.\n'
-    + '- Descontá aberturas: puerta 1,60 m², ventana 1,44 m², ventanal 4,20 m².\n'
-    + '- Calculá siempre a dos manos salvo que el usuario diga otra cosa.\n'
-    + '- Rendimientos: látex ~10 m² por litro por mano; esmalte sintético ~12 m² por litro por mano.\n'
-    + '- Elegí el envase que menos sobre y menos falte: conviene una lata grande a muchas chicas.\n'
-    + 'QUÉ NO PUEDE FALTAR: una propuesta de pintura nunca es sólo pintura. Incluí también '
-    + 'la preparación que corresponda (fijador/sellador, enduido, masilla para grietas) y los '
-    + 'accesorios para aplicarla (pincel, rodillo, bandeja, cinta de enmascarar, espátula, lijas, '
-    + 'y escalera si el techo es alto). Sin eso el presupuesto no sirve.\n'
-    + 'COLOR: el látex de paredes y cielorrasos de este catálogo existe SÓLO EN BLANCO, y no hay '
-    + 'entonadores ni tintes para teñirlo. No preguntes de qué color quiere pintar las paredes y no le '
-    + 'prometas ninguno. Si el usuario pide un color (beige, gris, el que sea), decíle de entrada que en '
-    + 'látex sólo hay blanco y preguntale si quiere seguir igual — los esmaltes sintéticos, que son para '
-    + 'aberturas y metal, sí vienen en varios colores y ahí el color se elige como atributo.\n'
-    + 'QUÉ PREGUNTAR: si las paredes están enduidas o ya pintadas y en buen estado (si lo están, '
-    + 'se puede prescindir del fijador), si hay grietas o humedad, si es cocina o baño (necesita '
-    + 'antihongo), e interior o exterior.\n'
-    + 'SEGÚN LA VIVIENDA: si es un departamento NO preguntes por pintura exterior. Si es una casa, '
-    + 'preguntá si además hay que pintar la pileta, el exterior y las rejas — cada uno lleva su '
-    + 'pintura específica.'
-};
+// Una conversación es siempre de un solo rubro, así que mandar el conocimiento
+// de todos es pagar tokens por instrucciones que no aplican. Se manda el del
+// rubro detectado y nada más.
+//
+// La guía tiene dos fuentes y conviene no mezclarlas:
+//
+// 1. src/config/guias/<idrubro>.txt — el conocimiento del negocio, que escribe
+//    el usuario en "informacion para la ia/<Rubro>/Listado_*.xlsx" y se
+//    convierte con `npm run guias`. Trae los supuestos de cálculo y los
+//    ejemplos resueltos. Medido: sin los ejemplos el asistente se olvidaba el
+//    esmalte de las aberturas y la mitad de los accesorios; con UNO solo
+//    copiaba su escala, y con dos de distinto tamaño interpola bien.
+//
+// 2. NOTAS_DEL_CATALOGO — hechos de ESTE catálogo que no están en las planillas
+//    del usuario y que el asistente no puede deducir de los nombres de los
+//    productos. Vive en código porque describe los datos, no el oficio. Si
+//    alguna vez pasa a las planillas, se borra de acá.
 const GUIA_GENERICA = 'Usá criterio experto del rubro, pero SIEMPRE preguntá antes de asumir.';
 
+const NOTAS_DEL_CATALOGO = {
+  5: 'NOTAS DE ESTE CATÁLOGO (además de lo anterior):\n'
+    + '- COLOR: el látex de paredes y cielorrasos existe SÓLO EN BLANCO y no hay entonadores ni '
+    + 'tintes para teñirlo. No preguntes de qué color quiere las paredes y no le prometas ninguno. '
+    + 'Si pide un color, decíselo de entrada y preguntale si quiere seguir igual. Los esmaltes '
+    + 'sintéticos sí vienen en varios colores, y ahí el color se elige como atributo del producto.\n'
+    + '- Preguntá también si es cocina o baño, porque necesita antihongo.\n'
+    + '- Elegí el envase que menos sobre y menos falte: conviene una lata grande a muchas chicas.'
+};
+
+const GUIAS = cargarGuias();
+
+function cargarGuias() {
+  const dir = path.join(__dirname, '..', 'config', 'guias');
+  const guias = {};
+  let archivos = [];
+  try {
+    archivos = fs.readdirSync(dir);
+  } catch {
+    return guias;  // sin guías generadas el asistente sigue andando, con menos oficio
+  }
+  for (const archivo of archivos) {
+    const id = Number(path.basename(archivo, '.txt'));
+    if (!Number.isInteger(id)) continue;
+    guias[id] = fs.readFileSync(path.join(dir, archivo), 'utf8').trim();
+  }
+  return guias;
+}
+
 function guiaDeRubro(idrubro) {
-  return GUIAS_POR_RUBRO[idrubro] || GUIA_GENERICA;
+  const partes = [GUIAS[idrubro], NOTAS_DEL_CATALOGO[idrubro]].filter(Boolean);
+  return partes.length > 0 ? partes.join('\n\n') : GUIA_GENERICA;
 }
 
 /**

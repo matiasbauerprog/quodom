@@ -235,6 +235,34 @@ describe('gemini helper', () => {
     expect(usados.some(u => u.includes('model-c'))).toBe(true);
   });
 
+  // Una propuesta larga se cortó contra el tope de salida y el error dijo
+  // "could not parse JSON response", que manda a buscar el problema al lugar
+  // equivocado: el JSON estaba bien hasta donde llegó. Google avisa el motivo
+  // del final en finishReason y nadie lo miraba.
+  it('reports a response cut short by the token limit instead of blaming the JSON', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"type":"proposal","te' }] } }]
+      })
+    });
+
+    await expect(callGemini({ model: 'gemini-2.5-flash', systemPrompt: 's', contents: [], responseSchema: {} }))
+      .rejects.toThrow(/cortó|MAX_TOKENS/i);
+  });
+
+  it('names the finishReason when the JSON cannot be parsed for another reason', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ candidates: [{ finishReason: 'SAFETY', content: { parts: [{ text: 'no es json' }] } }] })
+    });
+
+    await expect(callGemini({ model: 'gemini-2.5-flash', systemPrompt: 's', contents: [], responseSchema: {} }))
+      .rejects.toThrow(/SAFETY/);
+  });
+
   it('does not retry on a non-retryable 4xx', async () => {
     process.env.GEMINI_API_KEY = 'test-key';
     global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400, text: async () => 'bad request' });

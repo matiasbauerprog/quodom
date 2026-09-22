@@ -1,0 +1,42 @@
+SUPUESTOS Y REGLAS DE ESTE RUBRO:
+Supuestos utilizados para esta selección
+- Restaurant con 50 comensales/día -> 1.500 comensales/mes (50 x 30 días).
+- Se asumió que un 20% de los cubiertos son pedidos para llevar/delivery (≈300 raciones/mes) y el resto se consume en salón; ajustar según el mix real.
+- El catálogo no tiene servilletas de mesa como producto específico; lo más cercano es el 'Pañuelo descartable caja 150 uni.' (caja de pañuelos tipo tissue), no un servilletero de mesa tradicional.
+- Por pedido del usuario, no se incluyeron Barbijos descartables en la categoría Guantes.
+- Cantidades a ajustar según el consumo real observado mes a mes.
+Supuestos utilizados para esta selección
+Consultar la categoría Cartón (bandejas para tortas, conos de papas fritas, portapanchos, portavasos) por ser específica de un menú de comida rápida/pastelería.
+
+EJEMPLOS RESUELTOS DE REFERENCIA. Son casos concretos, no plantillas: recalculá siempre para lo que dijo el usuario, TAMBIÉN las cantidades de accesorios. Sirven para ver qué no puede faltar en un presupuesto de este rubro, no para copiar números.
+
+Compra mensual de papelera - Restaurant
+50 personas/día (1.500 comensales/mes)
+Categoría | Producto | Medida / Detalle | Cantidad sugerida
+Aluminio
+Aluminio | Bandeja con tapa por 10 unidades | F100 21x14x4cm (1000cc) - viandas para llevar | 30 packs (300 uds.)
+Aluminio | Rollo de aluminio por kg | 38cm x 1kg - cobertura bandejas en cocina | 3 unidades
+Gastronomía
+Gastronomía | Film gastronómico | 28cm x 100mts | 2 unidades
+Gastronomía | Cuchara plástico | x100 | 3 packs (300 uds.)
+Gastronomía | Tenedor plástico | x100 | 3 packs (300 uds.)
+Gastronomía | Cuchillo plástico | x100 | 3 packs (300 uds.)
+Gastronomía | Plato descartable Grande P22 | x100 | 3 packs (300 uds.)
+Gastronomía | Agitadores (madera) | x1000 | 1 pack
+Papelería
+Papelería | Papel higiénico doble hoja | 48 uni x 20mts | 1 pack
+Papelería | Toalla intercalada por 2000 uni. | Blanca | 2 packs
+Papelería | Pañuelo descartable caja 150 uni. | - | 5 cajas
+Embalaje
+Embalaje | Papel sulfito bobina | 20cm x 4kg | 1 unidad
+Embalaje | Film stretch virgen transparente | 10cm x 1000mts | 1 unidad
+Embalaje | Caja de cartón | 20x20x10cm, x25 - opcional para envíos | 1 pack
+Cintas
+Cintas | Cinta transparente 48mm por 100mts | x10 | 1 pack
+Bolsas
+Bolsas | Bolsa de consorcio | Negra 60x90cm, x50 | 2 packs (100 uds.)
+Bolsas | Bolsa camiseta común | 40x50cm, x100 | 3 packs (300 uds.)
+Oficina
+Oficina | Resma de papel A4 75gr | - | 1 unidad
+Guantes
+Guantes | Guantes de latex | Talle M, x100 | 5 packs (500 uds.)

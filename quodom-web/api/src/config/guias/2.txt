@@ -1,0 +1,46 @@
+SUPUESTOS Y REGLAS DE ESTE RUBRO:
+Supuestos utilizados para esta selección
+- Estimación basada en un consumo mensual típico de oficina para 10 puestos administrativos y 4 impresoras.
+- El papel A4 75 gramos se estima un consumo de 100 hojas por persona por mes (10 personas x 100 hojas = 1.000 hojas/mes = 2 resmas de 500 hojas). Al venderse en packs de 5 resmas, se sugiere comprar 1 pack (5 resmas = 2.500 hojas), que cubre aprox. 2 a 3 meses de consumo.
+- No se incluyeron productos de uso escolar/artístico (Cartulina, Plasticola, Tempera) por no ser típicos de una oficina administrativa.
+- No se incluyó Papel fotográfico salvo necesidad puntual de impresión de imágenes/material gráfico.
+- El listado de 'Comprador' del archivo original no tiene una línea específica de Toner/Cartuchos (solo figura del lado 'Vendedor'); con 4 impresoras es un insumo clave a gestionar aparte según marca/modelo de cada equipo.
+- Cantidades a ajustar según el consumo real observado mes a mes.
+Agregados
+- Consultar siempre la cantidad de empreados y calcular en base a este dato
+- Consultar la cantidad de impresoras  y calcular en base a este dato
+
+EJEMPLOS RESUELTOS DE REFERENCIA. Son casos concretos, no plantillas: recalculá siempre para lo que dijo el usuario, TAMBIÉN las cantidades de accesorios. Sirven para ver qué no puede faltar en un presupuesto de este rubro, no para copiar números.
+
+Compra mensual de librería - Oficina
+10 administrativos, 4 impresoras
+Categoría | Producto | Color / Tipo / Detalle | Cantidad sugerida
+Oficina (papel)
+Oficina | Resma por 5 unidades | A4 75 gramos | 1 pack (5 resmas)
+Oficina | Resma por 5 unidades | Oficio 75 gramos | 1 pack (5 resmas) - opcional
+Escritura
+Escritura | Lapiceras por 12 unidades | Azul | 1 pack
+Escritura | Lapiceras por 12 unidades | Negro | 1 pack
+Escritura | Resaltador por 10 unidades | Combinado | 1 pack
+Escritura | Lápiz corrector por 12 unidades | - | 1 pack
+Escritura | Borratintas por 6 unidades | - | 1 pack
+Escritura | Marcador de pizarra por 12 unidades | Combinado | 1 pack
+Escritura | Marcador indeleble por 12 unidades | Negro | 1 pack
+Escritura | Goma de borrar por 10 unidades | - | 1 pack
+Carpetas y cuadernos
+Carpetas y cuadernos | Carpetas A4 | Negro, Azul | 10 unidades
+Carpetas y cuadernos | Carpeta Cristal por 12 unidades | Negro, Azul | 1 pack
+Carpetas y cuadernos | Bibliorato A4 | Surtido (Negro, Gris, Rojo, Azul) | 10 unidades
+Carpetas y cuadernos | Block por 80 hojas | Rayado | 5 unidades
+Carpetas y cuadernos | Cuaderno universitario 48 hojas | Rayado | 5 unidades
+Artística (básicos de oficina)
+Artística | Tijera | 17 cm | 2 unidades
+Artística | Regla | - | 2 unidades
+Otros insumos
+Otros | Banditas elásticas por 1 kg | - | 1 kg
+Otros | Cinta transparente 48 mm | - | 3 rollos
+Otros | Cinta de papel | 24 mm | 2 rollos
+Otros | Sobres | - | 1 caja (~50 unidades)
+Otros | Clips metálicos | - | 1 caja
+Otros | Aprieta papel binder | Surtido de tamaños | 1 caja
+Otros | Tinta para sello | - | 1 unidad

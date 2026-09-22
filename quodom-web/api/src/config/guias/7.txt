@@ -1,0 +1,45 @@
+SUPUESTOS Y REGLAS DE ESTE RUBRO:
+Supuestos utilizados para esta selección
+Restaurant (50 personas/día = 1.500 comensales/mes):
+- ~35% de los comensales pide gaseosa, ~25% agua, ~20% cerveza, ~20% vino (compartido entre 3 personas), más consumo ocasional de aperitivos/tragos en barra.
+Evento privado (50 personas):
+- Evento de aproximadamente 5 horas, con un consumo estimado de 4 a 5 bebidas por persona entre alcohólicas y no alcohólicas.
+- Reglas prácticas utilizadas: 1 botella de vino (750ml) cada 3 personas; 2-3 cervezas por cada persona que bebe cerveza (~50% de los asistentes); 1 botella de destilado (750ml) cada 12-15 medidas; agua entre 1 y 1,5 litros por persona.
+General:
+- Las marcas de vino, whisky, vodka y aperitivo son sugerencias representativas del catálogo (que tiene muchísimas opciones, sobre todo en Whisky y Vodka); se pueden reemplazar por otras marcas según preferencia.
+- El catálogo no tiene hielo como producto; es indispensable para el servicio de bebidas y debe gestionarse aparte (proveedor de hielo o producción propia).
+- Cantidades a ajustar según el consumo real observado y las preferencias de los comensales/invitados.
+Consultar
+Si la compra es para restaurant o es un evento privado
+Sugerir
+Sugerir que seleccione las marcas antes de enviar a cotizar
+
+EJEMPLOS RESUELTOS DE REFERENCIA. Son casos concretos, no plantillas: recalculá siempre para lo que dijo el usuario, TAMBIÉN las cantidades de accesorios. Sirven para ver qué no puede faltar en un presupuesto de este rubro, no para copiar números.
+
+Compra mensual de bebidas - Restaurant
+50 personas/día (1.500 comensales/mes)
+Categoría | Producto | Formato | Cantidad sugerida
+Gaseosas | Coca Cola original botella | Botella 1,5 lts (Pack 8) | 10 packs
+Gaseosas | Sprite original botella | Botella 1,5 lts (Pack 8) | 3 packs
+Aguas | Agua Villavicencio | 500 ml con gas (pack 24) | 8 packs
+Aguas | Agua Villavicencio | 500 ml sin gas (pack 24) | 8 packs
+Cervezas | Andes Rubia | Lata 473 ml (Pack 24) | 13 packs
+Vinos | Alma Mora Malbec (o similar) | Malbec (Caja x 6) | 17 cajas
+Aperitivos | Fernet Branca | 750 ml (Caja x 6) | 2 cajas
+Whisky | Jack Daniels 750 ml | - | 2 unidades
+Vodka | Absolut 750 ml | Clásico | 2 unidades
+Energizantes | Red Bull | 250 ml (Pack 4) | 2 packs
+
+Compra de bebidas - Evento privado
+50 personas, evento de ~5 horas
+Categoría | Producto | Formato | Cantidad sugerida
+Vinos | Alma Mora Malbec / Chardonnay | Caja x 6 | 3 cajas (18 botellas)
+Cervezas | Andes Rubia / Imperial | Lata 473 ml (Pack 24) | 3 packs (72 latas)
+Whisky | Jack Daniels 750 ml | - | 3 unidades
+Vodka | Absolut 750 ml | Clásico | 3 unidades
+Aperitivos | Fernet Branca | 750 ml (Caja x 6) | 1 caja (6 botellas)
+Gaseosas | Coca Cola original botella | Botella 1,5 lts (Pack 8) | 3 packs (para fernet/whisky)
+Gaseosas | Sprite original botella | Botella 1,5 lts (Pack 8) | 1 pack (para vodka)
+Aguas | Agua Villavicencio | 500 ml con gas (pack 24) | 4 packs
+Aguas | Agua Villavicencio | 500 ml sin gas (pack 24) | 3 packs
+Energizantes | Red Bull | 250 ml (Pack 4) | 5 packs (para vodka-energizante)

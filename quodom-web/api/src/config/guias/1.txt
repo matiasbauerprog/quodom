@@ -1,0 +1,47 @@
+SUPUESTOS Y REGLAS DE ESTE RUBRO:
+Supuestos utilizados para esta selección
+- Empresa de 100 m², con 1 vestuario, 1 comedor y 5 baños, atendida por 1 empleado de limpieza.
+- Superficies a limpiar consideradas: pisos de cerámica, pisos de alfombra, baños, escritorios de madera/melamina, aromatizadores, ventanas y puertas de vidrio.
+- Cantidades estimadas para que la compra dure un mes, según un uso de oficina moderado (no industrial/alto tránsito).
+- No se incluyó Lavandería (no hay ropa/textiles a lavar), Automotor (no hay vehículos) ni Piscinas (no hay pileta) por no aplicar al escenario.
+- El catálogo no tiene un producto específico de 'aromatizante/desodorante de ambiente'; lo más cercano son los 'Perfume 5 litros' (pensados para ropa o autos, no para ambientes). Si se necesita, debe gestionarse aparte.
+- El catálogo tampoco tiene un 'limpiavidrios' dedicado; para ventanas y puertas de vidrio se recomendó usar el Multiuso junto con el Secador (accesorio), aunque no es un producto formulado específicamente para vidrios.
+- Cantidades a ajustar según el consumo real observado mes a mes.
+Supuestos utilizados para esta selección
+Consultar los metros cuadrados a limpiar
+Consultar si hay alfombras
+Consultar la cantidad de baños
+Hacer los cálculos según las respuestas anteriores
+
+EJEMPLOS RESUELTOS DE REFERENCIA. Son casos concretos, no plantillas: recalculá siempre para lo que dijo el usuario, TAMBIÉN las cantidades de accesorios. Sirven para ver qué no puede faltar en un presupuesto de este rubro, no para copiar números.
+
+Compra mensual de limpieza - Empresa 100 m²
+1 vestuario, 1 comedor, 5 baños, 1 empleado de limpieza
+Categoría | Producto | Uso / Detalle | Cantidad sugerida
+Pisos
+Pisos | Líquido para lampazo 5 litros | Mopeo diario piso cerámica | 2 unidades (10 L)
+Pisos | Limpiador neutro 5 litros | Superficies y pisos en general | 1 unidad
+Pisos | Alfombras y tapizados 5 litros | Piso alfombrado | 1 unidad
+Pisos | Lavandina concentrada 5 litros | Desinfección baños y pisos | 2 unidades
+Pisos | Lustra muebles 5 litros | Escritorios de madera/melamina | 1 unidad
+Cocina (comedor)
+Cocina | Detergente lavavajilla 5 litros | Vajilla del comedor | 1 unidad
+Cocina | Multiuso 5 litros | Superficies comedor, apoyo para vidrios/puertas de vidrio | 2 unidades
+Papelería
+Papelería | Papel Higiénico de 80 mts 30 unidades | 5 baños | 2 packs (60 rollos)
+Papelería | Rollo de cocina 50 paños 3 unidades | Comedor | 1 pack
+Papelería | Toalla intercalada 20x24cm 2500 uni. Blanca | Secado de manos (baños/vestuario) | 1 pack
+Accesorios
+Accesorios | Bolsa de residuos | Negra 60x90 cm (oficina/comedor) | 1 pack
+Accesorios | Bolsa de residuos | Negra 45x60 cm (baños) | 1 pack
+Accesorios | Franela por 10 unidades | 40x50 cm (paños superficies/vidrios) | 1 pack
+Accesorios | Trapo de piso por 10 unidades | - | 1 pack
+Accesorios | Secadores | 40 cm (ventanas y puertas de vidrio) | 1 unidad
+Accesorios | Escobillón de cerda | 80 cm | 1 unidad
+Accesorios | Escobilla para baño | Con base | 5 unidades (una por baño)
+Accesorios | Lampazo | Algodón 350 gr (repuesto mensual) | 1 unidad
+Accesorios | Guantes Mapa | Talle M | 2 unidades (uso del empleado)
+Cuidado Personal
+Cuidado Personal | Alcohol 70% por 5 litros | Desinfección escritorios/superficies | 1 unidad
+Cuidado Personal | Alcohol en gel por 5 litros | Dispensers vestuario/comedor/baños | 1 unidad
+Cuidado Personal | Jabón líquido de manos por 5 litros | 5 baños + vestuario | 2 unidades

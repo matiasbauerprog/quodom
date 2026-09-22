@@ -1,7 +1,11 @@
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_DEADLINE_MS = 55000;
 const DEFAULT_ATTEMPTS_PER_MODEL = 2;
-const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
+// Fusible de costo, no límite de diseño: tiene que sobrar para la respuesta
+// legítima más larga. Con los ejemplos resueltos en el prompt las propuestas
+// pasaron de 6 a 17 productos, así que 4096 quedó corto y una corrida de cada
+// dos se cortaba a mitad del JSON.
+const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 // Newest models get the most traffic and are the first to answer 503 UNAVAILABLE
 // on the free tier. Retrying on the next-newest is not enough: el 2026-09-20
 // toda la cadena (3.7 -> 3.6 -> 3.5) contestaba 503 a la vez y el chat fallaba
@@ -59,7 +63,7 @@ function tiempoParaEsteIntento(budget, modelosRestantes, timeoutMs) {
 }
 
 function isRetryable(e) {
-  return e.name === 'AbortError' || e.status === 429 || (e.status >= 500 && e.status <= 599);
+  return e.reintentable === true || e.name === 'AbortError' || e.status === 429 || (e.status >= 500 && e.status <= 599);
 }
 
 // A model can be retired or gated for the account: that is not worth retrying on
@@ -107,14 +111,29 @@ async function callGemini({ model, systemPrompt, contents, responseSchema }) {
         throw err;
       }
       const json = await res.json();
-      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const candidato = json?.candidates?.[0];
+      // Por qué terminó la respuesta. STOP es el final normal; MAX_TOKENS dice
+      // que se cortó contra el tope y el JSON queda a mitad de camino, que sin
+      // este chequeo se lee como "el modelo devolvió basura" y manda a
+      // investigar al lugar equivocado.
+      const finishReason = candidato?.finishReason;
+      if (finishReason === 'MAX_TOKENS') {
+        const err = new Error('gemini: la respuesta se cortó por el tope de salida (finishReason MAX_TOKENS); '
+          + 'subí GEMINI_MAX_OUTPUT_TOKENS o pedile una respuesta más corta');
+        // Reintentable: el largo de la respuesta varía entre corridas, así que
+        // otro intento puede entrar. El tope de intentos lo acota igual.
+        err.reintentable = true;
+        throw err;
+      }
+      const text = candidato?.content?.parts?.[0]?.text;
       if (typeof text !== 'string' || text.trim() === '') {
         throw new Error('gemini: empty or missing text in response (candidates: ' + (json?.candidates?.length ?? 0) + ')');
       }
       try {
         return JSON.parse(text);
       } catch (e) {
-        throw new Error('gemini: could not parse JSON response: ' + text.slice(0, 200));
+        throw new Error('gemini: could not parse JSON response (finishReason '
+          + (finishReason || 'desconocido') + '): ' + text.slice(0, 200));
       }
     } finally {
       clearTimeout(timer);

@@ -12,6 +12,7 @@
     "dev": "nodemon src/server.js",
     "seed": "node src/seed/seed.js",
     "reset-quodoms": "node src/seed/reset-quodoms.js",
+    "guias": "node src/seed/guias.js",
     "import-images": "node src/seed/import-images.js",
     "report-missing-images": "node src/seed/report-missing-images.js",
     "add-image": "node src/seed/add-image.js",

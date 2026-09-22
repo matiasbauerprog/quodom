@@ -321,7 +321,7 @@ describe('ia.chat (tamaño del prompt)', () => {
 // El clasificador devolvía dos o tres subcategorías y los accesorios viven en
 // otra, así que los pinceles y rodillos ni siquiera llegaban a la lista que ve
 // el asistente — no es que no los quisiera proponer, no los tenía.
-// Referencia del resultado esperado: docs/referencias/Listado_Pintura_Depto_Casa.xlsx
+// Referencia del resultado esperado: informacion para la ia/Pinturería/Listado_Pintura_Depto_Casa.xlsx
 describe('ia.chat (catálogo completo del rubro)', () => {
   it('offers every active subcategory of the rubro, not only the ones the classifier picked', async () => {
     callGemini
@@ -360,7 +360,7 @@ describe('ia.chat (catálogo completo del rubro)', () => {
   });
 });
 
-// El conocimiento del rubro sale de docs/referencias/Listado_Pintura_Depto_Casa.xlsx.
+// El conocimiento del rubro sale de las planillas en "informacion para la ia".
 // Sin los rendimientos el asistente propuso 10 litros para una casa entera,
 // cuando el listado de referencia pide 4 latas de 20.
 describe('ia.chat (guía de Pintura)', () => {
@@ -372,11 +372,14 @@ describe('ia.chat (guía de Pintura)', () => {
     return callGemini.mock.calls[1][0].systemPrompt;
   }
 
+  // Las cifras se afirman con las palabras de la planilla, que es la fuente:
+  // antes estaban escritas a mano en el controller y el test fijaba esa
+  // redacción, no el dato.
   it('gives the coverage figures needed to size the paint', async () => {
     const p = await guia();
-    expect(p).toContain('10 m² por litro por mano');
-    expect(p).toContain('2,8');
-    expect(p).toContain('dos manos');
+    expect(p).toContain('10 m²/L por mano');
+    expect(p).toContain('piso x 2,8');
+    expect(p).toContain('2 manos');
   });
 
   it('demands preparation and accessories, not only paint', async () => {
@@ -483,5 +486,47 @@ describe('ia.chat (nunca sustituir en silencio)', () => {
   it('tells the model that wall latex has no colour to offer', async () => {
     const p = await prompt();
     expect(p).toMatch(/látex.*sólo en blanco|sólo existe en blanco/i);
+  });
+});
+
+// Las guías salen de "informacion para la ia/<Rubro>/Listado_*.xlsx" vía
+// `npm run guias`. Un rubro sin guía generada no rompe nada visible: el
+// asistente sigue contestando, sólo que sin el conocimiento del rubro y nadie
+// se entera. Este test es el que avisa que falta correr la conversión.
+describe('guías por rubro', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const { RUBROS_ACTIVOS } = require('../src/config/rubros');
+  const DIR = path.join(__dirname, '..', 'src', 'config', 'guias');
+
+  it('has a generated guide for every active rubro', () => {
+    const faltan = RUBROS_ACTIVOS.filter(id => !fs.existsSync(path.join(DIR, id + '.txt')));
+    expect(faltan).toEqual([]);
+  });
+
+  it('carries the assumptions and the worked examples of the rubro', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+
+    await ia.chat(USER_ID, [{ role: 'user', text: 'pintar' }]);
+    const prompt = callGemini.mock.calls[1][0].systemPrompt;
+
+    expect(prompt).toContain('10 m²/L por mano');   // supuesto de rendimiento
+    expect(prompt).toContain('piso x 2,8');         // regla para estimar la pared
+    expect(prompt).toContain('Rodillo de Lana');    // sale de un ejemplo resuelto
+    expect(prompt).toMatch(/no son plantillas|no plantillas|no son plantillas|no para copiar/i);
+  });
+
+  it('keeps the catalogue notes that do not live in the spreadsheet', async () => {
+    callGemini
+      .mockResolvedValueOnce({ idrubro: 5, idsSubcategoria: [35] })
+      .mockResolvedValueOnce({ type: 'question', text: '¿interior?' });
+
+    await ia.chat(USER_ID, [{ role: 'user', text: 'pintar' }]);
+    const prompt = callGemini.mock.calls[1][0].systemPrompt;
+
+    expect(prompt).toMatch(/sólo en blanco/i);  // el látex no tiene color elegible
+    expect(prompt).toMatch(/antihongo/i);
   });
 });
