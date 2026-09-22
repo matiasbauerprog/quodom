@@ -5,6 +5,7 @@ Express + Sequelize 6 + SQLite, JavaScript (CommonJS). Port 1:1 de la API origin
 ## Comandos
 - `npm install` — instalar dependencias
 - `npm run seed` — poblar `quodom.sqlite` desde `Documentacion 2.0/Categorias/Migracion.xlsx` (verifica 50 subcategorías / 644 productos)
+- `npm run guias` — regenera `src/config/guias/<idrubro>.txt` desde `informacion para la ia/<Rubro>/Listado_*.xlsx`. **Correrlo cada vez que se toca una planilla**: sin eso la API sigue mandándole al asistente las instrucciones viejas y no falla nada visible. Ver §8 de `claude.md` en la raíz.
 - `npm run dev` — servidor en `http://localhost:3999` (nodemon)
 - `npm test` — Jest + Supertest contra SQLite en memoria (`--runInBand`; cada archivo de test tiene su propia DB)
 
@@ -13,6 +14,8 @@ Express + Sequelize 6 + SQLite, JavaScript (CommonJS). Port 1:1 de la API origin
 - `src/routes/` → `src/controllers/` → `src/models/` + `src/helpers/db.js`
 - `src/helpers/views.js` — vistas SQL (`v_Busquedas`, `v_Quodoms`, `v_Quodoms_Lines`, `v_InfoCompradors`). Los modelos `v_*` NO se sincronizan (son vistas); NUNCA usar `sequelize.sync()` global.
 - `src/middleware/auth.js` — `verifyToken()` (JWT Bearer) / `isAdmin()`
+- `src/config/guias/` — guías por rubro **generadas**; no editarlas a mano, se pisan con `npm run guias`. La fuente son las planillas en `informacion para la ia/`.
+- `src/helpers/gemini.js` — cadena de modelos con respaldo, reparto del presupuesto de tiempo y tope de salida. El modelo por defecto está elegido por medición, no por ser el más nuevo.
 - Config por `.env` (ver `.env.example`). Nunca commitear `.env` ni `quodom.sqlite`.
 
 ## Convenciones
