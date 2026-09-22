@@ -73,7 +73,7 @@ El paso intermedio existe para que un cambio en las instrucciones del asistente 
 
 > **Editar una planilla y no correr `npm run guias` no rompe nada visible.** La API sigue contestando con las instrucciones viejas y nadie se entera. El test `guías por rubro` avisa si a un rubro activo le **falta** el archivo, pero no puede saber que la planilla cambió.
 
-De cada planilla se toman las hojas `Supuestos` (reglas de cálculo, qué preguntar, y los huecos del catálogo) y los **ejemplos resueltos**; se ignoran `Pendientes` y los archivos `<Rubro>.xlsx`, que replican el catálogo que ya sale de la base y traen datos de vendedores, que acá no existen.
+Cómo escribir una planilla (qué va en los ejemplos y qué en los supuestos) está en `quodom-web/informacion para la ia/COMO ESCRIBIR LAS PLANILLAS.md`. De cada planilla se toman las hojas `Supuestos` (reglas de cálculo, qué preguntar, y los huecos del catálogo) y los **ejemplos resueltos**; se ignoran `Pendientes` y los archivos `<Rubro>.xlsx`, que replican el catálogo que ya sale de la base y traen datos de vendedores, que acá no existen.
 
 **Los ejemplos no son decoración, y tienen que ser dos de distinto tamaño.** Medido sobre un caso que no coincidía con ninguna referencia: sin ejemplos el asistente proponía 7 productos y se olvidaba el esmalte de las aberturas; con **uno** solo copiaba su escala (pedía 2 bandejas y 2 cintas para un departamento que lleva 1 de cada una); con **dos** de distinto tamaño interpola y llega a 17 productos correctos. Papelera, Limpieza y Librería todavía tienen uno solo; `npm run guias` lo avisa al correr.
 
