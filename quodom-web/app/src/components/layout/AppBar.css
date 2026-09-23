@@ -8,6 +8,19 @@
   top: 0;
   z-index: 20;
 }
+.appbar-marca {
+  font-family: var(--font-prompt);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  color: var(--color-texto);
+  text-decoration: none;
+  margin-left: var(--sp-2);
+  padding: 4px 2px;
+  /* La misma línea roja del wordmark grande, en chico. */
+  border-bottom: 2px solid var(--color-acento);
+  line-height: 1.1;
+}
 .appbar-hamburger {
   width: 40px;
   height: 40px;

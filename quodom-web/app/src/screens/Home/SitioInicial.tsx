@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { categorias } from '../../api/categorias';
-import type { Category } from '../../api/types';
+import { busqueda as busquedaApi } from '../../api/busqueda';
+import type { Category, BusquedaResult } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
+import { ProductImage } from '../../components/ProductImage';
 import { RubroSelector } from './RubroSelector';
 import { SubcategoriaTabs } from './SubcategoriaTabs';
 import { ListaProductos } from './ListaProductos';
@@ -24,6 +26,7 @@ export function SitioInicial() {
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [modoIa, setModoIa] = useState<ModoIa | null>(null);
+  const [sugerencias, setSugerencias] = useState<BusquedaResult[] | null>(null);
   const rubroParam = numParam(params.get('rubro'));
   const subParam = numParam(params.get('sub'));
 
@@ -83,14 +86,53 @@ export function SitioInicial() {
     e.preventDefault();
     const term = q.trim();
     if (term.length < 2) return;
+    setSugerencias(null);
     navigate('/busqueda?q=' + encodeURIComponent(term));
+  }
+
+  // Vista previa mientras se escribe. Espera a que el usuario frene para no
+  // disparar una consulta por tecla, y descarta las respuestas que llegan
+  // tarde: sin el `alive` una búsqueda vieja y lenta pisa a la nueva.
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) { setSugerencias(null); return; }
+    let alive = true;
+    const t = setTimeout(() => {
+      busquedaApi.buscar(term)
+        .then(r => { if (alive) setSugerencias(r); })
+        .catch(() => { if (alive) setSugerencias(null); });
+    }, 250);
+    return () => { alive = false; clearTimeout(t); };
+  }, [q]);
+
+  // Desde un rubro, el botón hace las dos cosas de una: sale del rubro y abre
+  // la conversación. Antes desaparecía acá adentro y había que volver al home
+  // a mano para llegar al asistente.
+  function abrirModoIa() {
+    if (idrubro !== null) {
+      setParams({});
+      setModoIa('chat');
+      return;
+    }
+    setModoIa(modo === 'chat' ? null : 'chat');
+  }
+
+  function elegirSugerencia(nombre: string) {
+    setSugerencias(null);
+    setQ('');
+    navigate('/busqueda?q=' + encodeURIComponent(nombre));
   }
 
   if (err) return <div className="container"><ErrorState message={err} onRetry={() => setNonce(n => n + 1)} /></div>;
 
   return (
     <section className={'container home-inicial' + (idrubro !== null ? ' home-compacto' : '')}>
-      {idrubro === null && modoIa === null && <h1 className="home-wordmark">QUODOM</h1>}
+      {idrubro === null && modoIa === null && (
+        <hgroup className="home-marca">
+          <h1 className="home-wordmark">QUODOM</h1>
+          <p className="home-claim">Cotizá todo junto, en un sólo lugar.</p>
+        </hgroup>
+      )}
 
       {/* El buscador queda fuera del bloque que se oculta: con un rubro
           elegido sigue siendo la salida más rápida a otra cosa, y verlo
@@ -100,21 +142,39 @@ export function SitioInicial() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
         </span>
         <input className="input home-search-input" type="search" placeholder="¿Qué necesitás?" aria-label="Buscar productos" value={q} onChange={e => setQ(e.target.value)} />
+
+        {sugerencias !== null && (
+          <div className="home-sugerencias card hoja" role="listbox" aria-label="Sugerencias">
+            {sugerencias.length === 0
+              ? <p className="home-sugerencias-vacio">Sin resultados para "{q.trim()}".</p>
+              : sugerencias.slice(0, 8).map(s => (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  className="home-sugerencia"
+                  onClick={() => elegirSugerencia(s.nombre)}
+                >
+                  <ProductImage idproducto={s.id} alt={s.nombre} size="sm" />
+                  <span>{s.nombre}</span>
+                </button>
+              ))}
+          </div>
+        )}
       </form>
 
       {/* El botón es también la única forma de cerrar la conversación: la
           pantalla de chat con su flecha de volver ya no existe, así que si
           desapareciera al abrirse el usuario quedaría encerrado adentro. */}
-      {idrubro === null && (
-        <button
-          type="button"
-          className={'btn home-modo-ia' + (modo === 'chat' ? ' home-modo-ia-activo' : '')}
-          aria-pressed={modo === 'chat'}
-          onClick={() => setModoIa(modo === 'chat' ? null : 'chat')}
-        >
-          Modo IA — armá tu Quodom conversando
-        </button>
-      )}
+      <button
+        type="button"
+        className={'btn home-modo-ia' + (modo === 'chat' ? ' home-modo-ia-activo' : '')}
+        aria-pressed={modo === 'chat'}
+        onClick={abrirModoIa}
+      >
+        Modo IA — armá tu Quodom conversando
+      </button>
 
       {modo === 'chat' && <PanelConversacion />}
 

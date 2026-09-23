@@ -4,9 +4,11 @@ import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-d
 import { SitioInicial } from '../SitioInicial';
 import { categorias } from '../../../api/categorias';
 import { productos } from '../../../api/productos';
+import { busqueda } from '../../../api/busqueda';
 
 vi.mock('../../../api/categorias', () => ({ categorias: { raiz: vi.fn(), subs: vi.fn() } }));
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
+vi.mock('../../../api/busqueda', () => ({ busqueda: { buscar: vi.fn() } }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({
   useAgregarProducto: () => ({
     agregar: vi.fn(), agregando: false, error: null, pendiente: null,
@@ -21,6 +23,7 @@ vi.mock('../../ModoIA/PanelConversacion', () => ({ PanelConversacion: () => <p>p
 const raiz = categorias.raiz as unknown as ReturnType<typeof vi.fn>;
 const subs = categorias.subs as unknown as ReturnType<typeof vi.fn>;
 const porCategoria = productos.porCategoria as unknown as ReturnType<typeof vi.fn>;
+const buscar = busqueda.buscar as unknown as ReturnType<typeof vi.fn>;
 
 const RUBROS = [
   { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, imagen: null, refreshImage: null, orden: 1 },
@@ -40,7 +43,8 @@ function montar(url: string) {
 }
 
 beforeEach(() => {
-  raiz.mockReset(); subs.mockReset(); porCategoria.mockReset();
+  raiz.mockReset(); subs.mockReset(); porCategoria.mockReset(); buscar.mockReset();
+  buscar.mockResolvedValue([]);
   raiz.mockResolvedValue(RUBROS);
   subs.mockResolvedValue(SUBS_BEBIDAS);
   porCategoria.mockResolvedValue([COCA]);
@@ -122,11 +126,13 @@ describe('SitioInicial (botón Modo IA)', () => {
     expect(screen.getByRole('button', { name: /modo ia/i })).toBeInTheDocument();
   });
 
-  it('no muestra el botón con un rubro elegido', async () => {
+  // Antes se escondía acá adentro, y para llegar al asistente había que volver
+  // al home a mano. Ahora queda a la vista y él mismo hace el camino de vuelta.
+  it('también se muestra con un rubro elegido', async () => {
     montar('/?rubro=7&sub=70');
     await screen.findByText('Coca Cola 2L');
 
-    expect(screen.queryByRole('button', { name: /modo ia/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /modo ia/i })).toBeInTheDocument();
   });
 
   it('tocarlo reemplaza el catálogo por la conversación', async () => {
@@ -187,7 +193,9 @@ describe('SitioInicial (botón Modo IA)', () => {
 
     expect(await screen.findByText('Coca Cola 2L')).toBeInTheDocument();
     expect(screen.queryByText('panel chat')).toBeNull();
-    expect(screen.queryByRole('button', { name: /modo ia/i })).toBeNull();
+    // El botón ya no se esconde dentro de un rubro, pero tiene que quedar
+    // "sin apretar": lo que se comprueba acá es que el panel se cerró.
+    expect(screen.getByRole('button', { name: /modo ia/i })).toHaveAttribute('aria-pressed', 'false');
   });
 });
 
@@ -208,3 +216,107 @@ describe('SitioInicial (botón Modo IA)', () => {
 //     expect(screen.queryByRole('link', { name: /bebidas/i })).toBeNull();
 //   });
 // });
+
+describe('SitioInicial (subtítulo)', () => {
+  it('acompaña al wordmark con el subtítulo en el home', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+    expect(screen.getByText(/cotizá todo junto, en un sólo lugar/i)).toBeInTheDocument();
+  });
+
+  it('lo esconde junto al wordmark cuando hay un rubro elegido', async () => {
+    montar('/?rubro=7');
+    await screen.findByRole('navigation', { name: /subcategorías/i });
+    expect(screen.queryByText('QUODOM')).toBeNull();
+    expect(screen.queryByText(/cotizá todo junto/i)).toBeNull();
+  });
+});
+
+// Antes había que apretar Enter para ver algo. El desplegable es una vista
+// previa: tocar un resultado lleva a la búsqueda completa de ese producto,
+// que es donde está el botón de agregar.
+describe('SitioInicial (buscador con sugerencias)', () => {
+  const RESULTADOS = [
+    { id: 700, nombre: 'Coca Cola 2L', descripcion: null, imagen: null, refreshImagen: null, categoriaPadre: 7 },
+    { id: 701, nombre: 'Coca Cola Zero 1.5L', descripcion: null, imagen: null, refreshImagen: null, categoriaPadre: 7 }
+  ];
+
+  it('busca y muestra resultados mientras se escribe', async () => {
+    buscar.mockResolvedValue(RESULTADOS);
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'coca' } });
+
+    expect(await screen.findByText('Coca Cola 2L')).toBeInTheDocument();
+    expect(screen.getByText('Coca Cola Zero 1.5L')).toBeInTheDocument();
+    await waitFor(() => expect(buscar).toHaveBeenCalledWith('coca'));
+  });
+
+  it('no consulta con menos de dos letras', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'c' } });
+
+    await new Promise(r => setTimeout(r, 400));
+    expect(buscar).not.toHaveBeenCalled();
+  });
+
+  it('avisa cuando no hay resultados en vez de dejar el desplegable vacío', async () => {
+    buscar.mockResolvedValue([]);
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'zzz' } });
+
+    expect(await screen.findByText(/sin resultados/i)).toBeInTheDocument();
+  });
+
+  it('al elegir un resultado va a la búsqueda de ese producto', async () => {
+    buscar.mockResolvedValue(RESULTADOS);
+    const router = createMemoryRouter(
+      [{ path: '/', element: <SitioInicial /> }, { path: '/busqueda', element: <p>pantalla de búsqueda</p> }],
+      { initialEntries: ['/'] }
+    );
+    render(<RouterProvider router={router} />);
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'coca' } });
+    fireEvent.click(await screen.findByText('Coca Cola 2L'));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/busqueda'));
+    expect(router.state.location.search).toBe('?q=' + encodeURIComponent('Coca Cola 2L'));
+  });
+});
+
+// Antes el botón desaparecía al entrar a un rubro y no había forma de llegar
+// al asistente sin volver al home a mano.
+describe('SitioInicial (Modo IA siempre a mano)', () => {
+  it('se sigue viendo con un rubro elegido', async () => {
+    montar('/?rubro=7');
+    await screen.findByRole('navigation', { name: /subcategorías/i });
+    expect(screen.getByRole('button', { name: /modo ia/i })).toBeInTheDocument();
+  });
+
+  it('desde un rubro vuelve al home y abre la conversación', async () => {
+    montar('/?rubro=7');
+    await screen.findByRole('navigation', { name: /subcategorías/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /modo ia/i }));
+
+    expect(await screen.findByText('panel chat')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: /subcategorías/i })).toBeNull();
+  });
+
+  it('en el home sigue abriendo y cerrando', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /modo ia/i }));
+    expect(await screen.findByText('panel chat')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /modo ia/i }));
+    await waitFor(() => expect(screen.queryByText('panel chat')).toBeNull());
+  });
+});
