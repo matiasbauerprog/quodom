@@ -238,7 +238,7 @@ describe('MisQuodomsSidebar (repetir con un Quodom abierto del rubro)', () => {
     expect(dialogo).toHaveTextContent(/QD-9/);
     expect(dialogo).toHaveTextContent(/repetir QD-E1/i);
     // Integrar no se ofrece: repetir siempre crea uno nuevo.
-    expect(within(dialogo).queryByRole('button', { name: /integrar/i })).toBeNull();
+    expect(within(dialogo).queryByRole('button', { name: /sumar todo/i })).toBeNull();
     expect(eliminar).not.toHaveBeenCalled();
   });
 

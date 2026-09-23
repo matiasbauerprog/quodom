@@ -199,7 +199,7 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
 
     await waitFor(() => expect(screen.getByText('Quodom de Bebidas ya abierto')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Integrar los dos' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sumar todo a ese Quodom' }));
 
     await waitFor(() => expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola-integrado'));
 

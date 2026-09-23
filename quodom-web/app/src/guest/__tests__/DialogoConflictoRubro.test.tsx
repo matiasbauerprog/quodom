@@ -44,7 +44,7 @@ describe('DialogoConflictoRubro', () => {
     const onElegir = vi.fn();
     render(<DialogoConflictoRubro conflicto={CONFLICTO} onElegir={onElegir} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /integrar los dos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sumar todo a ese quodom/i }));
     expect(onElegir).toHaveBeenCalledWith('integrar');
   });
 });

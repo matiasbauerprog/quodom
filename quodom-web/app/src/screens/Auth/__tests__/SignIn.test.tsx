@@ -76,7 +76,7 @@ describe('SignIn', () => {
     fillAndSubmit();
 
     await screen.findByRole('dialog');
-    expect(screen.getByRole('button', { name: /integrar los dos/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sumar todo a ese quodom/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reemplazar/i })).toBeInTheDocument();
     // Integrar no destruye nada, así que postergar sólo deja un carrito
     // huérfano conviviendo con el Quodom del servidor: no se ofrece.
@@ -94,7 +94,7 @@ describe('SignIn', () => {
     render(<MemoryRouter><SignIn /></MemoryRouter>);
     fillAndSubmit();
 
-    fireEvent.click(await screen.findByRole('button', { name: /integrar los dos/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /sumar todo a ese quodom/i }));
 
     // Sin esta salida el usuario queda encerrado en el login si el servidor no responde.
     const salir = await screen.findByRole('button', { name: /continuar sin integrar/i });
@@ -115,7 +115,7 @@ describe('SignIn', () => {
     render(<MemoryRouter><SignIn /></MemoryRouter>);
     fillAndSubmit();
 
-    fireEvent.click(await screen.findByRole('button', { name: /integrar los dos/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /sumar todo a ese quodom/i }));
     fireEvent.click(await screen.findByRole('button', { name: /continuar sin integrar/i }));
 
     await waitFor(() => expect(screen.getByText(/Quodom de Limpieza ya abierto/i)).toBeInTheDocument());

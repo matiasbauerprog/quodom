@@ -222,6 +222,7 @@ export function PanelConversacion() {
             lineasInvitado: conflicto.items.length
           }}
           descripcionEntrante={'el asistente te propuso ' + conflicto.items.length + ' producto(s)'}
+          etiquetaIntegrar="Sumar la propuesta a ese Quodom"
           ocupado={confirming}
           // Acá el diálogo lo abrió el propio usuario al confirmar, así que
           // cancelar es una salida legítima: la propuesta sigue en pantalla.

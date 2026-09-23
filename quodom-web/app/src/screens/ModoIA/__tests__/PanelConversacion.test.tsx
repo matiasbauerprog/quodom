@@ -129,7 +129,7 @@ describe('PanelConversacion (confirming a proposal, reuses the catalog rubro flo
     await enviarYProponer();
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /integrar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sumar la propuesta/i }));
 
     await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-EXIST');
@@ -230,7 +230,7 @@ describe('PanelConversacion (confirming a proposal, reuses the catalog rubro flo
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /integrar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sumar la propuesta/i }));
 
     await waitFor(() => expect(quodomLines.add).toHaveBeenCalled());
     expect(quodomLines.add).toHaveBeenCalledWith({

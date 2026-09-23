@@ -79,6 +79,14 @@ export function MisQuodomsSidebar() {
 
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
+  // El acuse avisa que algo pasó y se va; si se queda, a la segunda repetición
+  // ya no se sabe a cuál se refiere.
+  useEffect(() => {
+    if (!agregado) return;
+    const t = setTimeout(() => setAgregado(null), 4000);
+    return () => clearTimeout(t);
+  }, [agregado]);
+
   // A la derecha van sólo los activos: los enviados son historial y viven en
   // Mis Quodoms, a un clic de "Ver todos".
   const activos = list

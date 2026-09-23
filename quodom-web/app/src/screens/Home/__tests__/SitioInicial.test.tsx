@@ -469,7 +469,7 @@ describe('SitioInicial (agregar con un Quodom abierto del rubro)', () => {
     await elegirResultado();
     await screen.findByRole('dialog');
 
-    fireEvent.click(screen.getByRole('button', { name: /integrar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /agregarlo a ese quodom/i }));
 
     await waitFor(() => expect(agregarSpy).toHaveBeenCalledWith(
       { idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 }, 7

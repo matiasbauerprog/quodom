@@ -112,6 +112,15 @@ export function SitioInicial() {
     navigate('/busqueda?q=' + encodeURIComponent(term));
   }
 
+  // El acuse es un aviso de que algo pasó, no un estado: sin esto se quedaba
+  // colgado en pantalla para siempre, y a la tercera búsqueda ya no se sabía a
+  // qué producto se refería.
+  useEffect(() => {
+    if (!agregado) return;
+    const t = setTimeout(() => setAgregado(null), 4000);
+    return () => clearTimeout(t);
+  }, [agregado]);
+
   // Vista previa mientras se escribe. Espera a que el usuario frene para no
   // disparar una consulta por tecla, y descarta las respuestas que llegan
   // tarde: sin el `alive` una búsqueda vieja y lenta pisa a la nueva.
@@ -242,6 +251,7 @@ export function SitioInicial() {
             lineasInvitado: 1
           }}
           descripcionEntrante={'querés agregar ' + conflicto.producto.nombre}
+          etiquetaIntegrar="Agregarlo a ese Quodom"
           permitirCancelar
           etiquetaCancelar="Cancelar"
           onElegir={resolverConflicto}
