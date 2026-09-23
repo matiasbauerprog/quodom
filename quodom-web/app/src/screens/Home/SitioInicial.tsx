@@ -7,6 +7,9 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { ProductImage } from '../../components/ProductImage';
+import { useAgregarProducto } from '../../quodom/useAgregarProducto';
+import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { nombreRubro } from '../../quodom/rubros';
 import { RubroSelector } from './RubroSelector';
 import { SubcategoriaTabs } from './SubcategoriaTabs';
 import { ListaProductos } from './ListaProductos';
@@ -32,6 +35,12 @@ export function SitioInicial() {
   // rubro, y el chat queda enlazable.
   const modoIa: ModoIa | null = params.get('ia') === 'chat' ? 'chat' : null;
   const [sugerencias, setSugerencias] = useState<BusquedaResult[] | null>(null);
+  // Nombre del último producto agregado desde el buscador: sin este acuse,
+  // tocar un resultado no se ve por ningún lado.
+  const [agregado, setAgregado] = useState<string | null>(null);
+  const {
+    agregar: agregarLinea, agregando, error: errAgregar, pendiente, confirmar, cancelar
+  } = useAgregarProducto();
   const rubroParam = numParam(params.get('rubro'));
   const subParam = numParam(params.get('sub'));
 
@@ -119,10 +128,14 @@ export function SitioInicial() {
     setParams(modo === 'chat' ? {} : { ia: 'chat' });
   }
 
-  function elegirSugerencia(nombre: string) {
+  // Tocar un resultado agrega el producto y deja al usuario donde estaba. Antes
+  // llevaba a la pantalla de búsqueda, o sea a buscar de nuevo lo que ya había
+  // encontrado para recién ahí poder agregarlo.
+  function elegirSugerencia(r: BusquedaResult) {
     setSugerencias(null);
     setQ('');
-    navigate('/busqueda?q=' + encodeURIComponent(nombre));
+    setAgregado(r.nombre);
+    agregarLinea({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 }, r.categoriaPadre);
   }
 
   if (err) return <div className="container"><ErrorState message={err} onRetry={() => setNonce(n => n + 1)} /></div>;
@@ -136,9 +149,11 @@ export function SitioInicial() {
         </hgroup>
       )}
 
-      {/* El buscador queda fuera del bloque que se oculta: con un rubro
-          elegido sigue siendo la salida más rápida a otra cosa, y verlo
-          desaparecer al entrar a un rubro se lee como que se perdió. */}
+      {/* Con un rubro elegido el buscador se queda: sigue siendo la salida más
+          rápida a otra cosa, y verlo desaparecer al entrar a un rubro se lee
+          como que se perdió. Dentro de la conversación no: ahí lo que se busca
+          se pide escribiéndolo, y el campo queda sin nada a qué responder. */}
+      {modo !== 'chat' && (
       <form className="home-search" onSubmit={onSearch} role="search">
         <span className="home-search-icon" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
@@ -156,7 +171,8 @@ export function SitioInicial() {
                   role="option"
                   aria-selected="false"
                   className="home-sugerencia"
-                  onClick={() => elegirSugerencia(s.nombre)}
+                  disabled={agregando}
+                  onClick={() => elegirSugerencia(s)}
                 >
                   <ProductImage idproducto={s.id} alt={s.nombre} size="sm" />
                   <span>{s.nombre}</span>
@@ -165,6 +181,10 @@ export function SitioInicial() {
           </div>
         )}
       </form>
+      )}
+
+      {agregado && <p className="home-agregado" role="status">Agregado ✓ {agregado}</p>}
+      {errAgregar && <p className="home-agregar-error" role="alert">{errAgregar}</p>}
 
       {/* El botón es también la única forma de cerrar la conversación: la
           pantalla de chat con su flecha de volver ya no existe, así que si
@@ -207,6 +227,15 @@ export function SitioInicial() {
 
           {idsub !== null && <ListaProductos idsubcategoria={idsub} />}
         </>
+      )}
+
+      {pendiente && (
+        <DialogoNuevoRubro
+          nombreRubro={nombreRubro(pendiente.idrubro)}
+          onConfirmar={confirmar}
+          onCancelar={cancelar}
+          ocupado={agregando}
+        />
       )}
     </section>
   );

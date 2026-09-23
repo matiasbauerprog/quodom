@@ -213,10 +213,22 @@
 
 .home-modo-ia:hover { filter: brightness(1.05); }
 
-/* Con la conversación abierta el botón pasa a ser el control para cerrarla, y
-   se hunde para que se lea como activo y no como una invitación a entrar otra
-   vez a donde ya estás. */
-.home-modo-ia-activo { filter: brightness(0.92); }
+/* Con la conversación abierta el botón deja de invitar a entrar y pasa a ser el
+   control para salir, así que se invierte: el relleno se va y queda el contorno,
+   que en esta app es como se lee "esto está elegido" (`.cat-card-sel`). Un
+   oscurecido apenas —lo que había— no alcanzaba: el botón seguía pareciendo un
+   llamado a entrar a donde el usuario ya estaba. */
+.home-modo-ia-activo {
+  background: transparent;
+  color: var(--color-acento);
+  border: 2px solid var(--color-acento);
+}
+.home-modo-ia-activo:hover { background: rgba(230, 57, 70, 0.08); filter: none; }
+.home-modo-ia-activo::after {
+  content: '✕';
+  font-size: 13px;
+  opacity: 0.85;
+}
 
 /* Las pestañas siguen acá porque PestanasIA sigue existiendo: vuelven juntas
    el día que se reactive subir un archivo. */
@@ -247,3 +259,6 @@
   background: var(--color-acento);
   color: #fff;
 }
+
+.home-agregado { margin: 0; color: var(--color-exito); font-size: var(--fs-small); font-weight: 600; }
+.home-agregar-error { margin: 0; color: var(--color-acento); font-size: var(--fs-small); }

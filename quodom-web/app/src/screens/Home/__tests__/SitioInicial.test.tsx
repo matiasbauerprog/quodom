@@ -9,9 +9,10 @@ import { busqueda } from '../../../api/busqueda';
 vi.mock('../../../api/categorias', () => ({ categorias: { raiz: vi.fn(), subs: vi.fn() } }));
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
 vi.mock('../../../api/busqueda', () => ({ busqueda: { buscar: vi.fn() } }));
+const agregarSpy = vi.hoisted(() => vi.fn());
 vi.mock('../../../quodom/useAgregarProducto', () => ({
   useAgregarProducto: () => ({
-    agregar: vi.fn(), agregando: false, error: null, pendiente: null,
+    agregar: agregarSpy, agregando: false, error: null, pendiente: null,
     confirmar: vi.fn(), cancelar: vi.fn()
   })
 }));
@@ -43,7 +44,7 @@ function montar(url: string) {
 }
 
 beforeEach(() => {
-  raiz.mockReset(); subs.mockReset(); porCategoria.mockReset(); buscar.mockReset();
+  raiz.mockReset(); subs.mockReset(); porCategoria.mockReset(); buscar.mockReset(); agregarSpy.mockReset();
   buscar.mockResolvedValue([]);
   raiz.mockResolvedValue(RUBROS);
   subs.mockResolvedValue(SUBS_BEBIDAS);
@@ -282,8 +283,10 @@ describe('SitioInicial (buscador con sugerencias)', () => {
     expect(await screen.findByText(/sin resultados/i)).toBeInTheDocument();
   });
 
-  it('al elegir un resultado va a la búsqueda de ese producto', async () => {
-    buscar.mockResolvedValue(RESULTADOS);
+  // Enter sí sigue yendo a la pantalla de búsqueda: es "ver todo lo que hay
+  // para este término". Tocar un resultado puntual, en cambio, lo agrega —
+  // eso se comprueba en el describe de más abajo.
+  it('con Enter va a la búsqueda completa del término', async () => {
     const router = createMemoryRouter(
       [{ path: '/', element: <SitioInicial /> }, { path: '/busqueda', element: <p>pantalla de búsqueda</p> }],
       { initialEntries: ['/'] }
@@ -292,10 +295,10 @@ describe('SitioInicial (buscador con sugerencias)', () => {
     await screen.findByRole('link', { name: /bebidas/i });
 
     fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'coca' } });
-    fireEvent.click(await screen.findByText('Coca Cola 2L'));
+    fireEvent.submit(screen.getByRole('search'));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/busqueda'));
-    expect(router.state.location.search).toBe('?q=' + encodeURIComponent('Coca Cola 2L'));
+    expect(router.state.location.search).toBe('?q=coca');
   });
 });
 
@@ -359,5 +362,51 @@ describe('SitioInicial (el Modo IA queda en la URL)', () => {
 
     await waitFor(() => expect(screen.queryByText('panel chat')).toBeNull());
     expect(screen.getByText('QUODOM')).toBeInTheDocument();
+  });
+});
+
+describe('SitioInicial (buscador y Modo IA)', () => {
+  const RESULTADOS = [
+    { id: 700, nombre: 'Coca Cola 2L', descripcion: null, imagen: null, refreshImagen: null, categoriaPadre: 7 }
+  ];
+
+  // Dentro de la conversación el buscador no tiene a qué responder: lo que se
+  // busca ahí se pide escribiéndolo.
+  it('esconde el buscador con la conversación abierta', async () => {
+    montar('/?ia=chat');
+    await screen.findByText('panel chat');
+
+    expect(screen.queryByRole('searchbox', { name: /buscar productos/i })).toBeNull();
+  });
+
+  // Antes tocar un resultado llevaba a otra pantalla a buscar de nuevo el mismo
+  // producto para poder agregarlo.
+  it('elegir un resultado agrega el producto al Quodom', async () => {
+    buscar.mockResolvedValue(RESULTADOS);
+    const router = createMemoryRouter([{ path: '/', element: <SitioInicial /> }], { initialEntries: ['/'] });
+    render(<RouterProvider router={router} />);
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'coca' } });
+    fireEvent.click(await screen.findByRole('option', { name: /coca cola 2l/i }));
+
+    expect(agregarSpy).toHaveBeenCalledWith(
+      { idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 },
+      7
+    );
+    // Y no se va a ningún lado: el usuario sigue donde estaba.
+    expect(router.state.location.pathname).toBe('/');
+  });
+
+  it('avisa que lo agregó y cierra el desplegable', async () => {
+    buscar.mockResolvedValue(RESULTADOS);
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'coca' } });
+    fireEvent.click(await screen.findByRole('option', { name: /coca cola 2l/i }));
+
+    expect(await screen.findByText(/agregado/i)).toBeInTheDocument();
+    expect(screen.queryByRole('option')).toBeNull();
   });
 });
