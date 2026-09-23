@@ -33,3 +33,12 @@ describe('AppBar', () => {
     expect(screen.getByRole('button', { name: /abrir menú/i })).toBeInTheDocument();
   });
 });
+
+// Al abrir el chat el wordmark grande del home se esconde. Si acá tampoco
+// aparecía, el usuario quedaba sin marca y, peor, sin forma de volver.
+describe('AppBar (con el Modo IA abierto)', () => {
+  it('muestra el logo cuando la conversación está abierta', () => {
+    montar('/?ia=chat');
+    expect(screen.getByRole('link', { name: /volver al inicio/i })).toBeInTheDocument();
+  });
+});

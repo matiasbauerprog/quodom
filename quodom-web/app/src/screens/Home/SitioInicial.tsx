@@ -25,7 +25,12 @@ export function SitioInicial() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
-  const [modoIa, setModoIa] = useState<ModoIa | null>(null);
+  // El chat vive en la URL y no en estado del componente. Si vive en memoria,
+  // la barra de arriba no puede saber que está abierto, y como el wordmark
+  // grande se esconde al abrirlo el usuario quedaba sin logo y sin forma de
+  // volver al inicio. De paso el botón Atrás lo cierra, igual que sale de un
+  // rubro, y el chat queda enlazable.
+  const modoIa: ModoIa | null = params.get('ia') === 'chat' ? 'chat' : null;
   const [sugerencias, setSugerencias] = useState<BusquedaResult[] | null>(null);
   const rubroParam = numParam(params.get('rubro'));
   const subParam = numParam(params.get('sub'));
@@ -108,13 +113,10 @@ export function SitioInicial() {
   // Desde un rubro, el botón hace las dos cosas de una: sale del rubro y abre
   // la conversación. Antes desaparecía acá adentro y había que volver al home
   // a mano para llegar al asistente.
+  // Abrirlo saca el rubro de la URL: son excluyentes, y desde un rubro el
+  // botón hace las dos cosas de una (salir y abrir la conversación).
   function abrirModoIa() {
-    if (idrubro !== null) {
-      setParams({});
-      setModoIa('chat');
-      return;
-    }
-    setModoIa(modo === 'chat' ? null : 'chat');
+    setParams(modo === 'chat' ? {} : { ia: 'chat' });
   }
 
   function elegirSugerencia(nombre: string) {

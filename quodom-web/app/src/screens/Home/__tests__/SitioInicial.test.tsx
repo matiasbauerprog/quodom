@@ -175,7 +175,11 @@ describe('SitioInicial (botón Modo IA)', () => {
     expect(screen.queryByText('QUODOM')).toBeNull();
   });
 
-  it('el botón Atrás a un rubro sin remount cierra el panel y devuelve el catálogo', async () => {
+  // Desde que el chat vive en la URL deja su propia entrada en el historial,
+  // así que el primer Atrás lo cierra en vez de saltar directo al rubro. Lo
+  // que este test cuida sigue siendo lo mismo: que el panel no quede abierto
+  // encima del catálogo después de navegar.
+  it('el botón Atrás cierra el panel y el siguiente devuelve el rubro', async () => {
     // Mismo componente de ruta ('/') para las dos entradas del historial: al
     // volver con navigate(-1) sólo cambian los search params, sin remount,
     // igual que hace el navegador real con el botón Atrás.
@@ -191,11 +195,16 @@ describe('SitioInicial (botón Modo IA)', () => {
 
     await act(async () => { router.navigate(-1); });
 
+    // Primer Atrás: se cerró el chat y volvió el home con sus rubros.
+    await waitFor(() => expect(screen.queryByText('panel chat')).toBeNull());
+    expect(screen.getByRole('link', { name: /bebidas/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /modo ia/i })).toHaveAttribute('aria-pressed', 'false');
+
+    await act(async () => { router.navigate(-1); });
+
+    // Segundo Atrás: el rubro, sin que el panel se haya quedado encima.
     expect(await screen.findByText('Coca Cola 2L')).toBeInTheDocument();
     expect(screen.queryByText('panel chat')).toBeNull();
-    // El botón ya no se esconde dentro de un rubro, pero tiene que quedar
-    // "sin apretar": lo que se comprueba acá es que el panel se cerró.
-    expect(screen.getByRole('button', { name: /modo ia/i })).toHaveAttribute('aria-pressed', 'false');
   });
 });
 
@@ -318,5 +327,37 @@ describe('SitioInicial (Modo IA siempre a mano)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /modo ia/i }));
     await waitFor(() => expect(screen.queryByText('panel chat')).toBeNull());
+  });
+});
+
+// El chat vive en la URL y no sólo en memoria: así la barra de arriba puede
+// saber que está abierto para mostrar el logo de vuelta al inicio, y el botón
+// Atrás del navegador lo cierra igual que sale de un rubro.
+describe('SitioInicial (el Modo IA queda en la URL)', () => {
+  it('abrirlo deja ?ia=chat', async () => {
+    const router = createMemoryRouter([{ path: '/', element: <SitioInicial /> }], { initialEntries: ['/'] });
+    render(<RouterProvider router={router} />);
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /modo ia/i }));
+
+    await screen.findByText('panel chat');
+    expect(router.state.location.search).toBe('?ia=chat');
+  });
+
+  it('entrar directo con ?ia=chat abre la conversación', async () => {
+    montar('/?ia=chat');
+    expect(await screen.findByText('panel chat')).toBeInTheDocument();
+  });
+
+  it('volver al inicio la cierra', async () => {
+    const router = createMemoryRouter([{ path: '/', element: <SitioInicial /> }], { initialEntries: ['/?ia=chat'] });
+    render(<RouterProvider router={router} />);
+    await screen.findByText('panel chat');
+
+    await act(async () => { router.navigate('/'); });
+
+    await waitFor(() => expect(screen.queryByText('panel chat')).toBeNull());
+    expect(screen.getByText('QUODOM')).toBeInTheDocument();
   });
 });
