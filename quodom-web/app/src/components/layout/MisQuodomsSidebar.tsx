@@ -183,10 +183,6 @@ export function MisQuodomsSidebar() {
 
       {!user && invitado.length > 0 && <AvisoSinGuardar />}
 
-      {user && list && list.length > 0 && (
-        <Link to="/mis-quodoms" className="btn mq-sidebar-vermas">Ver todos</Link>
-      )}
-
       {terminados.length > 0 && (
         <section className="mq-sidebar-section mq-sidebar-repetir">
           <h3 className="mq-sidebar-section-title">Repetí un pedido</h3>
@@ -210,6 +206,12 @@ export function MisQuodomsSidebar() {
             ))}
           </ul>
         </section>
+      )}
+
+      {/* Al pie de todo: es la salida al historial completo, y lo que se ve
+          arriba —activos y últimos terminados— ya es el resumen de lo que hay. */}
+      {user && list && list.length > 0 && (
+        <Link to="/mis-quodoms" className="btn mq-sidebar-vermas">Ver todos</Link>
       )}
     </aside>
   );

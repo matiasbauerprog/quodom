@@ -1,9 +1,13 @@
+/* Es el título de la pantalla con su flecha, no una segunda barra. Tenía fondo
+   propio (#F9F9F9, de la paleta anterior), sombra y `sticky; top: 0` — el mismo
+   anclaje que el header de arriba —, así que en Notificaciones, Perfil y
+   Direcciones se veían dos barras apiladas y la de abajo no hacía juego con
+   nada. Transparente sobre el fondo de la página y sin sombra: la barra de
+   arriba es una sola. */
 .appbar-back {
   display: flex; align-items: center; gap: var(--sp-3);
-  padding: 0 var(--sp-3); height: 56px;
-  background: var(--color-navbar);
-  position: sticky; top: 0; z-index: 20;
-  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+  padding: var(--sp-4) var(--sp-3) 0 var(--sp-3);
+  background: transparent;
 }
 .appbar-back-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--color-texto); }
 .appbar-back-title { margin: 0; font-family: var(--font-prompt); font-weight: 500; font-size: 18px; }

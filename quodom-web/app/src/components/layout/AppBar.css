@@ -3,7 +3,14 @@
   align-items: center;
   padding: 0 var(--sp-4);
   height: 56px;
-  background: transparent;
+  /* Degradé leve: arranca en un gris apenas más oscuro que el fondo y termina
+     justo en el color del fondo, así la barra se insinúa arriba y se funde
+     abajo, sin borde duro que la recorte.
+
+     El fondo tiene que ser opaco igual, por otra razón: la barra está pegada
+     arriba (`sticky`), y en transparente el contenido se le veía a través al
+     scrollear. */
+  background: linear-gradient(180deg, #D4D4D4 0%, var(--color-fondo) 100%);
   position: sticky;
   top: 0;
   z-index: 20;

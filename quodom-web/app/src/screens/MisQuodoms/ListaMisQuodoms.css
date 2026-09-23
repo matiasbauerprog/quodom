@@ -1,4 +1,4 @@
-.mq { padding: var(--sp-4) 0 var(--sp-7); }
+.mq { padding: var(--sp-6) 0 var(--sp-7); }
 .mq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
 .mq-list { display: grid; gap: var(--sp-3); }
 .mq-item { width: 100%; }

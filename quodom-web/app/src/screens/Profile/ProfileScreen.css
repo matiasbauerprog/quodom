@@ -1,4 +1,4 @@
-.profile { padding: var(--sp-4) 0 var(--sp-7); }
+.profile { padding: var(--sp-6) 0 var(--sp-7); }
 .profile-head { text-align: center; margin-bottom: var(--sp-4); }
 .profile-name { font-family: var(--font-prompt); font-weight: 600; font-size: 20px; color: var(--color-acento); }
 .profile-email { color: var(--color-texto-muted); }

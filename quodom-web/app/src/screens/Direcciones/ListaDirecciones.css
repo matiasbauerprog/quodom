@@ -1,4 +1,4 @@
-.dirs { padding: var(--sp-4) 0 var(--sp-7); }
+.dirs { padding: var(--sp-6) 0 var(--sp-7); }
 .dirs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
 .dirs-list { display: grid; gap: var(--sp-3); }
 .dirs-item { display: grid; gap: var(--sp-3); }
