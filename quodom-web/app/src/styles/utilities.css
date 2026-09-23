@@ -70,11 +70,20 @@ label.field span { display: block; margin-bottom: var(--sp-1); }
   margin-bottom: var(--sp-4);
 }
 
-/* Agrupa el cuerpo de la pantalla en un solo bloque para que el reparto de la
-   sección sea entre dos cosas —encabezado y contenido— y no entre cada pieza
-   suelta. No se estira: el alto sobrante lo reparte el `space-evenly` de la
-   sección. */
+/* El h1 se queda arriba, en el flujo normal, así que arranca a la misma altura
+   en todas las secciones — es el título de la página, no una pieza que flota
+   según cuánto haya debajo. Esto se queda con el alto que sobra y centra su
+   contenido ahí: lo que el usuario ve centrado es el contenido, no el título.
+
+   Agrupar el cuerpo en un solo bloque también es lo que hace que el centrado
+   sea de una cosa y no de cada pieza suelta —el error, el loader, la lista—,
+   que quedaría distinto según cuál esté visible en cada momento.
+
+   Con contenido largo el centrado deja de tener efecto y la lista sigue hacia
+   abajo como siempre. */
 .pantalla-contenido {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
