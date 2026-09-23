@@ -7,15 +7,6 @@ const { listRoutes } = require('../src/helpers/listRoutes');
 const SPEC = YAML.parse(fs.readFileSync(path.join(__dirname, '..', 'openapi.yaml'), 'utf8'));
 const METHODS = ['get', 'post', 'put', 'delete', 'patch'];
 
-// Routes not described yet. Each task that documents a group removes its
-// entries; Task 4 deletes this list, and from then on every route must be in
-// openapi.yaml.
-const PENDIENTES = [
-  'user_direcciones',
-  'oper_notificaciones', 'hist_busquedas', 'api/ia'
-];
-const pendiente = p => PENDIENTES.some(g => p === '/' + g || p.startsWith('/' + g + '/'));
-
 const key = r => r.method.toUpperCase() + ' ' + r.path;
 const enCodigo = listRoutes(app).map(key);
 const enSpec = Object.entries(SPEC.paths || {}).flatMap(([p, ops]) =>
@@ -23,7 +14,7 @@ const enSpec = Object.entries(SPEC.paths || {}).flatMap(([p, ops]) =>
 
 describe('openapi.yaml covers the API', () => {
   it('describes every route the code answers', () => {
-    const faltan = enCodigo.filter(k => !enSpec.includes(k) && !pendiente(k.split(' ')[1]));
+    const faltan = enCodigo.filter(k => !enSpec.includes(k));
     expect(faltan).toEqual([]);
   });
 

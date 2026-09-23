@@ -926,3 +926,205 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /user_direcciones/direcciondefault:
+    get:
+      tags: [user_direcciones]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200': { description: 'OK (null si no tiene)', content: { application/json: { schema: { allOf: [{ $ref: '#/components/schemas/Direccion' }], nullable: true } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /user_direcciones/create:
+    post:
+      tags: [user_direcciones]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/DireccionInput' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /user_direcciones/prin/{id}:
+    put:
+      tags: [user_direcciones]
+      summary: Marca la dirección como principal
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      responses:
+        '200': { description: 'OK; el cuerpo lo devuelve el controller tal cual (ver Task 6)', content: { application/json: { schema: {} } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /user_direcciones/{id}:
+    get:
+      tags: [user_direcciones]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Direccion' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [user_direcciones]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/DireccionInput' } } }
+      responses:
+        '200': { description: 'OK; el cuerpo lo devuelve el controller tal cual (ver Task 6)', content: { application/json: { schema: {} } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [user_direcciones]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /oper_notificaciones:
+    get:
+      tags: [oper_notificaciones]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Notificacion' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /oper_notificaciones/count:
+    get:
+      tags: [oper_notificaciones]
+      summary: Cantidad de no leídas (el cuerpo es un número)
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: integer } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /oper_notificaciones/{id}:
+    put:
+      tags: [oper_notificaciones]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                leida: { type: integer }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Ok' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /hist_busquedas:
+    get:
+      tags: [hist_busquedas]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200':
+          description: Últimas búsquedas del usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    valor: { type: string, nullable: true }
+                    createdAt: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /hist_busquedas/create:
+    post:
+      tags: [hist_busquedas]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                valor: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Ok' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/ia/chat:
+    post:
+      tags: [ia]
+      summary: Un turno del Modo IA. Los límites (turnos, largo, cuota) los aplica el handler.
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role: { type: string }
+                      text: { type: string }
+      responses:
+        '200':
+          description: 'type question (repregunta) o proposal (items + idrubro)'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [type, text]
+                properties:
+                  type: { type: string, enum: [question, proposal] }
+                  text: { type: string }
+                  idrubro: { type: integer }
+                  items: { type: array, items: { type: object, additionalProperties: true } }
+                additionalProperties: true
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '500': { description: 'La IA falló', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '503': { description: 'La IA no está disponible', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /api/ia/lista:
+    post:
+      tags: [ia]
+      summary: Matchea una lista subida contra el catálogo
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo: { type: string, description: 'archivo | texto' }
+                texto: { type: string }
+                archivo:
+                  type: object
+                  properties:
+                    nombre: { type: string }
+                    datosBase64: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res]
+                properties:
+                  res: { type: boolean }
+                  grupos: { type: array, items: { type: object, additionalProperties: true } }
+                  ambiguas: { type: array, items: { type: object, additionalProperties: true } }
+                  noEncontrados: { type: array, items: { type: object, additionalProperties: true } }
+                  lineasIgnoradas: { type: integer }
+                additionalProperties: true
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '500': { description: 'La IA falló', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '503': { description: 'La IA no está disponible', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
