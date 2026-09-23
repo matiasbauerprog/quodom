@@ -188,6 +188,18 @@
 }
 .home-sugerencia:hover,
 .home-sugerencia:focus-visible { background: var(--color-fondo); }
+.home-sugerencia-nombre { flex: 1; min-width: 0; }
+/* La pista de qué va a pasar al tocar. Ocupa su lugar siempre (visibility, no
+   display) para que la fila no se mueva cuando aparece. */
+.home-sugerencia-accion {
+  flex: 0 0 auto;
+  visibility: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-acento);
+}
+.home-sugerencia:hover .home-sugerencia-accion,
+.home-sugerencia:focus-visible .home-sugerencia-accion { visibility: visible; }
 .home-sugerencias-vacio {
   margin: 0;
   padding: var(--sp-2);
