@@ -213,7 +213,7 @@ components:
         piso: { type: string, nullable: true }
         cp: { type: string, nullable: true }
         alias: { type: string, nullable: true }
-        default: { oneOf: [{ type: boolean }, { type: integer }], nullable: true }
+        default: { anyOf: [{ type: boolean, nullable: true }, { type: integer, nullable: true }] }
         idprovincia: { type: string, nullable: true }
         idpartido: { type: string, nullable: true }
         observaciones: { type: string, nullable: true }
@@ -242,7 +242,7 @@ components:
         titulo: { type: string }
         texto: { type: string }
         enviada: { type: boolean, nullable: true }
-        leida: { oneOf: [{ type: boolean }, { type: integer }], nullable: true }
+        leida: { anyOf: [{ type: boolean, nullable: true }, { type: integer, nullable: true }] }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
@@ -465,7 +465,7 @@ paths:
       responses:
         '200':
           description: La dirección por defecto, o la primera, o null
-          content: { application/json: { schema: { allOf: [{ $ref: '#/components/schemas/Direccion' }], nullable: true } } }
+          content: { application/json: { schema: { oneOf: [{ $ref: '#/components/schemas/Direccion' }, { type: string, nullable: true, enum: [null] }] } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /users/infoComprador/{idquodom}:
     get:
@@ -740,7 +740,7 @@ paths:
                 required: [res]
                 properties:
                   res: { type: boolean }
-                  data: { allOf: [{ $ref: '#/components/schemas/VQuodom' }], nullable: true }
+                  data: { oneOf: [{ $ref: '#/components/schemas/VQuodom' }, { type: string, nullable: true, enum: [null] }] }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /quodom/create:
@@ -932,7 +932,7 @@ paths:
       tags: [user_direcciones]
       security: [{ cookieAuth: [] }, { bearerAuth: [] }]
       responses:
-        '200': { description: 'OK (null si no tiene)', content: { application/json: { schema: { allOf: [{ $ref: '#/components/schemas/Direccion' }], nullable: true } } } }
+        '200': { description: 'OK (null si no tiene)', content: { application/json: { schema: { oneOf: [{ $ref: '#/components/schemas/Direccion' }, { type: string, nullable: true, enum: [null] }] } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /user_direcciones/create:
     post:

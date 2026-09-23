@@ -1,39 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const Joi = require('joi');
 const auth = require('../middleware/auth');
+const omitEmpty = require('../middleware/omitEmpty');
 const Controler = require('../controllers/quodom_lines.controller');
-const validateRequest = require('../middleware/validate-request');
 
 router.get('/lines/:id', auth.verifyToken(), getById);
 router.get('/atributos', getAtributos);
 router.get('/:id', auth.verifyToken(), getAllbyIdQuodom);
-router.post('/add', auth.verifyToken(), addSchema, add);
-router.put('/:id', auth.verifyToken(), updateSchema, update);
+router.post('/add', auth.verifyToken(), omitEmpty(['atributo1', 'atributo2']), add);
+router.put('/:id', auth.verifyToken(), omitEmpty(['atributo1', 'atributo2']), update);
 router.delete('/:id', auth.verifyToken(), _delete);
 
 module.exports = router;
-
-function updateSchema(req, res, next) {
-  const schema = Joi.object({
-    cantidad: Joi.number().integer(),
-    atributo1: Joi.string().empty(''),
-    atributo2: Joi.string().empty('')
-  });
-  validateRequest(req, next, schema);
-}
-
-function addSchema(req, res, next) {
-  const schema = Joi.object({
-    idquodom: Joi.string().required(),
-    idproducto: Joi.number().integer().required(),
-    cantidad: Joi.number().integer().required(),
-    nombreProducto: Joi.string(),
-    atributo1: Joi.string().empty(''),
-    atributo2: Joi.string().empty('')
-  });
-  validateRequest(req, next, schema);
-}
 
 function add(req, res, next) {
   Controler.add(req.body, req.user.id)

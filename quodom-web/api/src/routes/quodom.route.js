@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const Joi = require('joi');
 const auth = require('../middleware/auth');
+const omitEmpty = require('../middleware/omitEmpty');
 const Controler = require('../controllers/quodom.controller');
-const validateRequest = require('../middleware/validate-request');
 const { httpError } = require('../helpers/http-error');
 
 router.get('/getQuodomCreados', auth.verifyToken(), getQuodomCreados);
@@ -12,29 +11,12 @@ router.get('/porccompletado/:id', auth.verifyToken(), getPorcById);
 router.get('/whatsapp/:id', auth.verifyToken(), whatsappLink);
 router.get('/activo/:idrubro', auth.verifyToken(), getActivo);
 router.get('/:id', auth.verifyToken(), getById);
-router.post('/create', auth.verifyToken(), createSchema, create);
+router.post('/create', auth.verifyToken(), omitEmpty(['iddireccion'], [null]), create);
 router.post('/repetir/:id', auth.verifyToken(), repetir);
-router.put('/:id', auth.verifyToken(), updateSchema, update);
+router.put('/:id', auth.verifyToken(), omitEmpty(['iddireccion'], [null]), update);
 router.delete('/:id', auth.verifyToken(), _delete);
 
 module.exports = router;
-
-function createSchema(req, res, next) {
-  const schema = Joi.object({
-    descripcion: Joi.string().required(),
-    idrubro: Joi.number().integer().required(),
-    iddireccion: Joi.number().integer().empty(null)
-  });
-  validateRequest(req, next, schema);
-}
-
-function updateSchema(req, res, next) {
-  const schema = Joi.object({
-    descripcion: Joi.string(),
-    iddireccion: Joi.number().integer().empty(null)
-  });
-  validateRequest(req, next, schema);
-}
 
 function create(req, res, next) {
   Controler.create(req.body, req.user.id)

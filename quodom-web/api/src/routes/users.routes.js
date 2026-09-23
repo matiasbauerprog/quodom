@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const Joi = require('joi');
 const auth = require('../middleware/auth');
+const omitEmpty = require('../middleware/omitEmpty');
 const Controler = require('../controllers/users.controller');
-const validateRequest = require('../middleware/validate-request');
 const rateLimit = require('../middleware/rateLimit');
 const jwt = require('jsonwebtoken');
 const session = require('../helpers/session');
@@ -38,76 +37,17 @@ router.get('/', auth.isAdmin(), getAll);
 router.get('/current', auth.verifyToken(), getCurrent);
 router.get('/currentFoto', auth.verifyToken(), getCurrentFoto);
 router.get('/:id', auth.verifyToken(), getById);
-router.post('/signin', limitSignin, signinSchema, authenticate);
+router.post('/signin', limitSignin, authenticate);
 router.post('/signout', signout);
-router.post('/signup', limitSignup, signupSchema, register);
-router.post('/reset', limitMail, resetSchema, resetPass);
-router.post('/reenviar', limitMail, resetSchema, reenviar);
-router.post('/changePass', limitResetToken, changePassSchema, cambiarPass);
-router.put('/', auth.verifyToken(), updateSchema, update);
-router.put('/cambiarFoto/:id', auth.verifyToken(), fotoSchema, updateFoto);
+router.post('/signup', limitSignup, register);
+router.post('/reset', limitMail, resetPass);
+router.post('/reenviar', limitMail, reenviar);
+router.post('/changePass', limitResetToken, cambiarPass);
+router.put('/', auth.verifyToken(), omitEmpty(['dni']), update);
+router.put('/cambiarFoto/:id', auth.verifyToken(), omitEmpty(['foto']), updateFoto);
 router.delete('/:id', auth.isAdmin(), _delete);
 
 module.exports = router;
-
-function updateSchema(req, res, next) {
-  const schema = Joi.object({
-    username: Joi.string(),
-    email: Joi.string().email(),
-    nombre: Joi.string(),
-    apellido: Joi.string(),
-    dni: Joi.string().empty(''),
-    codArea: Joi.string(),
-    telefono: Joi.string(),
-    password: Joi.string().min(6)
-  });
-  validateRequest(req, next, schema);
-}
-
-function fotoSchema(req, res, next) {
-  const schema = Joi.object({
-    foto: Joi.string().empty(''),
-    refreshFoto: Joi.string()
-  });
-  validateRequest(req, next, schema);
-}
-
-function signinSchema(req, res, next) {
-  const schema = Joi.object({
-    username: Joi.string().required(),
-    password: Joi.string().required()
-  });
-  validateRequest(req, next, schema);
-}
-
-function signupSchema(req, res, next) {
-  const schema = Joi.object({
-    username: Joi.string().required(),
-    email: Joi.string().email().required(),
-    nombre: Joi.string().required(),
-    apellido: Joi.string(),
-    password: Joi.string().min(6).required(),
-    dni: Joi.string(),
-    codArea: Joi.string().required(),
-    telefono: Joi.string().required()
-  });
-  validateRequest(req, next, schema);
-}
-
-function resetSchema(req, res, next) {
-  const schema = Joi.object({
-    email: Joi.string().required()
-  });
-  validateRequest(req, next, schema);
-}
-
-function changePassSchema(req, res, next) {
-  const schema = Joi.object({
-    password: Joi.string().min(6).required(),
-    token: Joi.string().required()
-  });
-  validateRequest(req, next, schema);
-}
 
 function authenticate(req, res, next) {
   Controler.authenticate(req.body)

@@ -18,6 +18,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(cors());
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(require('./middleware/stripTrailingSlash'));
+app.use(require('./helpers/openapi').buildValidator());
 if (process.env.NODE_ENV !== 'test') {
   const morgan = require('morgan');
   app.use(morgan('dev'));
