@@ -1,15 +1,42 @@
-.aviso-login {
-  background: var(--color-tarjeta);
-  color: var(--color-texto);
-  font-family: var(--font-jaldi);
-  padding: 12px 16px;
-  margin: 0;
-  border-left: 3px solid var(--color-acento);
-  border-top-left-radius: var(--radius-hoja-tl);
-  border-bottom-right-radius: var(--radius-hoja-br);
+.aviso-login-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(30, 30, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
 }
 
-.aviso-login a {
-  color: var(--color-acento);
-  font-weight: 600;
+.aviso-login {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--sp-5);
+  background: var(--color-tarjeta);
+  color: var(--color-texto);
+}
+
+.aviso-login-titulo {
+  font-size: var(--fs-h3);
+  margin: 0 0 var(--sp-2) 0;
+}
+
+.aviso-login-texto {
+  font-family: var(--font-work);
+  margin: 0 0 var(--sp-4) 0;
+}
+
+/* En un teléfono los botones van uno debajo del otro: lado a lado, "Iniciar
+   sesión" queda demasiado angosto para lo que importa que se toque. */
+.aviso-login-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.aviso-login-acciones .btn { width: 100%; }
+
+@media (min-width: 601px) {
+  .aviso-login-acciones { flex-direction: row-reverse; }
+  .aviso-login-acciones .btn { width: auto; flex: 1; }
 }

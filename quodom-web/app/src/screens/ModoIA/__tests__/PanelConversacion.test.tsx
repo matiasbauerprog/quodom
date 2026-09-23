@@ -252,7 +252,7 @@ describe('PanelConversacion (invitado)', () => {
     fireEvent.change(screen.getByPlaceholderText(/escrib/i), { target: { value: 'quiero pintar' } });
     fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
 
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/iniciar sesión/i));
+    await waitFor(() => expect(screen.getByRole('dialog')).toHaveTextContent(/iniciar sesión/i));
     expect(iaApi.chat).not.toHaveBeenCalled();
   });
 });

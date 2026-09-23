@@ -136,7 +136,7 @@ describe('PanelLista (invitado)', () => {
     fireEvent.change(screen.getByLabelText(/pegá tu lista/i), { target: { value: '3 lavandinas' } });
     fireEvent.click(screen.getByRole('button', { name: /buscar en el catálogo/i }));
 
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/iniciar sesión/i));
+    await waitFor(() => expect(screen.getByRole('dialog')).toHaveTextContent(/iniciar sesión/i));
     expect(mockProcesar).not.toHaveBeenCalled();
   });
 });

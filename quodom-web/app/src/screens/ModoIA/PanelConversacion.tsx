@@ -179,7 +179,7 @@ export function PanelConversacion() {
           Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregadoEn)}>ver Quodom</Link>
         </p>
       )}
-      {necesitaLogin && <AvisoLogin />}
+      {necesitaLogin && <AvisoLogin onClose={() => setNecesitaLogin(false)} />}
       <div className="mia-messages">
         {messages.map((m, i) => (
           <div key={i}>

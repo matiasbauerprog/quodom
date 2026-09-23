@@ -102,7 +102,7 @@ export function PanelLista() {
     <section className="lia" aria-label="Subí tu lista">
       <CargarLista onEnviar={procesar} ocupado={busy} />
 
-      {necesitaLogin && <AvisoLogin />}
+      {necesitaLogin && <AvisoLogin onClose={() => setNecesitaLogin(false)} />}
 
       {busy && <p className="lia-cargando">Buscando en el catálogo…</p>}
       {error && <p className="lia-error" role="alert">{error}</p>}
