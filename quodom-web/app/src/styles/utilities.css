@@ -70,14 +70,11 @@ label.field span { display: block; margin-bottom: var(--sp-1); }
   margin-bottom: var(--sp-4);
 }
 
-/* El h1 queda arriba y esto se reparte el resto del alto, centrando lo que
-   contiene. Así el título no se mueve de su lugar aunque la pantalla tenga
-   poco que mostrar, y lo poco que hay no queda colgando del encabezado.
-   Con contenido largo el centrado deja de tener efecto y la lista sigue hacia
-   abajo como siempre. */
+/* Agrupa el cuerpo de la pantalla en un solo bloque para que el reparto de la
+   sección sea entre dos cosas —encabezado y contenido— y no entre cada pieza
+   suelta. No se estira: el alto sobrante lo reparte el `space-evenly` de la
+   sección. */
 .pantalla-contenido {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }

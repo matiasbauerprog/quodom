@@ -17,4 +17,6 @@
   min-height: var(--pantalla-alto);
   display: flex;
   flex-direction: column;
+  /* Encabezado y contenido repartidos parejo en el alto de la pantalla. */
+  justify-content: space-evenly;
 }
