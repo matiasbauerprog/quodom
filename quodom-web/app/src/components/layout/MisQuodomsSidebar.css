@@ -10,7 +10,17 @@
     padding: var(--sp-5) var(--sp-4);
     background: var(--color-panel-oscuro);
     color: #fff;
-    min-height: calc(100vh - 56px);
+    /* Queda fijo mientras la página scrollea: con pocos Quodoms el sidebar era
+       más corto que el contenido y se perdía de vista al bajar.
+
+       `align-self: start` es lo que lo hace posible: como celda del grid se
+       estiraba a lo alto de la fila, y un elemento tan alto como su contenedor
+       no tiene contra qué quedarse fijo. Sacado del estiramiento y con el alto
+       de la ventana, `sticky` sí actúa; lo que no entre scrollea adentro. */
+    position: sticky;
+    top: 56px;
+    align-self: start;
+    height: calc(100vh - 56px);
     overflow-y: auto;
   }
   .mq-sidebar-title {
