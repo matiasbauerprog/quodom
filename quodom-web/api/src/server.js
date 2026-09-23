@@ -63,7 +63,11 @@ app.get('/', (req, res) => {
     name: pkg.name,
     version: pkg.version,
     fecha: new Date(),
-    ip: req.ip
+    ip: req.ip,
+    // TEMP: forwarding chain, to count Render's proxies. Remove once set.
+    xff: req.headers['x-forwarded-for'],
+    cf: req.headers['cf-connecting-ip'],
+    tci: req.headers['true-client-ip']
   });
 });
 
