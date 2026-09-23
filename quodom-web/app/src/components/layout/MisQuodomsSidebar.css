@@ -18,9 +18,12 @@
        no tiene contra qué quedarse fijo. Sacado del estiramiento y con el alto
        de la ventana, `sticky` sí actúa; lo que no entre scrollea adentro. */
     position: sticky;
-    top: 56px;
+    top: 0;
     align-self: start;
-    height: calc(100vh - 56px);
+    /* Llega hasta arriba de todo: el header vive en la columna de la izquierda,
+       así que dejarle 56px libres acá sólo abría una franja del color de la
+       página sobre el panel oscuro. */
+    height: 100vh;
     overflow-y: auto;
   }
   .mq-sidebar-title {
