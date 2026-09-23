@@ -23,6 +23,11 @@
      leen como si les faltara algo. */
   --pantalla-ancho: 720px;
 
+  /* Alto contra el cual centrar el contenido de una sección: la ventana menos
+     el header. Si el contenido crece más que esto, el centrado deja de tener
+     efecto y la lista simplemente sigue hacia abajo. */
+  --pantalla-alto: calc(100vh - 56px);
+
   --font-prompt: 'Prompt', system-ui, sans-serif;
   --font-jaldi: 'Jaldi', Georgia, serif;
   --font-work: 'Work Sans', system-ui, sans-serif;

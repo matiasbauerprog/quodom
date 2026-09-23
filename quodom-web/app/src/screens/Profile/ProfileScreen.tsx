@@ -1,14 +1,18 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
-import { AppBarBack } from '../../components/layout/AppBarBack';
 import './ProfileScreen.css';
 
 export function ProfileScreen() {
   const { user, signout } = useAuth();
   return (
     <>
-      <AppBarBack title="Perfil" />
+      {/* Sin flecha de volver: a Perfil se llega desde el menú, no desde una
+          pantalla padre, y el logo del header ya es el camino al inicio. El
+          título va adentro de la sección, igual que en Mis Quodoms, así entra
+          en el centrado vertical. AppBarBack sigue en las pantallas anidadas
+          (Mis datos, Cambiar contraseña), donde la flecha sí es la salida. */}
       <section className="container profile">
+        <h1>Perfil</h1>
         <div className="profile-head card hoja">
           <div className="profile-name">{user?.nombre} {user?.apellido}</div>
           <div className="profile-email">{user?.email}</div>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { notificaciones } from '../../api/oper_notificaciones';
 import type { Notificacion } from '../../api/types';
 import { ApiError } from '../../api/client';
-import { AppBarBack } from '../../components/layout/AppBarBack';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
@@ -26,8 +25,9 @@ export function ListaNotificaciones() {
 
   return (
     <>
-      <AppBarBack title="Notificaciones" />
+      {/* Sin flecha: se llega desde el menú. Ver la nota en ProfileScreen. */}
       <section className="container notif">
+        <h1>Notificaciones</h1>
         {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
         {!err && !list && <Loader />}
         {list && list.length === 0 && <EmptyState title="No tenés notificaciones" />}
