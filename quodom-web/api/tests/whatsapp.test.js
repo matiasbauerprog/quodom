@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 
 let token;
 let idquodom;
@@ -22,7 +23,7 @@ beforeAll(async () => {
     password: 'secreto123', codArea: '11', telefono: '55554444'
   });
   const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
-  token = login.body.token;
+  token = sessionToken(login);
 
   const q = await request(app).post('/quodom/create')
     .set('Authorization', 'Bearer ' + token)
@@ -81,7 +82,7 @@ describe('whatsapp export', () => {
     const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
 
     const res = await request(app).get('/quodom/whatsapp/' + idquodom)
-      .set('Authorization', 'Bearer ' + login2.body.token);
+      .set('Authorization', 'Bearer ' + sessionToken(login2));
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
   });

@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 
 let token;
 let idquodom;
@@ -22,7 +23,7 @@ beforeAll(async () => {
     codArea: '11', telefono: '55554444'
   });
   const login = await request(app).post('/users/signin').send({ username: 'merge', password: 'secreto123' });
-  token = login.body.token;
+  token = sessionToken(login);
 
   const created = await request(app).post('/quodom/create')
     .set('Authorization', 'Bearer ' + token)

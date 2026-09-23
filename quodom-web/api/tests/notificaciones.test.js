@@ -1,6 +1,7 @@
 ﻿const request = require('supertest');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 
 let token;
 let userId;
@@ -14,7 +15,7 @@ beforeAll(async () => {
   });
   userId = signup.body.id;
   const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
-  token = login.body.token;
+  token = sessionToken(login);
 
   const n = await db.oper_notificaciones.create({
     userId: userId,
@@ -76,7 +77,7 @@ describe('notificaciones', () => {
     });
     const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
     const res = await request(app).put('/oper_notificaciones/' + idnotif)
-      .set('Authorization', 'Bearer ' + login2.body.token)
+      .set('Authorization', 'Bearer ' + sessionToken(login2))
       .send({ leida: 1 });
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('La notificación no pertenece a el usuario.');

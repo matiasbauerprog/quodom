@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 
 beforeAll(async () => { await db.ready; });
 
@@ -49,9 +50,9 @@ describe('users', () => {
       .send({ username: 'juan@test.com', password: 'secreto123' });
     expect(res.status).toBe(200);
     expect(res.body.res).toBe(true);
-    expect(res.body.token).toBeDefined();
+    expect(sessionToken(res)).toBeDefined();
     expect(res.body.password).toBeUndefined();
-    token = res.body.token;
+    token = sessionToken(res);
   });
 
   it('POST /users/signin rejects wrong password', async () => {
@@ -108,7 +109,7 @@ describe('users', () => {
     const res = await request(app).post('/users/signin')
       .send({ username: 'maria', password: 'secreto123' });
     expect(res.status).toBe(200);
-    token2 = res.body.token;
+    token2 = sessionToken(res);
   });
 
   it('GET /users/:id of another user returns 401', async () => {

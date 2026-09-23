@@ -4,6 +4,8 @@ import type { User, Direccion } from './types';
 export const users = {
   signin: (body: { username: string; password: string }) =>
     apiFetch<User>('/users/signin', { method: 'POST', body }),
+  signout: () =>
+    apiFetch<{ res: boolean }>('/users/signout', { method: 'POST' }),
   signup: (body: { username: string; email: string; nombre: string; apellido?: string; password: string; codArea: string; telefono: string; dni?: string }) =>
     apiFetch<{ res: boolean; id?: string; message: string }>('/users/signup', { method: 'POST', body }),
   reset: (body: { email: string }) =>

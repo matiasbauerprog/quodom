@@ -1,7 +1,8 @@
 # Deploy de los dos servicios en Render (Blueprint).
 # En Render: New > Blueprint > este repo. Pide dos valores al crear:
 #   APP_URL      -> la URL pública del frontend (quodom-app)
-#   VITE_API_URL -> la URL pública del API (quodom-api)
+#   VITE_API_URL -> /api (la app le habla al API por su propio dominio; ver
+#                   la regla /api/* más abajo)
 # Como cada una necesita la otra, se crean primero y se completan después:
 # poner cualquier cosa, y al terminar editar cada servicio con la URL real y
 # volver a desplegar. El frontend se rebuildea, el API sólo reinicia.
@@ -42,8 +43,17 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: /api
     routes:
+      # La sesión viaja en una cookie httpOnly. Si la app le hablara al API en
+      # otro dominio (quodom-api.onrender.com), Safari descartaría la cookie y
+      # nadie con iPhone podría iniciar sesión: onrender.com es un sufijo
+      # público, así que cada subdominio cuenta como un sitio distinto. Esta
+      # regla hace que el API se vea como parte del mismo sitio. Tiene que ir
+      # ANTES del comodín de la SPA.
+      - type: rewrite
+        source: /api/*
+        destination: https://quodom-api.onrender.com/*
       # La app es una SPA: sin esto, entrar directo a cualquier URL que no sea
       # la raíz devuelve 404 en vez de la aplicación.
       - type: rewrite

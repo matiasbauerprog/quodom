@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('../helpers/db');
 const correo = require('../helpers/email');
+const { SESSION_TTL } = require('../helpers/session');
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -45,7 +46,7 @@ async function authenticate({ username, password }) {
   if (!user.emailValidado)
     throw 'Valida tu correo electronico primero.';
 
-  const token = generarToken(user.id, '4800h');
+  const token = generarToken(user.id, SESSION_TTL);
 
   return { ...omitPassword(user.get()), token };
 }

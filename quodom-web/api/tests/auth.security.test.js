@@ -6,6 +6,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 const correo = require('../src/helpers/email');
 const rateLimit = require('../src/middleware/rateLimit');
 
@@ -33,8 +34,8 @@ beforeAll(async () => {
   await db.Category.create({ id: 5, nombrecategoria: 'Pintura', idcategoriapadre: 0, activa: true, orden: 1 });
   anaId = (await request(app).post('/users/signup').send(ANA)).body.id;
   await request(app).post('/users/signup').send(BETO);
-  anaToken = (await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' })).body.token;
-  betoToken = (await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' })).body.token;
+  anaToken = sessionToken(await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' }));
+  betoToken = sessionToken(await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' }));
 });
 
 beforeEach(() => rateLimit._reset());
@@ -76,7 +77,7 @@ describe('purpose-bound tokens', () => {
 
     const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'nueva123' });
     expect(login.status).toBe(200);
-    anaToken = login.body.token;
+    anaToken = sessionToken(login);
   });
 });
 

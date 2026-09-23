@@ -12,7 +12,7 @@ React 18 + Vite + TypeScript + plain CSS. 1:1 visual clone of the original React
 
 ## Estructura
 - `src/api/` — cliente `apiFetch` con JWT + un módulo por recurso. Todas las llamadas al backend pasan por acá.
-- `src/auth/` — `AuthContext` (token+user en `localStorage.quodom.token`) y `ProtectedRoute`.
+- `src/auth/` — `AuthContext` y `ProtectedRoute`. La sesión es una cookie httpOnly que pone el API; la app no ve el token, así que al cargar siempre pregunta `GET /users/current`.
 - `src/guest/` — Quodom de invitado en `localStorage.quodom.guest`; `migrateGuestQuodom` lo transfiere al backend al iniciar sesión.
 - `src/styles/` — `tokens.css` (paleta, tipografías, espacios, radios), `reset.css`, `typography.css`, `utilities.css` (`.container`, `.card`, `.btn`, `.hoja`, `.pantalla-header`, `.pantalla-contenido`), `global.css` que las importa todas.
 - `src/components/layout/` — `AppBar`, `Drawer`, `Layout`, `BarraQuodomInferior`, `AppBarBack`.
@@ -63,5 +63,6 @@ El `h1` de una pantalla es `--fs-h1` (32px). Los 44px de antes eran tamaño de w
 - **Código:** inglés (nombres de identifiers, comentarios). Sin comentarios salvo cuando el "por qué" no sea evidente.
 - **HTML semántico:** `header`, `nav`, `main`, `section`, `article`, `button`, `label`+`input`.
 - **Errores del API:** los controllers backend responden `{ res: false, message }` con status 4xx; el cliente lanza `ApiError` con el `message` — mostrarlo tal cual.
-- **Persistencia local:** solo dos claves — `quodom.token` (JWT) y `quodom.guest` (Quodom de invitado). Ninguna otra información sensible en `localStorage`.
+- **Persistencia local:** sólo el Quodom de invitado. **El token de sesión nunca va a `localStorage`**: vive en una cookie httpOnly que ningún script puede leer.
+- **El API se llama siempre por `/api`, en el mismo dominio que la app** (proxy de Vite en dev, regla de rewrite en Render). No apuntar `VITE_API_URL` a `quodom-api.onrender.com`: para el navegador sería otro sitio, Safari descarta la cookie y nadie con iPhone puede iniciar sesión.
 - **Testing:** el recorrido visual se hace siempre en el navegador (dev server + API real) — es lo que valida layout, contraste y sensación de uso, y ningún test lo reemplaza. Además se escriben tests de Vitest sobre el comportamiento: tanto lógica pura (api client, guest quodom, migración) como componentes con Testing Library, cuando hay una regla que se puede romper en silencio — qué se llama y con qué argumentos, qué se muestra en cada estado, qué pasa cuando el servidor falla. No se testea el aspecto.

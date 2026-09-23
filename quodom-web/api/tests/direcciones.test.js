@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 
 let token;
 let iddireccion;
@@ -13,7 +14,7 @@ beforeAll(async () => {
     codArea: '11', telefono: '55554444'
   });
   const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
-  token = login.body.token;
+  token = sessionToken(login);
 });
 
 describe('direcciones', () => {
@@ -60,7 +61,7 @@ describe('direcciones', () => {
     });
     const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
     const res = await request(app).get('/user_direcciones/' + iddireccion)
-      .set('Authorization', 'Bearer ' + login2.body.token);
+      .set('Authorization', 'Bearer ' + sessionToken(login2));
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('La dirección no pertenece a el usuario.');
   });

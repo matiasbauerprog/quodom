@@ -4,10 +4,12 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const app = express();
-// Render puts a proxy in front of the app. Without this every request carries
-// the proxy's address, and the per-address limits on sign-in and password
-// recovery would lock out every user at once.
-app.set('trust proxy', 1);
+// Render puts proxies in front of the app, and the frontend's /api rewrite
+// adds one more hop. Without the right count every request carries a proxy's
+// address, and the per-address limits on sign-in and password recovery would
+// lock out every user at once. GET / echoes the address it sees so this can
+// be checked against the caller's real one after a deploy.
+app.set('trust proxy', parseInt(process.env.TRUST_PROXY_HOPS, 10) || 1);
 
 const cors = require('cors');
 const helmet = require('helmet');
@@ -60,7 +62,8 @@ app.get('/', (req, res) => {
     message: 'Quodom API',
     name: pkg.name,
     version: pkg.version,
-    fecha: new Date()
+    fecha: new Date(),
+    ip: req.ip
   });
 });
 

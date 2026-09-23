@@ -13,7 +13,8 @@ Express + Sequelize 6 + SQLite, JavaScript (CommonJS). Port 1:1 de la API origin
 - `src/server.js` — app Express; exporta `app` (los tests la importan sin levantar el puerto)
 - `src/routes/` → `src/controllers/` → `src/models/` + `src/helpers/db.js`
 - `src/helpers/views.js` — vistas SQL (`v_Busquedas`, `v_Quodoms`, `v_Quodoms_Lines`, `v_InfoCompradors`). Los modelos `v_*` NO se sincronizan (son vistas); NUNCA usar `sequelize.sync()` global.
-- `src/middleware/auth.js` — `verifyToken()` (JWT Bearer) / `isAdmin()`
+- `src/middleware/auth.js` — `verifyToken()` / `isAdmin()`. Leen el JWT de la cookie `quodom_session` (`helpers/session.js`) o, si no está, del header Bearer, que queda para tests y herramientas. Un token con `action` (link de blanqueo o de validar email) **nunca** abre sesión.
+- `/users/signin`, `/signup`, `/reset`, `/reenviar`, `/changePass` y `/validateReset` tienen límite de intentos por IP (y por casilla, los que mandan mail). Los topes se ajustan con `AUTH_LIMIT_*` y el conteo por IP depende de `TRUST_PROXY_HOPS` (ver `.env.example`).
 - `src/config/guias/` — guías por rubro **generadas**; no editarlas a mano, se pisan con `npm run guias`. La fuente son las planillas en `informacion para la ia/`.
 - `src/helpers/gemini.js` — cadena de modelos con respaldo, reparto del presupuesto de tiempo y tope de salida. El modelo por defecto está elegido por medición, no por ser el más nuevo.
 - Config por `.env` (ver `.env.example`). Nunca commitear `.env` ni `quodom.sqlite`.

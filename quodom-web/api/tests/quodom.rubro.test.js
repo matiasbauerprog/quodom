@@ -1,4 +1,5 @@
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 
 beforeAll(async () => {
   await db.ready;
@@ -52,7 +53,7 @@ describe('create enforces one open quodom per rubro', () => {
       codArea: '11', telefono: '55554444'
     });
     const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
-    token = login.body.token;
+    token = sessionToken(login);
   });
 
   it('rejects a create without idrubro', async () => {
@@ -122,7 +123,7 @@ describe('add line enforces the quodom rubro', () => {
 
   beforeAll(async () => {
     const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
-    token = login.body.token;
+    token = sessionToken(login);
     const userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
     const res = await request(app).post('/quodom/create')
@@ -159,7 +160,7 @@ describe('GET /quodom/activo/:idrubro', () => {
 
   beforeAll(async () => {
     const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
-    token = login.body.token;
+    token = sessionToken(login);
     userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
@@ -211,7 +212,7 @@ describe('repetir of an already-open rubro', () => {
 
   beforeAll(async () => {
     const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
-    token = login.body.token;
+    token = sessionToken(login);
     userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
@@ -292,7 +293,7 @@ describe('a lost race answers 409, not 500', () => {
 
   beforeAll(async () => {
     const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
-    token = login.body.token;
+    token = sessionToken(login);
     userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });

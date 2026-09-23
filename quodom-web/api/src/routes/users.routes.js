@@ -6,6 +6,7 @@ const Controler = require('../controllers/users.controller');
 const validateRequest = require('../middleware/validate-request');
 const rateLimit = require('../middleware/rateLimit');
 const jwt = require('jsonwebtoken');
+const session = require('../helpers/session');
 
 const MIN = 60_000;
 const envInt = (name, fallback) => () => parseInt(process.env[name], 10) || fallback;
@@ -38,6 +39,7 @@ router.get('/current', auth.verifyToken(), getCurrent);
 router.get('/currentFoto', auth.verifyToken(), getCurrentFoto);
 router.get('/:id', auth.verifyToken(), getById);
 router.post('/signin', limitSignin, signinSchema, authenticate);
+router.post('/signout', signout);
 router.post('/signup', limitSignup, signupSchema, register);
 router.post('/reset', limitMail, resetSchema, resetPass);
 router.post('/reenviar', limitMail, resetSchema, reenviar);
@@ -109,18 +111,25 @@ function changePassSchema(req, res, next) {
 
 function authenticate(req, res, next) {
   Controler.authenticate(req.body)
-    .then(user => res.json({
-      res: true,
-      username: user.username,
-      nombre: user.nombre,
-      apellido: user.apellido,
-      email: user.email,
-      id: user.id,
-      role: user.role,
-      refreshFoto: user.refreshFoto,
-      token: user.token
-    }))
+    .then(user => {
+      session.setSession(req, res, user.token);
+      res.json({
+        res: true,
+        username: user.username,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        email: user.email,
+        id: user.id,
+        role: user.role,
+        refreshFoto: user.refreshFoto
+      });
+    })
     .catch(next);
+}
+
+function signout(req, res) {
+  session.clearSession(req, res);
+  res.json({ res: true });
 }
 
 function register(req, res, next) {

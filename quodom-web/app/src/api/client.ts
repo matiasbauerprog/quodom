@@ -1,13 +1,9 @@
-const TOKEN_KEY = 'quodom.token';
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+// The session lives in an httpOnly cookie the API sets at sign-in; no script
+// can read it, and the browser attaches it on its own. That only works because
+// the API is reached through this same origin (/api), never cross-site.
+// Before that the token sat in localStorage under this key; drop any leftover.
+export function forgetLegacyToken(): void {
+  try { localStorage.removeItem('quodom.token'); } catch { /* storage blocked */ }
 }
 
 export class ApiError extends Error {
@@ -28,7 +24,7 @@ type Options = {
 // Una sola definición de dónde vive el API: las imágenes se piden por URL
 // directa y antes tenían su propio default, que quedó apuntando a localhost.
 export function apiBase(): string {
-  return import.meta.env.VITE_API_URL || 'http://localhost:3999';
+  return import.meta.env.VITE_API_URL || '/api';
 }
 
 export async function apiFetch<T = unknown>(path: string, options: Options = {}): Promise<T> {
@@ -37,14 +33,12 @@ export async function apiFetch<T = unknown>(path: string, options: Options = {})
     'Content-Type': 'application/json',
     ...(options.headers ?? {})
   };
-  const token = getToken();
-  if (token) headers.Authorization = 'Bearer ' + token;
-
   let res: Response;
   try {
     res = await fetch(base + path, {
       method: options.method ?? 'GET',
       headers,
+      credentials: 'same-origin',
       body: options.body === undefined ? undefined : JSON.stringify(options.body)
     });
   } catch {
@@ -55,7 +49,6 @@ export async function apiFetch<T = unknown>(path: string, options: Options = {})
   const payload: any = isJson ? await res.json().catch(() => ({})) : null;
 
   if (!res.ok) {
-    if (res.status === 401) clearToken();
     const msg = (payload && payload.message) || 'Error del servidor.';
     throw new ApiError(msg, res.status);
   }

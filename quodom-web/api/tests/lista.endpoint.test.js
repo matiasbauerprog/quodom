@@ -3,6 +3,7 @@ const request = require('supertest');
 const { callGemini } = require('../src/helpers/gemini');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 const rateLimit = require('../src/middleware/rateLimit');
 
 let token;
@@ -20,7 +21,7 @@ beforeAll(async () => {
   const user = { username: 'lista', email: 'lista@test.com', nombre: 'Lista', password: 'secreto123', codArea: '11', telefono: '55553333' };
   await request(app).post('/users/signup').send(user);
   const login = await request(app).post('/users/signin').send({ username: 'lista', password: 'secreto123' });
-  token = login.body.token;
+  token = sessionToken(login);
 });
 
 beforeEach(() => {

@@ -1,5 +1,6 @@
 const jwt = require('express-jwt');
 const db = require('../helpers/db');
+const { readToken } = require('../helpers/session');
 
 module.exports = {
   verifyToken,
@@ -8,7 +9,7 @@ module.exports = {
 
 function verifyToken() {
   return [
-    jwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }),
+    jwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'], getToken: readToken }),
 
     async (req, res, next) => {
       try {
@@ -39,7 +40,7 @@ function verifyToken() {
 
 function isAdmin() {
   return [
-    jwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'] }),
+    jwt({ secret: process.env.JWT_SECRET, algorithms: ['HS256'], getToken: readToken }),
 
     async (req, res, next) => {
       try {

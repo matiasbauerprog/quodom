@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../src/server');
 const db = require('../src/helpers/db');
+const { sessionToken } = require('./helpers/session');
 
 let token;
 let otherToken;
@@ -26,11 +27,11 @@ beforeAll(async () => {
   };
   await request(app).post('/users/signup').send(user);
   const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
-  token = login.body.token;
+  token = sessionToken(login);
 
   await request(app).post('/users/signup').send({ ...user, username: 'beto', email: 'beto@test.com' });
   const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
-  otherToken = login2.body.token;
+  otherToken = sessionToken(login2);
 });
 
 describe('quodom', () => {
