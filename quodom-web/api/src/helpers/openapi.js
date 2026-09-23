@@ -13,7 +13,7 @@ function buildValidator() {
     validateRequests: { removeAdditional: 'all', allErrors: true },
     validateResponses: process.env.NODE_ENV === 'test',
     validateSecurity: false, // auth stays in middleware/auth.js
-    ignorePaths: /^\/img\//,
+    ignorePaths: /^\/(img|docs)(\/|$)/,
     serDes: [OpenApiValidator.serdes.dateTime]
   });
 }

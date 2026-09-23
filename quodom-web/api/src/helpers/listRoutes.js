@@ -35,7 +35,7 @@ function listRoutes(app) {
       }
     }
   }
-  return out.filter(r => r.path !== '*' && !r.path.startsWith('/img'));
+  return out.filter(r => r.path !== '*' && !r.path.startsWith('/img') && !r.path.startsWith('/docs'));
 }
 
 module.exports = { listRoutes };

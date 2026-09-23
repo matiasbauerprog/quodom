@@ -18,6 +18,15 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(cors());
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+// The API map, for local development only. Render does not set API_DOCS, so
+// production answers /docs with the usual 404 and publishes no route list.
+if (process.env.API_DOCS === 'true') {
+  const swaggerUi = require('swagger-ui-express');
+  const YAML = require('yaml');
+  const { SPEC_PATH } = require('./helpers/openapi');
+  const spec = YAML.parse(fs.readFileSync(SPEC_PATH, 'utf8'));
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
+}
 app.use(require('./middleware/stripTrailingSlash'));
 app.use(require('./helpers/openapi').buildValidator());
 // After the validator, so this res.json wraps the validator's and hands it plain JSON.
