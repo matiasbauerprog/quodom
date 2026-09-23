@@ -25,7 +25,11 @@
 
   /* Alto contra el cual se reparte una pantalla de sección: la ventana menos el
      header. El h1 se queda arriba y .pantalla-contenido centra el resto. */
+  /* `dvh` mide lo que realmente se ve en el celular; `vh` no descuenta la barra
+     de direcciones y centraría el contenido contra un alto mayor que la
+     pantalla, o sea más abajo de donde va. La línea con `vh` es la reserva. */
   --pantalla-alto: calc(100vh - 56px);
+  --pantalla-alto: calc(100dvh - 56px);
 
   --font-prompt: 'Prompt', system-ui, sans-serif;
   --font-jaldi: 'Jaldi', Georgia, serif;

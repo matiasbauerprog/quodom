@@ -1,4 +1,6 @@
-.auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--sp-4); background: var(--color-fondo); }
+/* `dvh`: centrar contra `100vh` en el celular deja el formulario más abajo de
+   lo que se ve, porque `vh` no descuenta la barra de direcciones. */
+.auth-screen { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: var(--sp-4); background: var(--color-fondo); }
 .auth-card { width: 100%; max-width: 420px; }
 .auth-card h1 { text-align: center; margin-bottom: var(--sp-5); }
 .auth-error { color: var(--color-error); font-size: var(--fs-small); margin: 0 0 var(--sp-3) 0; }
