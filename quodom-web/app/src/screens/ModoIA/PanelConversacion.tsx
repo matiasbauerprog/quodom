@@ -35,6 +35,7 @@ export function PanelConversacion() {
   const [pendiente, setPendiente] = useState<PendienteRubro | null>(null);
   const [conflicto, setConflicto] = useState<ConflictoIa | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [messages, busy]);
 
@@ -68,6 +69,10 @@ export function PanelConversacion() {
       setMessages(m => [...m, { role: 'assistant', text: msg }]);
     } finally {
       setBusy(false);
+      // El campo nunca se deshabilita —deshabilitar un input le saca el foco, y
+      // había que volver con el mouse en cada vuelta de la conversación—, pero
+      // si se mandó con el botón el foco quedó ahí: se lo devolvemos.
+      inputRef.current?.focus();
     }
   }
 
@@ -199,7 +204,7 @@ export function PanelConversacion() {
           onChange={e => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           maxLength={500}
-          disabled={busy || confirming}
+          ref={inputRef}
         />
         <button
           className="btn btn-exito mia-send"

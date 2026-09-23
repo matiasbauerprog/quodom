@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PanelConversacion } from '../PanelConversacion';
 import { iaApi } from '../../../api/ia';
@@ -254,5 +254,39 @@ describe('PanelConversacion (invitado)', () => {
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/iniciar sesión/i));
     expect(iaApi.chat).not.toHaveBeenCalled();
+  });
+});
+
+// Escribir, mandar y tener que volver con el mouse al campo en cada vuelta es
+// insoportable en una conversación. El campo pierde el foco porque se
+// deshabilita mientras la IA piensa: deshabilitar un input lo desenfoca.
+describe('PanelConversacion (el foco se queda en el campo)', () => {
+  beforeEach(() => { (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockReset(); });
+
+  it('deja seguir escribiendo mientras la IA piensa', async () => {
+    let resolver: (v: unknown) => void = () => {};
+    (iaApi.chat as unknown as ReturnType<typeof vi.fn>)
+      .mockReturnValue(new Promise(r => { resolver = r; }));
+    renderWith();
+
+    const input = screen.getByPlaceholderText(/escrib/i);
+    fireEvent.change(input, { target: { value: 'quiero pintar' } });
+    fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
+
+    expect(input).not.toBeDisabled();
+    await act(async () => { resolver({ type: 'question', text: 'ok' }); });
+  });
+
+  it('devuelve el foco al campo cuando llega la respuesta', async () => {
+    (iaApi.chat as unknown as ReturnType<typeof vi.fn>)
+      .mockResolvedValue({ type: 'question', text: '¿de qué color?' });
+    renderWith();
+
+    const input = screen.getByPlaceholderText(/escrib/i);
+    fireEvent.change(input, { target: { value: 'quiero pintar' } });
+    fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
+
+    await screen.findByText('¿de qué color?');
+    await waitFor(() => expect(input).toHaveFocus());
   });
 });
