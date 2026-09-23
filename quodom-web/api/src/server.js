@@ -4,12 +4,10 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const app = express();
-// Render puts proxies in front of the app, and the frontend's /api rewrite
-// adds one more hop. Without the right count every request carries a proxy's
-// address, and the per-address limits on sign-in and password recovery would
-// lock out every user at once. GET / echoes the address it sees so this can
-// be checked against the caller's real one after a deploy.
-app.set('trust proxy', parseInt(process.env.TRUST_PROXY_HOPS, 10) || 1);
+// The per-address limits on sign-in and password recovery need the client's
+// address, not a proxy's; otherwise they lock out every user at once. See
+// config/proxies.js. GET / echoes the address it sees, to check after deploys.
+app.set('trust proxy', require('./config/proxies').trustedProxies());
 
 const cors = require('cors');
 const helmet = require('helmet');
@@ -63,11 +61,7 @@ app.get('/', (req, res) => {
     name: pkg.name,
     version: pkg.version,
     fecha: new Date(),
-    ip: req.ip,
-    // TEMP: forwarding chain, to count Render's proxies. Remove once set.
-    xff: req.headers['x-forwarded-for'],
-    cf: req.headers['cf-connecting-ip'],
-    tci: req.headers['true-client-ip']
+    ip: req.ip
   });
 });
 

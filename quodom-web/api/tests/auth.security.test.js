@@ -18,7 +18,7 @@ let anaToken;
 let betoToken;
 let ip = 0;
 // A fresh client address per test, so one test's attempts don't spend another's budget.
-const nextIp = () => '10.0.0.' + (++ip);
+const nextIp = () => '203.0.113.' + (++ip);
 
 async function pedirReset(email, from = nextIp()) {
   const spy = jest.spyOn(correo, 'sendEmail').mockResolvedValue(true);
