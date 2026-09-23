@@ -15,7 +15,9 @@
      Proporcional al alto de la pantalla, con piso y techo: en un monitor el aire
      acompaña, y en un teléfono no se come media pantalla antes del primer dato.
      El piso son los 48px que había fijos, así que nunca queda más apretado. */
-  --pantalla-top: clamp(var(--sp-7), 8vh, 120px);
+  /* Un 30% más que los 48/8vh/120 que había: pegado al header el título se
+     leía como parte de la barra y no como el principio de la página. */
+  --pantalla-top: clamp(62px, 10.4vh, 156px);
 
   /* Ancho de la columna de contenido de una pantalla de sección. `.container`
      llega a 1120px, que es lo que necesita una grilla de productos y demasiado

@@ -69,6 +69,18 @@ label.field span { display: block; margin-bottom: var(--sp-1); }
   justify-content: space-between;
   margin-bottom: var(--sp-4);
 }
+/* La misma línea roja que lleva el wordmark del home y el nombre de cada rubro,
+   acá alineada a la izquierda porque el título lo está. Es lo que hace que un
+   título de sección se lea como parte de Quodom y no como un texto suelto. */
+.pantalla-header h1::after,
+.appbar-back-title::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--color-acento);
+  margin: 6px 0 0 0;
+}
 
 /* El h1 se queda arriba, en el flujo normal, así que arranca a la misma altura
    en todas las secciones — es el título de la página, no una pieza que flota
