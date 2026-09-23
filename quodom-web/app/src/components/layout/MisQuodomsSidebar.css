@@ -105,10 +105,16 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .mq-terminado-meta { font-size: var(--fs-tiny); color: rgba(255,255,255,0.6); }
+  /* `.btn` trae min-height: 44px, el mínimo para tocar con el dedo, y eso es lo
+     que lo dejaba alto: el padding chico no alcanzaba para bajarlo. Acá se
+     puede ajustar al texto porque este sidebar existe sólo de 1025px para
+     arriba, donde se apunta con el mouse. */
   .mq-terminado-repetir {
     flex: 0 0 auto;
-    padding: 6px 12px;
-    font-size: 13px;
+    min-height: 0;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.2;
     background: var(--color-exito);
     color: #fff;
     border: none;
