@@ -267,7 +267,7 @@ export function DetalleQuodom() {
           {lines.map(l => (
             <li key={l.key} className="dq-line card hoja">
               <div className="dq-line-head">
-                <ProductImage idproducto={l.idproducto} alt={l.nombreProducto} size="sm" />
+                <ProductImage idproducto={l.idproducto} alt={l.nombreProducto ?? ''} size="sm" />
                 <span className="dq-line-name">{l.nombreProducto}</span>
                 <button className="dq-line-remove" aria-label="Quitar" onClick={l.onRemove}>×</button>
               </div>

@@ -65,7 +65,7 @@ export function LineasQuodomSidebar(props: Props) {
           const falta = faltante(l);
           return {
             key: String(l.id),
-            nombre: l.nombreProducto,
+            nombre: l.nombreProducto ?? '',
             cantidad: l.cantidad,
             idproducto: l.idproducto,
             faltaAtributo: falta ? falta.nombre : null,

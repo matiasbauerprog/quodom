@@ -57,7 +57,7 @@ export function AgregarDireccion() {
           <label className="field"><span>Localidad</span>
             <input list="locs" className="input" value={f.localidad ?? ''} onChange={set('localidad')} required />
             <datalist id="locs">
-              {locs.map(l => <option key={l.id} value={l.localidad} />)}
+              {locs.map(l => <option key={l.id} value={l.nombre ?? ''} />)}
             </datalist>
           </label>
           <label className="field"><span>CP</span><input className="input" value={f.cp ?? ''} onChange={set('cp')} /></label>

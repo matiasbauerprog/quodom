@@ -132,14 +132,14 @@ components:
         esvendedor: { type: string, nullable: true }
     BusquedaResult:
       type: object
-      required: [id, nombre]
+      required: [id, nombre, categoriaPadre]
       properties:
         id: { type: integer }
-        nombre: { type: string, nullable: true }
+        nombre: { type: string }
         descripcion: { type: string, nullable: true }
         imagen: { type: string, nullable: true }
         refreshImagen: { type: string, nullable: true }
-        categoriaPadre: { type: integer, nullable: true }
+        categoriaPadre: { type: integer }
     Provincia:
       type: object
       required: [id, provincia]
@@ -158,16 +158,16 @@ components:
 
     VQuodom:
       type: object
-      required: [id, descripcion, estado, nro]
+      required: [id, descripcion, estado, nro, idrubro]
       properties:
         id: { type: string }
         descripcion: { type: string }
         createdBy: { type: string }
         estado: { type: string, enum: [CREADO, ENVIADO] }
-        idrubro: { type: integer, nullable: true }
+        idrubro: { type: integer }
         nombrerubro: { type: string, nullable: true }
-        porccompletado: { type: number, nullable: true }
-        cantproductos: { type: integer, nullable: true }
+        porccompletado: { type: number }
+        cantproductos: { type: integer }
         fechavencimientoenvio: { type: string, format: date-time, nullable: true }
         diasparavencimientoenvio: { type: integer, nullable: true }
         diasparavencimientoaceptacion: { type: integer, nullable: true }
@@ -190,7 +190,7 @@ components:
         detalleProducto: { type: string, nullable: true }
         marca: { type: string, nullable: true }
         unidad: { type: string, nullable: true }
-        atributosFaltantes: { type: integer, nullable: true }
+        atributosFaltantes: { type: integer }
         imagen: { type: string, nullable: true }
         refreshImagen: { type: string, nullable: true }
         atributo1: { type: string, nullable: true, description: 'Lo que eligió el usuario' }
@@ -233,7 +233,7 @@ components:
 
     Notificacion:
       type: object
-      required: [id, titulo, texto]
+      required: [id, titulo, texto, createdAt]
       properties:
         id: { type: integer }
         userId: { type: string }
