@@ -1,4 +1,4 @@
-.detalle-quodom { padding: var(--sp-4) 0 calc(var(--sp-7) + 60px); }
+.detalle-quodom { padding: var(--pantalla-top) 0 calc(var(--sp-7) + 60px); }
 .dq-empty { text-align: center; color: var(--color-texto-muted); padding: var(--sp-6) 0; }
 .dq-aviso { background: var(--color-tarjeta); border-left: 3px solid var(--color-acento); padding: var(--sp-3); color: var(--color-texto); }
 .dq-lines { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); }
@@ -15,3 +15,7 @@
 .dq-chooser { display: grid; gap: var(--sp-3); margin-top: var(--sp-3); list-style: none; padding: 0; }
 .dq-chooser-item { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3); text-decoration: none; color: var(--color-texto); }
 .dq-chooser-item strong { font-family: var(--font-prompt); color: var(--color-acento); }
+
+/* Columna de contenido centrada: mas especifico que .container, que apunta a
+   1120px para las grillas de producto. */
+.container.detalle-quodom { max-width: var(--pantalla-ancho); }

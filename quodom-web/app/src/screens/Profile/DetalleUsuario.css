@@ -1,2 +1,6 @@
-.detalle-usuario { padding: var(--sp-4) 0 var(--sp-7); }
+.detalle-usuario { padding: var(--pantalla-top) 0 var(--sp-7); }
 .detalle-usuario .grid-2 { display: grid; grid-template-columns: 1fr 2fr; gap: var(--sp-3); }
+
+/* Columna de contenido centrada: mas especifico que .container, que apunta a
+   1120px para las grillas de producto. */
+.container.detalle-usuario { max-width: var(--pantalla-ancho); }

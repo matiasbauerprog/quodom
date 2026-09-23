@@ -1,5 +1,7 @@
-.dirs { padding: var(--sp-6) 0 var(--sp-7); }
-.dirs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3); }
+.dirs { padding: var(--pantalla-top) 0 var(--sp-7); }
+/* Igual que .mq-header: título al centro, acción anclada a la derecha. */
+.dirs-header { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: var(--sp-4); }
+.dirs-header > .btn { position: absolute; right: 0; }
 .dirs-list { display: grid; gap: var(--sp-3); }
 .dirs-item { display: grid; gap: var(--sp-3); }
 .dirs-alias { font-family: var(--font-prompt); font-weight: 500; color: var(--color-acento); font-size: 18px; }
@@ -9,3 +11,7 @@
 .dirs-badge { background: rgba(45,171,102,.15); color: var(--color-exito); padding: 4px 10px; border-radius: 999px; font-size: var(--fs-tiny); font-weight: 500; }
 
 @media (min-width: 601px) { .dirs-item { grid-template-columns: 1fr auto; align-items: center; } }
+
+/* Columna de contenido centrada: mas especifico que .container, que apunta a
+   1120px para las grillas de producto. */
+.container.dirs { max-width: var(--pantalla-ancho); }

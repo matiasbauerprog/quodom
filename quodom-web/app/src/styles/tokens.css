@@ -8,12 +8,30 @@
   --color-tarjeta: #FFFFFF;
   --color-panel-oscuro: #1E1E2A;
 
+  /* Dónde empieza el contenido de una pantalla debajo del header. Está acá y no
+     repetido en cada CSS para que se mueva de una sola vez: si una pantalla usa
+     otro valor, se despega distinto que el resto y se nota.
+
+     Proporcional al alto de la pantalla, con piso y techo: en un monitor el aire
+     acompaña, y en un teléfono no se come media pantalla antes del primer dato.
+     El piso son los 48px que había fijos, así que nunca queda más apretado. */
+  --pantalla-top: clamp(var(--sp-7), 8vh, 120px);
+
+  /* Ancho de la columna de contenido de una pantalla de sección. `.container`
+     llega a 1120px, que es lo que necesita una grilla de productos y demasiado
+     para una lista de direcciones o un formulario: estirados a ese ancho se
+     leen como si les faltara algo. */
+  --pantalla-ancho: 720px;
+
   --font-prompt: 'Prompt', system-ui, sans-serif;
   --font-jaldi: 'Jaldi', Georgia, serif;
   --font-work: 'Work Sans', system-ui, sans-serif;
   --font-mont: 'Montserrat', system-ui, sans-serif;
 
-  --fs-h1: 44px;
+  /* 44px era el tamaño del wordmark del home, no el de un título de sección.
+     Como acá viven todos los h1 de pantalla — Mis Quodoms, Direcciones, y los
+     que arma AppBarBack —, bajarlo acá los baja a todos juntos. */
+  --fs-h1: 32px;
   --fs-h2: 32px;
   --fs-h3: 24px;
   --fs-body: 16px;

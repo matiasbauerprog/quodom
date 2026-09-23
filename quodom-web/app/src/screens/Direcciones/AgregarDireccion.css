@@ -1,3 +1,7 @@
-.dir-form { padding: var(--sp-4) 0 var(--sp-7); }
+.dir-form { padding: var(--pantalla-top) 0 var(--sp-7); }
 .dir-form .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sp-3); }
 .dir-form .check { display: flex; align-items: center; gap: var(--sp-2); margin: var(--sp-3) 0; }
+
+/* Columna de contenido centrada: mas especifico que .container, que apunta a
+   1120px para las grillas de producto. */
+.container.dir-form { max-width: var(--pantalla-ancho); }

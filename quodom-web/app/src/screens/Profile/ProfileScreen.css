@@ -1,4 +1,4 @@
-.profile { padding: var(--sp-6) 0 var(--sp-7); }
+.profile { padding: var(--pantalla-top) 0 var(--sp-7); }
 .profile-head { text-align: center; margin-bottom: var(--sp-4); }
 .profile-name { font-family: var(--font-prompt); font-weight: 600; font-size: 20px; color: var(--color-acento); }
 .profile-email { color: var(--color-texto-muted); }
@@ -6,3 +6,7 @@
 .profile-menu { display: grid; gap: var(--sp-3); }
 .profile-link { display: block; text-align: left; padding: var(--sp-3) var(--sp-4); color: var(--color-texto); font-weight: 500; width: 100%; }
 .profile-danger { color: var(--color-error); }
+
+/* Columna de contenido centrada: mas especifico que .container, que apunta a
+   1120px para las grillas de producto. */
+.container.profile { max-width: var(--pantalla-ancho); }

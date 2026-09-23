@@ -14,7 +14,12 @@ export function Drawer({ open, onClose }: { open: boolean; onClose: () => void }
         </div>
         <nav className="drawer-nav">
           <NavLink to="/" end onClick={onClose}>Inicio</NavLink>
-          <NavLink to="/busqueda" onClick={onClose}>Buscar</NavLink>
+          {/* "Buscar" salió del menú (2026-09-22): el buscador del home, que
+              muestra resultados mientras se escribe, es la entrada a lo mismo.
+              La pantalla, su ruta /busqueda y api/busqueda.ts siguen vivos y con
+              sus tests — el home los usa, y esta entrada vuelve descomentando
+              esta línea y el test de Drawer.test.tsx. */}
+          {/* <NavLink to="/busqueda" onClick={onClose}>Buscar</NavLink> */}
           {user && <NavLink to="/mis-quodoms" onClick={onClose}>Mis Quodoms</NavLink>}
           {user && <NavLink to="/perfil" onClick={onClose}>Perfil</NavLink>}
           {user && <NavLink to="/direcciones" onClick={onClose}>Direcciones</NavLink>}

@@ -1,4 +1,4 @@
-.busqueda { padding: var(--sp-4) 0 var(--sp-7); }
+.busqueda { padding: var(--pantalla-top) 0 var(--sp-7); }
 .busqueda > h1 { text-align: center; margin-bottom: var(--sp-4); }
 .busqueda-form {
   display: flex;

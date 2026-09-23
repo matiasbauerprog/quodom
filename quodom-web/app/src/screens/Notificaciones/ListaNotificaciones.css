@@ -1,7 +1,11 @@
-.notif { padding: var(--sp-6) 0 var(--sp-7); }
+.notif { padding: var(--pantalla-top) 0 var(--sp-7); }
 .notif-list { display: grid; gap: var(--sp-3); }
 .notif-item { cursor: pointer; }
 .notif-title { font-family: var(--font-prompt); font-weight: 500; color: var(--color-acento); margin-bottom: var(--sp-1); }
 .notif-text { color: var(--color-texto); margin-bottom: var(--sp-2); }
 .notif-date { font-size: var(--fs-tiny); color: var(--color-texto-muted); }
 .notif-leida { opacity: .6; }
+
+/* Columna de contenido centrada: mas especifico que .container, que apunta a
+   1120px para las grillas de producto. */
+.container.notif { max-width: var(--pantalla-ancho); }
