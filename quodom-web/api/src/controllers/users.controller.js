@@ -17,11 +17,17 @@ module.exports = {
   reset,
   reenviar,
   validateEmail,
+  verifyResetToken,
   changePass,
   delete: _delete
 };
 
 const emailEnabled = () => process.env.EMAIL_ENABLED === 'true';
+
+// reset and reenviar answer the same whether or not the account exists, so
+// neither can be used to find out who is registered.
+const RESET_SENT = { res: true, message: 'Si el e-mail o usuario está registrado, te enviamos un link para blanquear la contraseña. Dura 1 hora.' };
+const VALIDATION_SENT = { res: true, message: 'Si el correo está registrado y falta validarlo, te reenviamos el link.' };
 
 async function authenticate({ username, password }) {
   const user = await db.User.scope('withHash').findOne({
@@ -73,7 +79,7 @@ async function create(params) {
 
   const user = await db.User.create(params);
 
-  const token = generarToken(user.id, '72h');
+  const token = generarToken(user.id, '72h', 'validar');
   const link = process.env.APP_URL + '/validar-email/' + token;
   const ret = await correo.sendEmail(user, link, 'Verifica tu correo electrónico', 'validar-email');
 
@@ -124,25 +130,46 @@ async function updateFoto(id, params) {
 }
 
 async function reset(params) {
-  const user = await db.User.findOne({
+  const user = await db.User.scope('withHash').findOne({
     where: {
       [Op.or]: [{ email: params.email }, { username: params.email }]
     }
   });
 
-  if (!user) throw 'Revisá tu e-mail o usuario.';
-  if (!user.activo) throw 'Usuario bloqueado.';
-  if (!user.emailValidado) throw 'Valida tu e-mail primero.';
+  if (!user || !user.activo || !user.emailValidado) return RESET_SENT;
 
-  const token = generarToken(user.id, '1h', 'resetpass');
-  const link = process.env.APP_URL + '/reset-password/' + token;
+  const token = jwt.sign({ sub: user.id, action: 'resetpass' }, resetSecret(user), { expiresIn: '1h' });
+  const link = process.env.APP_URL + '/reset/' + token;
   const ret = await correo.sendEmail(user, link, 'Restablecer contraseña QUODOM', 'reset-password');
+  if (!ret) console.log('[reset] email could not be sent to user ' + user.id);
 
-  if (!ret) {
-    return { res: false, message: 'El correo no pudo ser enviado.' };
+  return RESET_SENT;
+}
+
+// The reset token is signed with the user's current password hash mixed into
+// the secret: changing the password invalidates every link issued before, so
+// a link works once. It also means a reset token never verifies as a session.
+function resetSecret(user) {
+  return process.env.JWT_SECRET + ':' + user.password;
+}
+
+async function verifyResetToken(token) {
+  const expired = 'El token ha expirado, genere uno nuevo ingresando a ¿Olvidaste tu clave?';
+  const invalid = 'El link no es valido o ya fue usado, genere uno nuevo ingresando a ¿Olvidaste tu clave?';
+
+  const claims = jwt.decode(token);
+  if (!claims || claims.action !== 'resetpass' || !claims.sub) throw invalid;
+
+  const user = await db.User.scope('withHash').findByPk(claims.sub);
+  if (!user) throw invalid;
+
+  try {
+    jwt.verify(token, resetSecret(user), { algorithms: ['HS256'] });
+  } catch (err) {
+    throw err.name === 'TokenExpiredError' ? expired : invalid;
   }
-
-  return { res: true, message: 'Correo enviado correctamente, recuerda que el link tiene una duracion de 1 hora.' };
+  if (!user.activo) throw 'El Usuario se encuentra actualmente bloqueado.';
+  return user;
 }
 
 async function validateEmail(id) {
@@ -155,16 +182,14 @@ async function validateEmail(id) {
 
 async function reenviar(params) {
   const user = await db.User.findOne({ where: { email: params.email } });
-  if (!user) throw 'Correo electronico no encontrado.';
+  if (!user || user.emailValidado) return VALIDATION_SENT;
 
-  const token = generarToken(user.id, '72h');
+  const token = generarToken(user.id, '72h', 'validar');
   const link = process.env.APP_URL + '/validar-email/' + token;
   const ret = await correo.sendEmail(user, link, 'Verifica tu correo electrónico', 'validar-email');
+  if (!ret) console.log('[reenviar] email could not be sent to user ' + user.id);
 
-  if (!ret) {
-    return { res: false, message: 'El correo no pudo ser enviado.' };
-  }
-  return { res: true, message: 'Correo enviado correctamente.' };
+  return VALIDATION_SENT;
 }
 
 async function _delete(id) {
@@ -172,15 +197,10 @@ async function _delete(id) {
   await user.destroy();
 }
 
-async function changePass(id, params) {
-  const user = await getUser(id);
-
-  if (!user.activo) throw 'El Usuario se encuentra actualmente bloqueado.';
-
-  if (params.password) {
-    params.password = await bcrypt.hash(params.password, 10);
-  }
-  return await user.update({ password: params.password });
+async function changePass(token, params) {
+  const user = await verifyResetToken(token);
+  const password = await bcrypt.hash(params.password, 10);
+  return await user.update({ password });
 }
 
 async function getUserDirecciones(userId) {
@@ -208,7 +228,9 @@ async function getUserDireccionDefault(userId) {
   return dire;
 }
 
-async function getInfoComprador(idquodom) {
+async function getInfoComprador(userId, idquodom) {
+  const own = await db.Quodom.findOne({ where: { id: idquodom, createdBy: userId }, attributes: ['id'] });
+  if (!own) return null;
   return await db.v_InfoCompradors.findOne({
     where: { idquodom: idquodom }
   });

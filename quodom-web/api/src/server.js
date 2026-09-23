@@ -4,6 +4,10 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const app = express();
+// Render puts a proxy in front of the app. Without this every request carries
+// the proxy's address, and the per-address limits on sign-in and password
+// recovery would lock out every user at once.
+app.set('trust proxy', 1);
 
 const cors = require('cors');
 const helmet = require('helmet');

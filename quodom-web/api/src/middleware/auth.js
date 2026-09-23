@@ -12,6 +12,11 @@ function verifyToken() {
 
     async (req, res, next) => {
       try {
+        // Reset and email-validation links are signed with the same secret;
+        // only a token minted at sign-in (no `action`) opens a session.
+        if (req.user.action)
+          return res.status(401).json({ res: false, message: 'No autorizado.' });
+
         const user = await db.User.findByPk(req.user.sub);
 
         if (!user)
@@ -38,6 +43,11 @@ function isAdmin() {
 
     async (req, res, next) => {
       try {
+        // Reset and email-validation links are signed with the same secret;
+        // only a token minted at sign-in (no `action`) opens a session.
+        if (req.user.action)
+          return res.status(401).json({ res: false, message: 'No autorizado.' });
+
         const user = await db.User.findByPk(req.user.sub);
 
         if (!user)

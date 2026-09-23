@@ -4,10 +4,32 @@ const Joi = require('joi');
 const auth = require('../middleware/auth');
 const Controler = require('../controllers/users.controller');
 const validateRequest = require('../middleware/validate-request');
+const rateLimit = require('../middleware/rateLimit');
 const jwt = require('jsonwebtoken');
 
+const MIN = 60_000;
+const envInt = (name, fallback) => () => parseInt(process.env[name], 10) || fallback;
+const byIp = req => req.ip;
+// The field is called `email` but also accepts a username; either way it names
+// the inbox that receives the mail, so the cap follows it across addresses.
+const byInbox = req => String((req.body && req.body.email) || '').trim().toLowerCase();
+
+const limitSignin = rateLimit.perRequest(
+  { name: 'signin-ip', limit: envInt('AUTH_LIMIT_SIGNIN_PER_IP', 10), windowMs: 15 * MIN, key: byIp }
+);
+const limitSignup = rateLimit.perRequest(
+  { name: 'signup-ip', limit: envInt('AUTH_LIMIT_SIGNUP_PER_IP', 5), windowMs: 60 * MIN, key: byIp }
+);
+const limitMail = rateLimit.perRequest(
+  { name: 'mail-ip', limit: envInt('AUTH_LIMIT_RESET_PER_IP', 5), windowMs: 60 * MIN, key: byIp },
+  { name: 'mail-inbox', limit: envInt('AUTH_LIMIT_RESET_PER_EMAIL', 3), windowMs: 60 * MIN, key: byInbox }
+);
+const limitResetToken = rateLimit.perRequest(
+  { name: 'resettoken-ip', limit: envInt('AUTH_LIMIT_RESET_TOKEN_PER_IP', 10), windowMs: 15 * MIN, key: byIp }
+);
+
 router.get('/validateEmail/:token', validateEmail);
-router.get('/validateReset/:token', validateReset);
+router.get('/validateReset/:token', limitResetToken, validateReset);
 router.get('/infoComprador/:idquodom', auth.verifyToken(), getInfoComprador);
 router.get('/dire/', auth.verifyToken(), getUserDirecciones);
 router.get('/direcciondefault/', auth.verifyToken(), getUserDireccionDefault);
@@ -15,11 +37,11 @@ router.get('/', auth.isAdmin(), getAll);
 router.get('/current', auth.verifyToken(), getCurrent);
 router.get('/currentFoto', auth.verifyToken(), getCurrentFoto);
 router.get('/:id', auth.verifyToken(), getById);
-router.post('/signin', signinSchema, authenticate);
-router.post('/signup', signupSchema, register);
-router.post('/reset', resetSchema, resetPass);
-router.post('/reenviar', resetSchema, reenviar);
-router.post('/changePass', changePassSchema, cambiarPass);
+router.post('/signin', limitSignin, signinSchema, authenticate);
+router.post('/signup', limitSignup, signupSchema, register);
+router.post('/reset', limitMail, resetSchema, resetPass);
+router.post('/reenviar', limitMail, resetSchema, reenviar);
+router.post('/changePass', limitResetToken, changePassSchema, cambiarPass);
 router.put('/', auth.verifyToken(), updateSchema, update);
 router.put('/cambiarFoto/:id', auth.verifyToken(), fotoSchema, updateFoto);
 router.delete('/:id', auth.isAdmin(), _delete);
@@ -164,8 +186,10 @@ function getUserDireccionDefault(req, res, next) {
 }
 
 function getInfoComprador(req, res, next) {
-  Controler.getInfoComprador(req.params.idquodom)
-    .then(data => res.json(data))
+  Controler.getInfoComprador(req.user.id, req.params.idquodom)
+    .then(data => data
+      ? res.json(data)
+      : res.status(404).json({ res: false, message: 'Quodom no encontrado.' }))
     .catch(next);
 }
 
@@ -204,8 +228,8 @@ function reenviar(req, res, next) {
 }
 
 function validateEmail(req, res, next) {
-  jwt.verify(req.params.token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
+  jwt.verify(req.params.token, process.env.JWT_SECRET, { algorithms: ['HS256'] }, (err, decoded) => {
+    if (err || decoded.action !== 'validar') {
       return res.json({ res: false, message: 'El token no es valido o ha expirado.' });
     }
     Controler.validateEmail(decoded.sub)
@@ -214,34 +238,16 @@ function validateEmail(req, res, next) {
   });
 }
 
+// Token problems answer 200 with res:false, as before, so the screen shows
+// the message in place instead of treating it as a server error.
 function validateReset(req, res, next) {
-  jwt.verify(req.params.token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      if (err.message === 'jwt expired') {
-        return res.json({ res: false, message: 'El token ha expirado, genere uno nuevo ingresando a ¿Olvidaste tu clave?' });
-      }
-      return res.json({ res: false, message: 'El token no es valido.' });
-    }
-    if (decoded.action !== 'resetpass') {
-      return res.json({ res: false, message: 'El token no es valido para esta operacion, genere uno nuevo ingresando a ¿Olvidaste tu clave?' });
-    }
-    res.status(200).json({ res: true });
-  });
+  Controler.verifyResetToken(req.params.token)
+    .then(() => res.status(200).json({ res: true }))
+    .catch(err => typeof err === 'string' ? res.json({ res: false, message: err }) : next(err));
 }
 
 function cambiarPass(req, res, next) {
-  jwt.verify(req.body.token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      if (err.message === 'jwt expired') {
-        return res.json({ res: false, message: 'El token ha expirado, genere uno nuevo ingresando a ¿Olvidaste tu clave?' });
-      }
-      return res.json({ res: false, message: 'El token no es valido.' });
-    }
-    if (decoded.action !== 'resetpass') {
-      return res.json({ res: false, message: 'El token no es valido para esta operacion, genere uno nuevo ingresando a ¿Olvidaste tu clave?' });
-    }
-    Controler.changePass(decoded.sub, req.body)
-      .then(() => res.json({ res: true, message: 'La contraseña ha sido modificado con exito, ya puedes volver a ingresar a QUODOM.' }))
-      .catch(next);
-  });
+  Controler.changePass(req.body.token, req.body)
+    .then(() => res.json({ res: true, message: 'La contraseña ha sido modificado con exito, ya puedes volver a ingresar a QUODOM.' }))
+    .catch(err => typeof err === 'string' ? res.json({ res: false, message: err }) : next(err));
 }
