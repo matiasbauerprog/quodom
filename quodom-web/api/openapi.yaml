@@ -1,0 +1,396 @@
+openapi: 3.0.3
+info:
+  title: Quodom API
+  version: 1.0.0
+  description: |
+    Contrato entre la app y el API. **Este archivo manda**: todo cambio de API
+    empieza acá y después va el código. El servidor valida los pedidos contra
+    este archivo, los tests validan las respuestas, y la app genera sus tipos
+    con `npm run api-types`.
+servers:
+  - url: /
+tags:
+  - name: catalogo
+  - name: users
+  - name: quodom
+  - name: quodom_lines
+  - name: user_direcciones
+  - name: oper_notificaciones
+  - name: hist_busquedas
+  - name: ia
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: quodom_session
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  responses:
+    BadRequest:
+      description: Pedido inválido o regla de negocio rota
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: Sin sesión o sesión inválida
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: No existe
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    TooMany:
+      description: Demasiados intentos
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: Choca con un Quodom abierto (rubro_duplicado / rubro_mismatch)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  parameters:
+    IntId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    QuodomId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    Error:
+      type: object
+      required: [res]
+      properties:
+        res: { type: boolean, enum: [false] }
+        message: { type: string }
+        error: { type: string }
+        exp: { type: boolean }
+      additionalProperties: true
+    Ok:
+      type: object
+      required: [res]
+      properties:
+        res: { type: boolean }
+    OkMessage:
+      type: object
+      required: [res, message]
+      properties:
+        res: { type: boolean }
+        message: { type: string }
+
+    Category:
+      type: object
+      required: [id, nombrecategoria, idcategoriapadre, orden]
+      properties:
+        id: { type: integer }
+        nombrecategoria: { type: string }
+        idcategoriapadre: { type: integer }
+        activa: { type: boolean }
+        imagen: { type: string, nullable: true }
+        refreshImage: { type: string, nullable: true }
+        orden: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Product:
+      type: object
+      required: [id, nombreproducto, categoria, categoriaPadre]
+      properties:
+        id: { type: integer }
+        nombreproducto: { type: string }
+        descripcion: { type: string, nullable: true }
+        categoria: { type: integer }
+        categoriaPadre: { type: integer }
+        idatributo: { type: integer, nullable: true }
+        nombreatributo: { type: string, nullable: true }
+        unidadmedida: { type: integer, nullable: true }
+        nombreunidadmedida: { type: string, nullable: true }
+        imagen: { type: string, nullable: true }
+        refreshImagen: { type: string, nullable: true }
+        atributo1: { type: string, nullable: true, description: 'Nombre del grupo ("MEDIDAS"), no un valor' }
+        atributo2: { type: string, nullable: true }
+        valoresAtributo1: { type: array, items: { type: string } }
+        valoresAtributo2: { type: array, items: { type: string } }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ProductWithExiste:
+      type: object
+      required: [id, nombreproducto, existe]
+      properties:
+        id: { type: integer }
+        nombreproducto: { type: string }
+        imagen: { type: string, nullable: true }
+        refreshImagen: { type: string, nullable: true }
+        existe: { type: integer }
+    Atributo:
+      type: object
+      required: [valoratributo]
+      properties:
+        valoratributo: { type: string }
+        orden: { type: integer, nullable: true }
+        esvendedor: { type: string, nullable: true }
+    BusquedaResult:
+      type: object
+      required: [id, nombre]
+      properties:
+        id: { type: integer }
+        nombre: { type: string, nullable: true }
+        descripcion: { type: string, nullable: true }
+        imagen: { type: string, nullable: true }
+        refreshImagen: { type: string, nullable: true }
+        categoriaPadre: { type: integer, nullable: true }
+    Provincia:
+      type: object
+      required: [id, provincia]
+      properties:
+        id: { type: integer }
+        provincia: { type: string }
+    Localidad:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer }
+        idprovincia: { type: integer, nullable: true }
+        nombre: { type: string, nullable: true }
+        comprador: { type: boolean, nullable: true }
+        vendedor: { type: boolean, nullable: true }
+
+    VQuodom:
+      type: object
+      required: [id, descripcion, estado, nro, createdBy]
+      properties:
+        id: { type: string }
+        descripcion: { type: string }
+        createdBy: { type: string }
+        estado: { type: string, enum: [CREADO, ENVIADO] }
+        idrubro: { type: integer, nullable: true }
+        nombrerubro: { type: string, nullable: true }
+        porccompletado: { type: number, nullable: true }
+        cantproductos: { type: integer, nullable: true }
+        fechavencimientoenvio: { type: string, format: date-time, nullable: true }
+        diasparavencimientoenvio: { type: integer, nullable: true }
+        diasparavencimientoaceptacion: { type: integer, nullable: true }
+        iddireccion: { type: string, nullable: true }
+        nro: { type: string }
+        fechaenvio: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+    VQuodomLine:
+      type: object
+      required: [id, idquodom, idproducto, cantidad]
+      properties:
+        id: { type: integer }
+        idquodom: { type: string }
+        idproducto: { type: integer }
+        cantidad: { type: number }
+        categoria: { type: integer, nullable: true }
+        categoriaPadre: { type: integer, nullable: true }
+        nombreCategoria: { type: string, nullable: true }
+        nombreProducto: { type: string, nullable: true }
+        detalleProducto: { type: string, nullable: true }
+        marca: { type: string, nullable: true }
+        unidad: { type: string, nullable: true }
+        atributosFaltantes: { type: integer, nullable: true }
+        imagen: { type: string, nullable: true }
+        refreshImagen: { type: string, nullable: true }
+        atributo1: { type: string, nullable: true, description: 'Lo que eligió el usuario' }
+        atributo2: { type: string, nullable: true }
+        nombreAtributo1: { type: string, nullable: true, description: 'Nombre del grupo' }
+        nombreAtributo2: { type: string, nullable: true }
+
+    Direccion:
+      type: object
+      required: [id, userid]
+      properties:
+        id: { type: integer }
+        userid: { type: string }
+        provincia: { type: string, nullable: true }
+        partido: { type: string, nullable: true }
+        localidad: { type: string, nullable: true }
+        direccion: { type: string, nullable: true }
+        calle: { type: string, nullable: true }
+        numero: { type: string, nullable: true }
+        piso: { type: string, nullable: true }
+        cp: { type: string, nullable: true }
+        alias: { type: string, nullable: true }
+        default: { oneOf: [{ type: boolean }, { type: integer }], nullable: true }
+        idprovincia: { type: string, nullable: true }
+        idpartido: { type: string, nullable: true }
+        observaciones: { type: string, nullable: true }
+    DireccionInput:
+      type: object
+      properties:
+        alias: { type: string }
+        calle: { type: string }
+        numero: { type: string }
+        piso: { type: string }
+        cp: { type: string }
+        localidad: { type: string }
+        direccion: { type: string }
+        observaciones: { type: string }
+        idprovincia: { type: integer }
+        default: { type: boolean }
+
+    Notificacion:
+      type: object
+      required: [id, titulo, texto]
+      properties:
+        id: { type: integer }
+        userId: { type: string }
+        tiponotificacion: { type: string }
+        idquodom: { type: string }
+        titulo: { type: string }
+        texto: { type: string }
+        enviada: { type: boolean, nullable: true }
+        leida: { oneOf: [{ type: boolean }, { type: integer }], nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CurrentUser:
+      type: object
+      required: [id, username, email]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        email: { type: string }
+        nombre: { type: string, nullable: true }
+        apellido: { type: string, nullable: true }
+        dni: { type: string, nullable: true }
+        refreshFoto: { type: string, nullable: true }
+        telefono: { type: string, nullable: true }
+        codArea: { type: string, nullable: true }
+    SigninResponse:
+      type: object
+      required: [res, id, username, email]
+      description: El token NO viaja acá; queda en la cookie httpOnly quodom_session.
+      properties:
+        res: { type: boolean }
+        id: { type: string }
+        username: { type: string }
+        email: { type: string }
+        nombre: { type: string, nullable: true }
+        apellido: { type: string, nullable: true }
+        role: { type: string, nullable: true }
+        refreshFoto: { type: string, nullable: true }
+    InfoComprador:
+      type: object
+      properties:
+        idquodom: { type: string }
+        NombreComprador: { type: string, nullable: true }
+        telefono: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        Direccion: { type: string, nullable: true }
+        Provincia: { type: string, nullable: true }
+        Localidad: { type: string, nullable: true }
+        cp: { type: string, nullable: true }
+        observaciones: { type: string, nullable: true }
+
+paths:
+  /:
+    get:
+      tags: [catalogo]
+      summary: Info del API y la IP que ve el servidor (para chequear proxies)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, name, version, fecha, ip]
+                properties:
+                  message: { type: string }
+                  name: { type: string }
+                  version: { type: string }
+                  fecha: { type: string, format: date-time }
+                  ip: { type: string }
+
+  /categorias:
+    get:
+      tags: [catalogo]
+      summary: Rubros activos
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Category' } } } }
+  /categorias/Sub/{idcategoriapadre}:
+    get:
+      tags: [catalogo]
+      summary: Subcategorías de un rubro
+      parameters:
+        - { name: idcategoriapadre, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Category' } } } }
+  /categorias/{id}:
+    get:
+      tags: [catalogo]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /productos/categoria/{idcategoria}:
+    get:
+      tags: [catalogo]
+      parameters:
+        - { name: idcategoria, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Product' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /productos/categoriaQ/{idquodom}/{idcategoria}:
+    get:
+      tags: [catalogo]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: idquodom, in: path, required: true, schema: { type: string } }
+        - { name: idcategoria, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProductWithExiste' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /productos/{id}:
+    get:
+      tags: [catalogo]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /busqueda:
+    get:
+      tags: [catalogo]
+      parameters:
+        - { name: b, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK (lista vacía si no hay b)
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/BusquedaResult' } } } }
+
+  /provincias:
+    get:
+      tags: [catalogo]
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Provincia' } } } }
+  /localidades/prov:
+    get:
+      tags: [catalogo]
+      parameters:
+        - { name: idprovincia, in: query, required: false, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Localidad' } } } }

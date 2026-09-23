@@ -42,7 +42,7 @@ ahí en adelante.
 
 | Pieza | Dónde | Herramienta |
 |---|---|---|
-| El contrato | `api/openapi.yaml` (OpenAPI 3.1) | escrito a mano |
+| El contrato | `api/openapi.yaml` (OpenAPI 3.0.3; el validador soporta 3.1 sólo en parte) | escrito a mano |
 | Guardia del API | middleware en `api/src/server.js` | `express-openapi-validator` |
 | Página de docs | `/docs`, sólo en dev | `swagger-ui-express` |
 | Tipos de la app | `app/src/api/schema.d.ts` (generado, commiteado) | `openapi-typescript` |
