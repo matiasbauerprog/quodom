@@ -19,10 +19,14 @@ type Props = {
   // propuesta del asistente al confirmarla. Las salidas son idénticas, sólo
   // cambia cómo nombrar lo que está por entrar.
   descripcionEntrante?: string;
+  // Repetir un Quodom siempre crea uno nuevo (`POST /quodom/repetir`), así que
+  // integrar los dos no es una salida posible: ahí sólo se puede reemplazar.
+  soloReemplazar?: boolean;
 };
 
 export function DialogoConflictoRubro({
   conflicto, onElegir, ocupado, permitirCancelar, etiquetaCancelar = 'Ahora no',
+  soloReemplazar,
   descripcionEntrante = `armaste ${conflicto.lineasInvitado} producto(s) sin iniciar sesión`
 }: Props) {
   useEffect(() => {
@@ -57,9 +61,11 @@ export function DialogoConflictoRubro({
           {' '}{conflicto.quodomExistente.cantproductos ?? 0} productos) y {descripcionEntrante}.
         </p>
         <div className="dcr-acciones">
-          <button type="button" className="btn btn-exito" onClick={() => elegir('integrar')} disabled={ocupado}>
-            {ocupado ? 'Migrando…' : 'Integrar los dos'}
-          </button>
+          {!soloReemplazar && (
+            <button type="button" className="btn btn-exito" onClick={() => elegir('integrar')} disabled={ocupado}>
+              {ocupado ? 'Migrando…' : 'Integrar los dos'}
+            </button>
+          )}
           <button type="button" className="btn btn-peligro" onClick={() => elegir('reemplazar')} disabled={ocupado}>
             {ocupado ? 'Migrando…' : `Reemplazar — se descarta ${conflicto.quodomExistente.nro} entero`}
           </button>

@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MisQuodomsSidebar } from '../MisQuodomsSidebar';
 import { quodom as quodomApi } from '../../../api/quodom';
 import { useAuth } from '../../../auth/AuthContext';
 import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
+import { ApiError } from '../../../api/client';
 
-vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(), repetir: vi.fn() } }));
+vi.mock('../../../api/quodom', () => ({
+  quodom: { misQuodom: vi.fn(), repetir: vi.fn(), activoPorRubro: vi.fn(), eliminar: vi.fn() }
+}));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
@@ -192,5 +195,82 @@ describe('MisQuodomsSidebar (repetí un pedido)', () => {
     await act(async () => { screen.getByRole('button', { name: /repetir/i }).click(); });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/ya tenés un quodom abierto/i);
+  });
+});
+
+// Repetir crea un Quodom, así que choca con la regla de uno abierto por rubro y
+// el backend contesta 409. Antes eso llegaba como un mensaje de error y el
+// usuario quedaba sin salida; ahora se le ofrece reemplazar el que tiene.
+describe('MisQuodomsSidebar (repetir con un Quodom abierto del rubro)', () => {
+  const repetir = quodomApi.repetir as unknown as ReturnType<typeof vi.fn>;
+  const activoPorRubro = quodomApi.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
+  const eliminar = quodomApi.eliminar as unknown as ReturnType<typeof vi.fn>;
+  const ENVIADO_PINTURA = {
+    id: 'q-viejo', descripcion: 'Pintura living', estado: 'ENVIADO', nro: 'QD-E1',
+    idrubro: 5, nombrerubro: 'Pintura', cantproductos: 4, createdBy: 'u-1', iddireccion: null
+  };
+  const ABIERTO_PINTURA = {
+    id: 'q-abierto', descripcion: 'Pintura cocina', estado: 'CREADO', nro: 'QD-9',
+    idrubro: 5, nombrerubro: 'Pintura', cantproductos: 2, createdBy: 'u-1', iddireccion: null
+  };
+
+  beforeEach(() => {
+    misQuodom.mockReset(); repetir.mockReset(); activoPorRubro.mockReset(); eliminar.mockReset();
+    clearGuestQuodoms(); login();
+    misQuodom.mockResolvedValue([ENVIADO_PINTURA]);
+  });
+
+  async function tocarRepetir() {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText(/repetí un pedido/i)).toBeInTheDocument());
+    await act(async () => { screen.getByRole('button', { name: /^repetir$/i }).click(); });
+  }
+
+  it('ofrece reemplazar en vez de dejar el error', async () => {
+    repetir.mockRejectedValue(new ApiError('Ya tenés un Quodom abierto de Pintura.', 409));
+    activoPorRubro.mockResolvedValue(ABIERTO_PINTURA);
+
+    await tocarRepetir();
+
+    // Tiene que nombrar a los dos: el que está abierto y el que se quiere
+    // repetir, que es lo que el usuario necesita para decidir.
+    const dialogo = await screen.findByRole('dialog');
+    expect(dialogo).toHaveTextContent(/QD-9/);
+    expect(dialogo).toHaveTextContent(/repetir QD-E1/i);
+    // Integrar no se ofrece: repetir siempre crea uno nuevo.
+    expect(within(dialogo).queryByRole('button', { name: /integrar/i })).toBeNull();
+    expect(eliminar).not.toHaveBeenCalled();
+  });
+
+  it('al aceptar descarta el abierto y repite', async () => {
+    repetir.mockRejectedValueOnce(new ApiError('Ya tenés un Quodom abierto de Pintura.', 409));
+    activoPorRubro.mockResolvedValue(ABIERTO_PINTURA);
+    eliminar.mockResolvedValue({ res: true });
+    await tocarRepetir();
+
+    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+    await act(async () => { screen.getByRole('button', { name: /reemplazar/i }).click(); });
+
+    expect(eliminar).toHaveBeenCalledWith('q-abierto');
+    expect(repetir).toHaveBeenLastCalledWith('q-viejo');
+  });
+
+  it('cancelar no toca nada', async () => {
+    repetir.mockRejectedValue(new ApiError('Ya tenés un Quodom abierto de Pintura.', 409));
+    activoPorRubro.mockResolvedValue(ABIERTO_PINTURA);
+    await tocarRepetir();
+
+    await act(async () => { screen.getByRole('button', { name: /cancelar/i }).click(); });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(eliminar).not.toHaveBeenCalled();
+  });
+
+  it('avisa que se agregó cuando repetir sale bien', async () => {
+    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+
+    await tocarRepetir();
+
+    expect(await screen.findByText(/agregado/i)).toBeInTheDocument();
   });
 });

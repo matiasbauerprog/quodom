@@ -9,6 +9,8 @@ import { QuodomCard } from '../QuodomCard';
 import { TarjetaQuodomInvitado } from '../TarjetaQuodomInvitado';
 import { LineasQuodomSidebar } from './LineasQuodomSidebar';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
+import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
+import type { AccionRubro } from '../../guest/migrateGuestQuodom';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
 import { nombreRubro } from '../../quodom/rubros';
 import './MisQuodomsSidebar.css';
@@ -29,6 +31,11 @@ export function MisQuodomsSidebar() {
   const [reciénEnviados, setReciénEnviados] = useState<string[]>([]);
   const [enviando, setEnviando] = useState<string | null>(null);
   const [repitiendo, setRepitiendo] = useState<string | null>(null);
+  const [conflictoRepetir, setConflictoRepetir] = useState<{ origen: Quodom; abierto: Quodom } | null>(null);
+  // Id del Quodom recién creado al repetir. Es sólo el acuse de que algo pasó:
+  // el Quodom nuevo aparece arriba, entre los activos, y sin este aviso el
+  // botón parecía no haber hecho nada.
+  const [agregado, setAgregado] = useState<string | null>(null);
   const [errEnviar, setErrEnviar] = useState<string | null>(null);
   // Guards against `quodom:changed` firing repeatedly in quick succession:
   // only the response for the most recently started request is applied, so
@@ -103,10 +110,39 @@ export function MisQuodomsSidebar() {
     if (repitiendo) return;
     setRepitiendo(q.id); setErrEnviar(null);
     try {
-      await quodomApi.repetir(q.id);
-      window.dispatchEvent(new Event('quodom:changed'));
-      refresh();
+      await hacerRepetir(q);
     } catch (e) {
+      // Repetir crea un Quodom, así que choca con la regla de uno abierto por
+      // rubro: 409. En vez de dejar el error, se ofrece reemplazar el que hay —
+      // que es lo único que la regla permite para tener este pedido en armado.
+      if (e instanceof ApiError && e.status === 409) {
+        const abierto = await quodomApi.activoPorRubro(q.idrubro).catch(() => null);
+        if (abierto) { setConflictoRepetir({ origen: q, abierto }); return; }
+      }
+      setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el Quodom.');
+    } finally { setRepitiendo(null); }
+  }
+
+  async function hacerRepetir(q: Quodom) {
+    const creado = await quodomApi.repetir(q.id);
+    window.dispatchEvent(new Event('quodom:changed'));
+    refresh();
+    setAgregado(creado.idquodom);
+  }
+
+  async function reemplazarYRepetir() {
+    if (!conflictoRepetir) return;
+    const { origen, abierto } = conflictoRepetir;
+    setRepitiendo(origen.id); setErrEnviar(null);
+    try {
+      // Reemplazar descarta el Quodom entero: el DELETE se lleva cabecera y
+      // líneas mientras el estado sea CREADO. Va antes de repetir porque el
+      // backend no admite dos abiertos del mismo rubro.
+      await quodomApi.eliminar(abierto.id);
+      await hacerRepetir(origen);
+      setConflictoRepetir(null);
+    } catch (e) {
+      setConflictoRepetir(null);
       setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el Quodom.');
     } finally { setRepitiendo(null); }
   }
@@ -136,6 +172,12 @@ export function MisQuodomsSidebar() {
     <aside className="mq-sidebar" aria-label="Mis Quodoms">
       <h2 className="mq-sidebar-title">MIS QUODOMS</h2>
 
+      {agregado && (
+        <p className="mq-sidebar-agregado" role="status">
+          Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregado)}>ver Quodom</Link>
+        </p>
+      )}
+
       {vacio && (
         <div className="mq-sidebar-empty">
           <p><strong>No tenés Quodoms.</strong></p>
@@ -145,7 +187,7 @@ export function MisQuodomsSidebar() {
       )}
 
       {hayActivos && (
-        <section className="mq-sidebar-section">
+        <section className="mq-sidebar-section mq-sidebar-section-activos">
           <h3 className="mq-sidebar-section-title">Quodoms activos</h3>
           <ul className="mq-sidebar-list">
             {items.map(it => {
@@ -212,6 +254,25 @@ export function MisQuodomsSidebar() {
           arriba —activos y últimos terminados— ya es el resumen de lo que hay. */}
       {user && list && list.length > 0 && (
         <Link to="/mis-quodoms" className="btn mq-sidebar-vermas">Ver todos</Link>
+      )}
+
+      {conflictoRepetir && (
+        <DialogoConflictoRubro
+          conflicto={{
+            idrubro: conflictoRepetir.origen.idrubro,
+            quodomExistente: conflictoRepetir.abierto,
+            lineasInvitado: conflictoRepetir.origen.cantproductos ?? 0
+          }}
+          descripcionEntrante={'querés repetir ' + conflictoRepetir.origen.nro}
+          ocupado={repitiendo !== null}
+          permitirCancelar
+          etiquetaCancelar="Cancelar"
+          // Integrar no se ofrece: /quodom/repetir siempre crea uno nuevo, así
+          // que la única salida que la regla de un Quodom por rubro permite es
+          // reemplazar al que está abierto.
+          soloReemplazar
+          onElegir={(accion: AccionRubro | null) => (accion === 'reemplazar' ? reemplazarYRepetir() : setConflictoRepetir(null))}
+        />
       )}
     </aside>
   );
