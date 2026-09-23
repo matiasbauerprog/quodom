@@ -5,20 +5,13 @@
    nada. Transparente sobre el fondo de la página y sin sombra: la barra de
    arriba es una sola. */
 .appbar-back {
-  /* El título va centrado en la pantalla, no corrido por el ancho de la flecha,
-     así que la flecha se saca del flujo y se ancla a la izquierda. */
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-3) 0 var(--sp-3);
   background: transparent;
 }
-.appbar-back-btn {
-  position: absolute; left: var(--sp-3); top: 50%; transform: translateY(-50%);
-  width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
-  color: var(--color-texto);
-}
+.appbar-back-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--color-texto); }
 /* Mismo tamaño que el h1 que escriben a mano Mis Quodoms y Direcciones: son
    todos el título de su pantalla y tienen que leerse igual. Estaba en 18px de
    cuando esto era una barra de navegación. */
-.appbar-back-title { margin: 0; font-family: var(--font-prompt); font-weight: 500; font-size: var(--fs-h1); text-align: center; }
-.appbar-back-right { position: absolute; right: var(--sp-3); display: flex; align-items: center; }
+.appbar-back-title { margin: 0; font-family: var(--font-prompt); font-weight: 500; font-size: var(--fs-h1); }
+.appbar-back-right { margin-left: auto; display: flex; align-items: center; }

@@ -1,7 +1,7 @@
 .dirs { padding: var(--pantalla-top) 0 var(--sp-7); }
-/* Igual que .mq-header: título al centro, acción anclada a la derecha. */
-.dirs-header { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: var(--sp-4); }
-.dirs-header > .btn { position: absolute; right: 0; }
+/* Título a la izquierda y acción a la derecha, como estaba. */
+.dirs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
+
 .dirs-list { display: grid; gap: var(--sp-3); }
 .dirs-item { display: grid; gap: var(--sp-3); }
 .dirs-alias { font-family: var(--font-prompt); font-weight: 500; color: var(--color-acento); font-size: 18px; }

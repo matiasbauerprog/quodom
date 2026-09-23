@@ -1,8 +1,7 @@
 .mq { padding: var(--pantalla-top) 0 var(--sp-7); }
-/* El título va centrado en la pantalla; la acción se ancla a la derecha para
-   no correrlo. Mismo criterio que AppBarBack con su flecha. */
-.mq-header { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: var(--sp-4); }
-.mq-header > .btn { position: absolute; right: 0; }
+/* Título a la izquierda y acción a la derecha, como estaba. */
+.mq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
+
 .mq-list { display: grid; gap: var(--sp-3); }
 .mq-item { width: 100%; }
 
