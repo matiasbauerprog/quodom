@@ -214,16 +214,15 @@
 .home-modo-ia:hover { filter: brightness(1.05); }
 
 /* Con la conversación abierta el botón deja de invitar a entrar y pasa a ser el
-   control para salir, así que se invierte: el relleno se va y queda el contorno,
-   que en esta app es como se lee "esto está elegido" (`.cat-card-sel`). Un
-   oscurecido apenas —lo que había— no alcanzaba: el botón seguía pareciendo un
-   llamado a entrar a donde el usuario ya estaba. */
+   control para salir. Va al oscuro de la paleta, el mismo del drawer y la barra
+   inferior: se lee como otro estado y no como el mismo botón apagado. Antes era
+   un oscurecido del 8%, que no se notaba; vaciarlo y dejar sólo el contorno se
+   probó y quedó sin cuerpo al lado del resto del home. */
 .home-modo-ia-activo {
-  background: transparent;
-  color: var(--color-acento);
-  border: 2px solid var(--color-acento);
+  background: var(--color-panel-oscuro);
+  color: #fff;
 }
-.home-modo-ia-activo:hover { background: rgba(230, 57, 70, 0.08); filter: none; }
+.home-modo-ia-activo:hover { filter: brightness(1.15); }
 .home-modo-ia-activo::after {
   content: '✕';
   font-size: 13px;
