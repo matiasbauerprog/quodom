@@ -13,6 +13,7 @@ export function ProfileScreen() {
           (Mis datos, Cambiar contraseña), donde la flecha sí es la salida. */}
       <section className="container profile">
         <div className="pantalla-header"><h1>Perfil</h1></div>
+        <div className="pantalla-contenido">
         <div className="profile-head card hoja">
           <div className="profile-name">{user?.nombre} {user?.apellido}</div>
           <div className="profile-email">{user?.email}</div>
@@ -24,6 +25,7 @@ export function ProfileScreen() {
           <li><Link to="/direcciones" className="card hoja profile-link">Mis direcciones</Link></li>
           <li><button className="card hoja profile-link profile-danger" onClick={signout}>Cerrar sesión</button></li>
         </ul>
+        </div>
       </section>
     </>
   );

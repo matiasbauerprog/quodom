@@ -12,4 +12,9 @@
 
 /* Columna de contenido centrada: mas especifico que .container, que apunta a
    1120px para las grillas de producto. */
-.container.dirs { max-width: var(--pantalla-ancho); }
+.container.dirs {
+  max-width: var(--pantalla-ancho);
+  min-height: var(--pantalla-alto);
+  display: flex;
+  flex-direction: column;
+}

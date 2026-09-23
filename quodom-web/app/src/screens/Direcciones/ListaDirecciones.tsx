@@ -40,6 +40,7 @@ export function ListaDirecciones() {
             y los dos botones quedaban uno encima del otro. */}
         {list && list.length > 0 && <Link to="/direcciones/nuevo" className="btn">Agregar</Link>}
       </div>
+      <div className="pantalla-contenido">
       {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
       {!err && !list && <Loader />}
       {list && list.length === 0 && (
@@ -65,6 +66,7 @@ export function ListaDirecciones() {
           ))}
         </ul>
       )}
+      </div>
     </section>
   );
 }

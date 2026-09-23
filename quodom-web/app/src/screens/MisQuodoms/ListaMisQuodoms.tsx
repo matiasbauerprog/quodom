@@ -63,6 +63,7 @@ export function ListaMisQuodoms() {
         <h1>Mis Quodoms</h1>
         <button className="btn" onClick={() => setEligiendoRubro(true)}>Nuevo</button>
       </div>
+      <div className="pantalla-contenido">
       {eligiendoRubro && (
         <div className="mq-rubros-backdrop" onClick={cerrarPicker}>
           <section
@@ -130,6 +131,7 @@ export function ListaMisQuodoms() {
             ))}
           </ul>
         )}
+      </div>
       </div>
     </section>
   );

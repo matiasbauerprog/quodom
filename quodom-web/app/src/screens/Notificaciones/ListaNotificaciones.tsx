@@ -28,6 +28,7 @@ export function ListaNotificaciones() {
       {/* Sin flecha: se llega desde el menú. Ver la nota en ProfileScreen. */}
       <section className="container notif">
         <div className="pantalla-header"><h1>Notificaciones</h1></div>
+        <div className="pantalla-contenido">
         {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
         {!err && !list && <Loader />}
         {list && list.length === 0 && <EmptyState title="No tenés notificaciones" />}
@@ -42,6 +43,7 @@ export function ListaNotificaciones() {
             ))}
           </ul>
         )}
+        </div>
       </section>
     </>
   );
