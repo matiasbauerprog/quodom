@@ -22,14 +22,25 @@
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
+/* Antes era un cartel; ahora es el botón que resuelve lo que avisa, así que
+   tiene que parecer tocable sin gritar más que el nombre del producto. */
 .lqs-falta {
   display: block;
   margin-top: 2px;
+  padding: 2px 6px;
+  background: none;
+  border: 1px dashed rgba(255, 180, 180, 0.6);
+  border-radius: 4px;
   color: #FFB4B4;
+  font-family: inherit;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  cursor: pointer;
 }
+.lqs-falta:hover:not(:disabled),
+.lqs-falta:focus-visible { background: rgba(255, 180, 180, 0.12); }
+.lqs-falta:disabled { opacity: 0.6; cursor: default; }
 .lqs-controles {
   display: flex;
   align-items: center;

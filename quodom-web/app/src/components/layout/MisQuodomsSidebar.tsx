@@ -28,6 +28,7 @@ export function MisQuodomsSidebar() {
   // Quodom queda sólo en Mis Quodoms, que es su lugar.
   const [reciénEnviados, setReciénEnviados] = useState<string[]>([]);
   const [enviando, setEnviando] = useState<string | null>(null);
+  const [repitiendo, setRepitiendo] = useState<string | null>(null);
   const [errEnviar, setErrEnviar] = useState<string | null>(null);
   // Guards against `quodom:changed` firing repeatedly in quick succession:
   // only the response for the most recently started request is applied, so
@@ -89,6 +90,26 @@ export function MisQuodomsSidebar() {
     ...activos.map((q): Item => ({ clave: 'q:' + q.id, tipo: 'servidor', quodom: q }))
   ];
   const toggle = (clave: string) => setAbierto(a => (a === clave ? null : clave));
+
+  // Los terminados no se mudan acá con código: al enviarlo el backend lo pasa a
+  // ENVIADO y `quodom:changed` recarga la lista, así que sale de "activos" y
+  // entra acá solo. Los recién enviados de esta visita se excluyen a propósito:
+  // siguen arriba, donde el usuario los dejó, hasta que recargue.
+  const terminados = list
+    ? list.filter(q => q.estado === 'ENVIADO' && !reciénEnviados.includes(q.id)).slice(0, 5)
+    : [];
+
+  async function repetirQuodom(q: Quodom) {
+    if (repitiendo) return;
+    setRepitiendo(q.id); setErrEnviar(null);
+    try {
+      await quodomApi.repetir(q.id);
+      window.dispatchEvent(new Event('quodom:changed'));
+      refresh();
+    } catch (e) {
+      setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el Quodom.');
+    } finally { setRepitiendo(null); }
+  }
 
   async function enviar(q: Quodom) {
     if (enviando) return;
@@ -164,6 +185,31 @@ export function MisQuodomsSidebar() {
 
       {user && list && list.length > 0 && (
         <Link to="/mis-quodoms" className="btn mq-sidebar-vermas">Ver todos</Link>
+      )}
+
+      {terminados.length > 0 && (
+        <section className="mq-sidebar-section mq-sidebar-repetir">
+          <h3 className="mq-sidebar-section-title">Repetí un pedido</h3>
+          <ul className="mq-sidebar-list">
+            {terminados.map(q => (
+              <li key={q.id} className="mq-terminado hoja">
+                <span className="mq-terminado-datos">
+                  <strong className="mq-terminado-rubro">{q.nombrerubro || nombreRubro(q.idrubro)}</strong>
+                  <span className="mq-terminado-desc">{q.descripcion}</span>
+                  <span className="mq-terminado-meta">{q.nro} · {q.cantproductos ?? 0} productos</span>
+                </span>
+                <button
+                  type="button"
+                  className="btn mq-terminado-repetir"
+                  disabled={repitiendo !== null}
+                  onClick={() => repetirQuodom(q)}
+                >
+                  {repitiendo === q.id ? 'Repitiendo…' : 'Repetir'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </aside>
   );

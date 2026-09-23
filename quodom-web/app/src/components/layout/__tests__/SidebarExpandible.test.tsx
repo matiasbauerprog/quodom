@@ -9,7 +9,7 @@ import { addGuestLine, clearGuestQuodoms, getGuestCart } from '../../../guest/gu
 
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn() } }));
 vi.mock('../../../api/quodom_lines', () => ({
-  quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn() }
+  quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn(), atributos: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 
@@ -17,6 +17,7 @@ const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const porQuodom = quodomLines.porQuodom as unknown as ReturnType<typeof vi.fn>;
 const update = quodomLines.update as unknown as ReturnType<typeof vi.fn>;
 const eliminar = quodomLines.eliminar as unknown as ReturnType<typeof vi.fn>;
+const atributosApi = quodomLines.atributos as unknown as ReturnType<typeof vi.fn>;
 
 const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, createdBy: 'u-1', iddireccion: null };
 const LIMPIEZA = { id: 'q-1', descripcion: 'Limpieza mensual', estado: 'CREADO', nro: 'QD-9', idrubro: 1, nombrerubro: 'Limpieza', cantproductos: 1, createdBy: 'u-1', iddireccion: null };
@@ -48,12 +49,18 @@ beforeEach(() => {
 });
 
 describe('sidebar: sólo activos', () => {
-  it('no lista los enviados — el historial vive en Mis Quodoms', async () => {
+  // Un enviado ya no se edita, así que no puede estar entre los activos ni
+  // desplegarse. Pero desde 2026-09-22 tampoco desaparece: baja a "Repetí un
+  // pedido", al pie del sidebar.
+  it('saca los enviados de los activos y los baja a repetir', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
     await screen.findByText('Bebidas oficina');
-    expect(screen.queryByText('Pintura living')).toBeNull();
-    expect(screen.queryByText(/Últimos Quodoms/i)).toBeNull();
+    const activos = screen.getByRole('heading', { name: /quodoms activos/i }).closest('section')!;
+    expect(within(activos).queryByText('Pintura living')).toBeNull();
+
+    const repetir = screen.getByRole('heading', { name: /repetí un pedido/i }).closest('section')!;
+    expect(within(repetir).getByText('Pintura living')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ver todos/i })).toBeInTheDocument();
   });
 });
@@ -196,5 +203,53 @@ describe('sidebar: carrito de invitado', () => {
     await waitFor(() => expect(getGuestCart(7).lines[0].cantidad).toBe(3));
     expect(porQuodom).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
+  });
+});
+
+// La línea avisaba "Falta elegir LITROS" y no se podía hacer nada con eso sin
+// irse al detalle del Quodom. Ahora se elige en el mismo sidebar, con el mismo
+// selector que usa el detalle.
+describe('MisQuodomsSidebar (elegir el atributo que falta)', () => {
+  const SIN_LITROS = {
+    id: 11, idquodom: 'q-7', idproducto: 302, nombreProducto: 'Latex Interior Blanco Mate', cantidad: 2,
+    nombreAtributo1: 'LITROS', atributo1: null, nombreAtributo2: null, atributo2: null
+  };
+
+  beforeEach(() => {
+    misQuodom.mockReset(); porQuodom.mockReset(); update.mockReset();
+    eliminar.mockReset(); atributosApi.mockReset(); clearGuestQuodoms();
+    vi.mocked(useAuth).mockReturnValue({ user: { id: 'u-1' } } as unknown as ReturnType<typeof useAuth>);
+    misQuodom.mockResolvedValue([BEBIDAS]);
+    porQuodom.mockResolvedValue([SIN_LITROS]);
+    atributosApi.mockResolvedValue([{ valoratributo: '10 litros' }, { valoratributo: '20 litros' }]);
+    update.mockResolvedValue({ res: true });
+  });
+
+  async function desplegar() {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Bebidas oficina')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Bebidas oficina'));
+    await screen.findByText('Latex Interior Blanco Mate');
+  }
+
+  it('lo que faltaba ahora se puede tocar', async () => {
+    await desplegar();
+    expect(screen.getByRole('button', { name: /elegir litros/i })).toBeInTheDocument();
+  });
+
+  it('abre el selector con los valores del producto', async () => {
+    await desplegar();
+    fireEvent.click(screen.getByRole('button', { name: /elegir litros/i }));
+
+    expect(await screen.findByRole('button', { name: '20 litros' })).toBeInTheDocument();
+    expect(atributosApi).toHaveBeenCalledWith(302, 'LITROS');
+  });
+
+  it('elegir un valor lo guarda en la línea', async () => {
+    await desplegar();
+    fireEvent.click(screen.getByRole('button', { name: /elegir litros/i }));
+    fireEvent.click(await screen.findByRole('button', { name: '20 litros' }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledWith(11, { atributo1: '20 litros' }));
   });
 });

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { quodomLines } from '../../api/quodom_lines';
-import type { QuodomLine } from '../../api/types';
 import { ApiError } from '../../api/client';
-import { getGuestCart, removeGuestLine, updateGuestLineCantidad } from '../../guest/guestQuodom';
+import { getGuestCart, removeGuestLine, updateGuestLineAtributos, updateGuestLineCantidad } from '../../guest/guestQuodom';
+import { SelectorAtributo } from '../../screens/Quodom/SelectorAtributo';
 import './LineasQuodomSidebar.css';
 
 // Una línea, sin importar si vive en el servidor o en localStorage. El editor
@@ -12,12 +12,16 @@ type Linea = {
   key: string;
   nombre: string;
   cantidad: number;
+  idproducto: number;
+  // El nombre del grupo que falta y en qué ranura va: para poder guardarlo hay
+  // que saber si es atributo1 o atributo2, no alcanza con el nombre.
   faltaAtributo: string | null;
+  slotFaltante: 1 | 2 | null;
 };
 
-function faltante(l: QuodomLine): string | null {
-  if (l.nombreAtributo1 && !l.atributo1) return l.nombreAtributo1;
-  if (l.nombreAtributo2 && !l.atributo2) return l.nombreAtributo2;
+function faltante(l: { nombreAtributo1?: string | null; atributo1?: string | null; nombreAtributo2?: string | null; atributo2?: string | null }) {
+  if (l.nombreAtributo1 && !l.atributo1) return { nombre: l.nombreAtributo1, slot: 1 as const };
+  if (l.nombreAtributo2 && !l.atributo2) return { nombre: l.nombreAtributo2, slot: 2 as const };
   return null;
 }
 
@@ -31,6 +35,7 @@ export function LineasQuodomSidebar(props: Props) {
   const [err, setErr] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [eligiendo, setEligiendo] = useState<{ linea: Linea; index: number; nombre: string; slot: 1 | 2 } | null>(null);
 
   const clave = props.modo === 'servidor' ? props.idquodom : String(props.idrubro);
   const modo = props.modo;
@@ -38,13 +43,17 @@ export function LineasQuodomSidebar(props: Props) {
   useEffect(() => {
     if (modo === 'invitado') {
       const cart = getGuestCart(Number(clave));
-      setLineas(cart.lines.map((l, i) => ({
-        key: 'g-' + i,
-        nombre: l.nombreProducto,
-        cantidad: l.cantidad,
-        faltaAtributo: l.nombreAtributo1 && !l.atributo1 ? l.nombreAtributo1
-          : l.nombreAtributo2 && !l.atributo2 ? l.nombreAtributo2 : null
-      })));
+      setLineas(cart.lines.map((l, i) => {
+        const falta = faltante(l);
+        return {
+          key: 'g-' + i,
+          nombre: l.nombreProducto,
+          cantidad: l.cantidad,
+          idproducto: l.idproducto,
+          faltaAtributo: falta ? falta.nombre : null,
+          slotFaltante: falta ? falta.slot : null
+        };
+      }));
       return;
     }
     let alive = true;
@@ -52,12 +61,17 @@ export function LineasQuodomSidebar(props: Props) {
     quodomLines.porQuodom(clave)
       .then(d => {
         if (!alive) return;
-        setLineas(d.map(l => ({
-          key: String(l.id),
-          nombre: l.nombreProducto,
-          cantidad: l.cantidad,
-          faltaAtributo: faltante(l)
-        })));
+        setLineas(d.map(l => {
+          const falta = faltante(l);
+          return {
+            key: String(l.id),
+            nombre: l.nombreProducto,
+            cantidad: l.cantidad,
+            idproducto: l.idproducto,
+            faltaAtributo: falta ? falta.nombre : null,
+            slotFaltante: falta ? falta.slot : null
+          };
+        }));
       })
       .catch(e => { if (alive) setErr(e instanceof ApiError ? e.message : 'No se pudieron cargar los productos.'); });
     return () => { alive = false; };
@@ -107,6 +121,18 @@ export function LineasQuodomSidebar(props: Props) {
     else mutar(() => quodomLines.update(Number(l.key), { cantidad }));
   }
 
+  // Elegir el atributo que falta sin salir del sidebar: hasta ahora la línea
+  // avisaba "Falta elegir LITROS" y para resolverlo había que abrir el detalle
+  // del Quodom. Es el mismo selector que usa esa pantalla.
+  function guardarAtributo(valor: string) {
+    if (!eligiendo) return;
+    const { linea, index, slot } = eligiendo;
+    const patch = slot === 1 ? { atributo1: valor } : { atributo2: valor };
+    setEligiendo(null);
+    if (modo === 'invitado') mutar(() => updateGuestLineAtributos(Number(clave), index, patch));
+    else mutar(() => quodomLines.update(Number(linea.key), patch));
+  }
+
   function quitar(l: Linea, index: number) {
     if (modo === 'invitado') mutar(() => removeGuestLine(Number(clave), index));
     else mutar(() => quodomLines.eliminar(Number(l.key)));
@@ -124,7 +150,16 @@ export function LineasQuodomSidebar(props: Props) {
           <li key={l.key} className="lqs-linea">
             <span className="lqs-nombre">
               {l.nombre}
-              {l.faltaAtributo && <span className="lqs-falta">Falta elegir {l.faltaAtributo}</span>}
+              {l.faltaAtributo && l.slotFaltante && (
+                <button
+                  type="button"
+                  className="lqs-falta"
+                  disabled={busy}
+                  onClick={() => setEligiendo({ linea: l, index: i, nombre: l.faltaAtributo!, slot: l.slotFaltante! })}
+                >
+                  Elegir {l.faltaAtributo}
+                </button>
+              )}
             </span>
             <span className="lqs-controles">
               <button
@@ -153,6 +188,16 @@ export function LineasQuodomSidebar(props: Props) {
           </li>
         ))}
       </ul>
+
+      {eligiendo && (
+        <SelectorAtributo
+          idproducto={eligiendo.linea.idproducto}
+          nombreatributo={eligiendo.nombre}
+          valorActual={null}
+          onSelect={guardarAtributo}
+          onClose={() => setEligiendo(null)}
+        />
+      )}
     </>
   );
 }
