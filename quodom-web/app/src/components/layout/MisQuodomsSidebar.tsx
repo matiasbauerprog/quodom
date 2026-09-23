@@ -187,7 +187,7 @@ export function MisQuodomsSidebar() {
       )}
 
       {hayActivos && (
-        <section className="mq-sidebar-section mq-sidebar-section-activos">
+        <section className="mq-sidebar-section">
           <h3 className="mq-sidebar-section-title">Quodoms activos</h3>
           <ul className="mq-sidebar-list">
             {items.map(it => {

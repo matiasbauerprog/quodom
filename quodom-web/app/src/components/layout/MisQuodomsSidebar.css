@@ -10,12 +10,8 @@
     padding: var(--sp-5) var(--sp-4);
     background: var(--color-panel-oscuro);
     color: #fff;
-    /* Alto fijo, no mínimo: para que las tarjetas puedan repartirse lo que
-       sobra, el contenedor tiene que tener un alto contra el cual repartir. */
-    height: calc(100vh - 56px);
-    position: sticky;
-    top: 56px;
-    overflow: hidden;
+    min-height: calc(100vh - 56px);
+    overflow-y: auto;
   }
   .mq-sidebar-title {
     text-align: center;
@@ -53,17 +49,6 @@
   .mq-sidebar-empty .btn { margin-top: var(--sp-3); background: #fff; color: var(--color-acento); }
   .mq-sidebar-list { display: flex; flex-direction: column; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; }
 
-  /* Los activos se reparten el alto que sobra: con dos Quodoms se ven grandes y
-     con diez —el máximo— entran los diez sin scrollear. El piso de 56px es el
-     límite de legibilidad: por debajo de eso la tarjeta deja de leerse, y si ni
-     así entran, la lista scrollea en vez de aplastarlas. */
-  .mq-sidebar-section-activos { flex: 1; min-height: 0; }
-  .mq-sidebar-section-activos .mq-sidebar-list { flex: 1; min-height: 0; overflow-y: auto; }
-  .mq-sidebar-section-activos .mq-sidebar-item { flex: 1 1 0; min-height: 56px; display: flex; }
-  .mq-sidebar-section-activos .mq-sidebar-item > * { width: 100%; }
-  /* La desplegada muestra el editor de líneas, así que necesita más que su
-     parte: se lleva el doble y las otras se achican hasta su piso. */
-  .mq-sidebar-section-activos .mq-sidebar-item-abierta { flex: 3 1 auto; overflow-y: auto; }
   /* La tarjeta desplegada y sus productos se leen como una sola pieza. */
   .mq-sidebar-item-abierta {
     background: rgba(255, 255, 255, 0.08);
