@@ -35,13 +35,13 @@ function create(req, res, next) {
 
 function update(req, res, next) {
   Controler.update(req.params.id, req.body, req.user.id)
-    .then(data => res.json(data))
+    .then(() => res.json({ res: true, message: 'Actualizado.' }))
     .catch(next);
 }
 
 function updatePrincipal(req, res, next) {
   Controler.updatePrincipal(req.params.id, req.user.id)
-    .then(data => res.json(data))
+    .then(() => res.json({ res: true, message: 'Actualizado.' }))
     .catch(next);
 }
 

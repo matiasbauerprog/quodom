@@ -82,7 +82,7 @@ components:
 
     Category:
       type: object
-      required: [id, nombrecategoria, idcategoriapadre, orden]
+      required: [id, nombrecategoria, orden]
       properties:
         id: { type: integer }
         nombrecategoria: { type: string }
@@ -158,7 +158,7 @@ components:
 
     VQuodom:
       type: object
-      required: [id, descripcion, estado, nro, createdBy]
+      required: [id, descripcion, estado, nro]
       properties:
         id: { type: string }
         descripcion: { type: string }
@@ -952,7 +952,7 @@ paths:
       security: [{ cookieAuth: [] }, { bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/IntId' }]
       responses:
-        '200': { description: 'OK; el cuerpo lo devuelve el controller tal cual (ver Task 6)', content: { application/json: { schema: {} } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /user_direcciones/{id}:
@@ -972,7 +972,7 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/DireccionInput' } } }
       responses:
-        '200': { description: 'OK; el cuerpo lo devuelve el controller tal cual (ver Task 6)', content: { application/json: { schema: {} } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     delete:

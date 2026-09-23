@@ -20,6 +20,8 @@ app.use(cors());
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(require('./middleware/stripTrailingSlash'));
 app.use(require('./helpers/openapi').buildValidator());
+// After the validator, so this res.json wraps the validator's and hands it plain JSON.
+if (process.env.NODE_ENV === 'test') app.use(require('./helpers/openapi').plainJson);
 if (process.env.NODE_ENV !== 'test') {
   const morgan = require('morgan');
   app.use(morgan('dev'));
