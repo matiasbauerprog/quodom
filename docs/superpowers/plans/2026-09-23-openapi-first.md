@@ -1161,7 +1161,6 @@ Expected: FAIL listing 16 routes.
         '409': { $ref: '#/components/responses/Conflict' }
 ```
 
-```
 
 **Path-template collision.** Express declares `GET /quodom_lines/:idquodom` but `PUT`/`DELETE /quodom_lines/:id`. `listRoutes` turns them into `/quodom_lines/{idquodom}` and `/quodom_lines/{id}`, which OpenAPI treats as the same templated path and rejects as a duplicate. Fix it in the code, not the contract: rename the GET's param to `:id`. The contract then has a single key for all three operations:
 

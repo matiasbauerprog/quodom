@@ -11,7 +11,7 @@ const METHODS = ['get', 'post', 'put', 'delete', 'patch'];
 // entries; Task 4 deletes this list, and from then on every route must be in
 // openapi.yaml.
 const PENDIENTES = [
-  'users', 'quodom', 'quodom_lines', 'user_direcciones',
+  'quodom', 'quodom_lines', 'user_direcciones',
   'oper_notificaciones', 'hist_busquedas', 'api/ia'
 ];
 const pendiente = p => PENDIENTES.some(g => p === '/' + g || p.startsWith('/' + g + '/'));

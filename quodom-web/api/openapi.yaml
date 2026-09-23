@@ -394,3 +394,272 @@ paths:
         '200':
           description: OK
           content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Localidad' } } } }
+
+  /users:
+    get:
+      tags: [users]
+      summary: Todos los usuarios (sólo admin)
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content: { application/json: { schema: { type: array, items: { type: object, additionalProperties: true } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [users]
+      summary: Editar el perfil propio
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                email: { type: string, format: email }
+                nombre: { type: string }
+                apellido: { type: string }
+                dni: { type: string }
+                codArea: { type: string }
+                telefono: { type: string }
+                password: { type: string, minLength: 6 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /users/current:
+    get:
+      tags: [users]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/CurrentUser' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /users/currentFoto:
+    get:
+      tags: [users]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  foto: { type: string, nullable: true }
+                  refreshFoto: { type: string, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /users/dire:
+    get:
+      tags: [users]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Direccion' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /users/direcciondefault:
+    get:
+      tags: [users]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200':
+          description: La dirección por defecto, o la primera, o null
+          content: { application/json: { schema: { allOf: [{ $ref: '#/components/schemas/Direccion' }], nullable: true } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /users/infoComprador/{idquodom}:
+    get:
+      tags: [users]
+      summary: Datos de contacto del dueño del Quodom (sólo el propio)
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: idquodom, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/InfoComprador' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /users/validateEmail/{token}:
+    get:
+      tags: [users]
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 'res false si el token no sirve', content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /users/validateReset/{token}:
+    get:
+      tags: [users]
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: 'res false si el link venció o ya se usó'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res]
+                properties:
+                  res: { type: boolean }
+                  message: { type: string }
+        '429': { $ref: '#/components/responses/TooMany' }
+  /users/{id}:
+    get:
+      tags: [users]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      responses:
+        '200':
+          description: Sólo el propio usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  username: { type: string }
+                  email: { type: string }
+                  nombre: { type: string, nullable: true }
+                  apellido: { type: string, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [users]
+      summary: Borrar un usuario (sólo admin)
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /users/signin:
+    post:
+      tags: [users]
+      summary: Inicia sesión y pone la cookie quodom_session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, description: 'Usuario o e-mail' }
+                password: { type: string }
+      responses:
+        '200':
+          description: OK. Set-Cookie quodom_session (httpOnly, SameSite=Strict, 30 días)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SigninResponse' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooMany' }
+  /users/signout:
+    post:
+      tags: [users]
+      summary: Borra la cookie de sesión (funciona sin sesión)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Ok' } } } }
+  /users/signup:
+    post:
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, nombre, password, codArea, telefono]
+              properties:
+                username: { type: string }
+                email: { type: string, format: email }
+                nombre: { type: string }
+                apellido: { type: string }
+                password: { type: string, minLength: 6 }
+                dni: { type: string }
+                codArea: { type: string }
+                telefono: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res, message]
+                properties:
+                  res: { type: boolean }
+                  id: { type: string }
+                  message: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooMany' }
+  /users/reset:
+    post:
+      tags: [users]
+      summary: Pide el link de blanqueo. Contesta igual exista o no la cuenta.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, description: 'E-mail o usuario' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '429': { $ref: '#/components/responses/TooMany' }
+  /users/reenviar:
+    post:
+      tags: [users]
+      summary: Reenvía el link de validación. Contesta igual exista o no la cuenta.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '429': { $ref: '#/components/responses/TooMany' }
+  /users/changePass:
+    post:
+      tags: [users]
+      summary: Cambia la clave con el token del link (sirve una sola vez)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password, token]
+              properties:
+                password: { type: string, minLength: 6 }
+                token: { type: string }
+      responses:
+        '200': { description: 'res false si el link venció o ya se usó', content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '429': { $ref: '#/components/responses/TooMany' }
+  /users/cambiarFoto/{id}:
+    put:
+      tags: [users]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                foto: { type: string }
+                refreshFoto: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  res: { type: boolean }
+                  refresh: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
