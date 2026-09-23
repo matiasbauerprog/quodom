@@ -8,6 +8,7 @@ Express + Sequelize 6 + SQLite, JavaScript (CommonJS). Port 1:1 de la API origin
 - `npm run guias` — regenera `src/config/guias/<idrubro>.txt` desde `informacion para la ia/<Rubro>/Listado_*.xlsx`. **Correrlo cada vez que se toca una planilla**: sin eso la API sigue mandándole al asistente las instrucciones viejas y no falla nada visible. Ver §8 de `claude.md` en la raíz.
 - `npm run dev` — servidor en `http://localhost:3999` (nodemon)
 - `npm test` — Jest + Supertest contra SQLite en memoria (`--runInBand`; cada archivo de test tiene su propia DB)
+- `http://localhost:3999/docs/` — la documentación navegable del API, sólo con `npm run dev` (`nodemon.json` pone `API_DOCS=true`). En Render no existe.
 
 ## Estructura
 - `src/server.js` — app Express; exporta `app` (los tests la importan sin levantar el puerto)
@@ -24,3 +25,5 @@ Express + Sequelize 6 + SQLite, JavaScript (CommonJS). Port 1:1 de la API origin
 - Rutas públicas (guest): `/categorias`, `/productos/categoria/:id`, `/productos/:id`, `/busqueda`, `/provincias`, `/localidades/prov`. Todo lo demás requiere token.
 - Estados de Quodom: `CREADO` → `ENVIADO` (vía `GET /quodom/whatsapp/:id`). No existen estados de cotización.
 - Tests: integración con la DB real en memoria, sin mocks. Cada feature nueva agrega su archivo en `tests/`.
+- **Una ruta nueva o cambiada empieza por `openapi.yaml`.** Sin eso falla `tests/openapi.coverage.test.js` (ruta sin describir) o la validación de respuestas. Ya no hay esquemas Joi: la validación de pedidos sale del contrato. Si un campo vacío tiene que significar "no tocar", va `omitEmpty([...])` en la ruta, porque el contrato deja pasar `''` y `null`.
+- Todo campo que un handler lea del body tiene que estar declarado en el contrato: el validador borra los que no lo están.

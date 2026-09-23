@@ -11,6 +11,7 @@ Transformación de Quodom 1.0 (React Native + API MySQL) en una webapp, **sin us
 ## 2. Arquitectura
 - `quodom-web/api/`: Express + Sequelize + **SQLite**, en JavaScript, espejo 1:1 de la estructura original (`controllers/`, `models/`, `routes/`, `helpers/`, `middleware/`). Config por variables de entorno (`.env`, nunca commitear secretos).
 - `quodom-web/app/`: React + Vite + **TypeScript**, CSS plano, espejo de las screens/navegación de la APP original.
+- **OpenAPI first:** `quodom-web/api/openapi.yaml` es el contrato entre la app y el API, y **manda**. Todo cambio de API empieza ahí y después va el código. El API rechaza pedidos que no lo cumplen (y descarta campos de más), los tests validan cada respuesta contra él, y la app genera sus tipos con `npm run api-types`. Tres tests fallan si se desalinean: cobertura de rutas, respuestas, y tipos al día. Spec: `docs/superpowers/specs/2026-09-23-openapi-first-design.md`.
 - La base se puebla con `npm run seed` leyendo `Documentacion 2.0/Categorias/Migracion.xlsx` (en la raíz del repo; 8 rubros + 50 subcategorías, 644 productos, IDs reales).
 
 ## 3. Reglas de producto

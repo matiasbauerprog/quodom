@@ -8,10 +8,11 @@ React 18 + Vite + TypeScript + plain CSS. 1:1 visual clone of the original React
 - `npm run build` — build de producción a `dist/`
 - `npm run preview` — servir el build
 - `npm run typecheck` — `tsc -b --noEmit`
+- `npm run api-types` — regenera `src/api/schema.d.ts` desde `../api/openapi.yaml`. Correrlo cada vez que cambia el contrato; `tests/api-types.test.ts` falla si quedó viejo.
 - `npm test` — Vitest (solo lógica no trivial: api client, guest quodom, migración)
 
 ## Estructura
-- `src/api/` — cliente `apiFetch` con JWT + un módulo por recurso. Todas las llamadas al backend pasan por acá.
+- `src/api/` — cliente `apiFetch` + un módulo por recurso. Todas las llamadas al backend pasan por acá. Los tipos de datos **no se escriben a mano**: `types.ts` son alias de `schema.d.ts`, generado desde `openapi.yaml`.
 - `src/auth/` — `AuthContext` y `ProtectedRoute`. La sesión es una cookie httpOnly que pone el API; la app no ve el token, así que al cargar siempre pregunta `GET /users/current`.
 - `src/guest/` — Quodom de invitado en `localStorage.quodom.guest`; `migrateGuestQuodom` lo transfiere al backend al iniciar sesión.
 - `src/styles/` — `tokens.css` (paleta, tipografías, espacios, radios), `reset.css`, `typography.css`, `utilities.css` (`.container`, `.card`, `.btn`, `.hoja`, `.pantalla-header`, `.pantalla-contenido`), `global.css` que las importa todas.
