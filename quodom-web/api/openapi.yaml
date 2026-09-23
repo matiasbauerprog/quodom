@@ -221,8 +221,8 @@ components:
       type: object
       properties:
         alias: { type: string }
-        calle: { type: string }
-        numero: { type: string }
+        calle: { type: string, minLength: 1 }
+        numero: { type: string, minLength: 1 }
         piso: { type: string }
         cp: { type: string }
         localidad: { type: string }
@@ -416,13 +416,13 @@ paths:
             schema:
               type: object
               properties:
-                username: { type: string }
+                username: { type: string, minLength: 1 }
                 email: { type: string, format: email }
-                nombre: { type: string }
+                nombre: { type: string, minLength: 1 }
                 apellido: { type: string }
                 dni: { type: string }
-                codArea: { type: string }
-                telefono: { type: string }
+                codArea: { type: string, minLength: 1 }
+                telefono: { type: string, minLength: 1 }
                 password: { type: string, minLength: 6 }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
@@ -542,8 +542,8 @@ paths:
               type: object
               required: [username, password]
               properties:
-                username: { type: string, description: 'Usuario o e-mail' }
-                password: { type: string }
+                username: { type: string, minLength: 1, description: 'Usuario o e-mail' }
+                password: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK. Set-Cookie quodom_session (httpOnly, SameSite=Strict, 30 días)
@@ -567,14 +567,14 @@ paths:
               type: object
               required: [username, email, nombre, password, codArea, telefono]
               properties:
-                username: { type: string }
+                username: { type: string, minLength: 1 }
                 email: { type: string, format: email }
-                nombre: { type: string }
+                nombre: { type: string, minLength: 1 }
                 apellido: { type: string }
                 password: { type: string, minLength: 6 }
                 dni: { type: string }
-                codArea: { type: string }
-                telefono: { type: string }
+                codArea: { type: string, minLength: 1 }
+                telefono: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -755,7 +755,7 @@ paths:
               type: object
               required: [descripcion, idrubro]
               properties:
-                descripcion: { type: string }
+                descripcion: { type: string, minLength: 1 }
                 idrubro: { type: integer }
                 iddireccion: { type: integer, nullable: true }
       responses:
@@ -812,7 +812,7 @@ paths:
             schema:
               type: object
               properties:
-                descripcion: { type: string }
+                descripcion: { type: string, minLength: 1 }
                 iddireccion: { type: integer, nullable: true }
       responses:
         '200': { description: 'OK (el cuerpo es true)', content: { application/json: { schema: { type: boolean } } } }

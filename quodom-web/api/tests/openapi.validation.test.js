@@ -87,4 +87,28 @@ describe('request validation against openapi.yaml', () => {
     const q = await db.Quodom.findByPk(res.body.idquodom);
     expect(q.iddireccion).not.toBeNull();
   });
+
+  it('rejects an empty value where one is required, as Joi did', async () => {
+    const perfil = await request(app).put('/users').set('Authorization', 'Bearer ' + token).send({ telefono: '' });
+    expect(perfil.status).toBe(400);
+    expect(perfil.body.message).toBe('Faltan datos o hay datos inválidos: telefono');
+    const alta = await request(app).post('/users/signup')
+      .send({ username: 'y', email: 'y@test.com', nombre: '', password: 'secreto123', codArea: '11', telefono: '1' });
+    expect(alta.status).toBe(400);
+    const quodom = await request(app).put('/quodom/' + idquodom).set('Authorization', 'Bearer ' + token).send({ descripcion: '' });
+    expect(quodom.status).toBe(400);
+  });
+
+  it('still accepts the optional fields the app sends empty', async () => {
+    const alta = await request(app).post('/users/signup')
+      .send({ username: 'z', email: 'z@test.com', nombre: 'Z', apellido: '', password: 'secreto123', codArea: '11', telefono: '1' });
+    expect(alta.status).toBe(200);
+  });
+
+  it('does not blame a URL segment when the body is not JSON', async () => {
+    const res = await request(app).put('/oper_notificaciones/1').set('Authorization', 'Bearer ' + token)
+      .set('Content-Type', 'text/plain').send('leida=1');
+    expect(res.body.res).toBe(false);
+    expect(res.body.message).toBe('Faltan datos o hay datos inválidos.');
+  });
 });

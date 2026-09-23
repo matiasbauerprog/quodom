@@ -46,9 +46,13 @@ function errorHandler(err, req, res, next) {
 
 // '/body/telefono' -> 'telefono'; a missing required field may come as
 // path '/body' with "must have required property 'telefono'".
+// Anything not about the body, query or params (a 415 carries the URL as its
+// path) names no field, so the message doesn't blame ':id' or 'create'.
 function campoDe(e) {
+    const path = String(e.path || '');
+    if (!/^\/(body|query|params)(\/|$)/.test(path)) return null;
     const m = /required property '([^']+)'/.exec(e.message || '');
     if (m) return m[1];
-    const partes = String(e.path || '').split('/').filter(Boolean);
+    const partes = path.split('/').filter(Boolean);
     return partes.length > 1 ? partes[partes.length - 1] : null;
 }
