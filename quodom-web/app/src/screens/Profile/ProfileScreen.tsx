@@ -12,7 +12,7 @@ export function ProfileScreen() {
           en el centrado vertical. AppBarBack sigue en las pantallas anidadas
           (Mis datos, Cambiar contraseña), donde la flecha sí es la salida. */}
       <section className="container profile">
-        <h1>Perfil</h1>
+        <div className="pantalla-header"><h1>Perfil</h1></div>
         <div className="profile-head card hoja">
           <div className="profile-name">{user?.nombre} {user?.apellido}</div>
           <div className="profile-email">{user?.email}</div>

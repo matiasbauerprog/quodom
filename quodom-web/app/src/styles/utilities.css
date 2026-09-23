@@ -57,3 +57,15 @@
 
 label.field { display: block; margin-bottom: var(--sp-3); font-size: var(--fs-small); color: var(--color-texto); }
 label.field span { display: block; margin-bottom: var(--sp-1); }
+
+/* Encabezado de una pantalla de sección: el h1 a la izquierda y, si la pantalla
+   tiene una acción principal, el botón al otro extremo. Vive acá y no repetido
+   en cada CSS porque las cuatro pantallas que se llegan desde el menú tienen que
+   arrancar igual; cuando cada una traía su propia regla, ya se habían ido
+   separando entre sí. */
+.pantalla-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+}

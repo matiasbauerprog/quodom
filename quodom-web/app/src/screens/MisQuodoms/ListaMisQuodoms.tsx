@@ -59,7 +59,7 @@ export function ListaMisQuodoms() {
 
   return (
     <section className="container mq">
-      <div className="mq-header">
+      <div className="pantalla-header">
         <h1>Mis Quodoms</h1>
         <button className="btn" onClick={() => setEligiendoRubro(true)}>Nuevo</button>
       </div>

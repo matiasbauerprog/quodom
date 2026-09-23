@@ -34,7 +34,7 @@ export function ListaDirecciones() {
 
   return (
     <section className="container dirs">
-      <div className="dirs-header">
+      <div className="pantalla-header">
         <h1>Direcciones</h1>
         {/* Sin direcciones, el EmptyState de abajo ya ofrece "Agregar dirección"
             y los dos botones quedaban uno encima del otro. */}

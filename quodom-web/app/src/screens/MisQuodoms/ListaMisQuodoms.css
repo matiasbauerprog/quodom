@@ -1,6 +1,4 @@
 .mq { padding: var(--pantalla-top) 0 var(--sp-7); }
-/* Título a la izquierda y acción a la derecha, como estaba. */
-.mq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
 
 .mq-list { display: grid; gap: var(--sp-3); }
 .mq-item { width: 100%; }
@@ -25,13 +23,4 @@
 
 /* Columna de contenido centrada: mas especifico que .container, que apunta a
    1120px para las grillas de producto. */
-.container.mq {
-  max-width: var(--pantalla-ancho);
-  /* Centrado vertical: con poco contenido queda en el medio de la pantalla en
-     vez de colgado del header; con mucho, el centrado no hace nada y la lista
-     sigue hacia abajo como siempre. */
-  min-height: var(--pantalla-alto);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
+.container.mq { max-width: var(--pantalla-ancho); }
