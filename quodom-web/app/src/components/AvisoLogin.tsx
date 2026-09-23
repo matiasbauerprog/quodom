@@ -26,7 +26,6 @@ export function AvisoLogin({ onClose }: { onClose: () => void }) {
         <h2 id="aviso-login-titulo" className="aviso-login-titulo">Necesitás iniciar sesión</h2>
         <p className="aviso-login-texto">
           El asistente arma el Quodom en tu cuenta, así que primero tenés que entrar.
-          Lo que escribiste queda acá.
         </p>
         <div className="aviso-login-acciones">
           <button type="button" className="btn btn-ghost" onClick={onClose}>Ahora no</button>
