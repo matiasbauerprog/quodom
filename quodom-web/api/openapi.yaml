@@ -663,3 +663,266 @@ paths:
                   res: { type: boolean }
                   refresh: { type: string }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /quodom/getQuodomCreados:
+    get:
+      tags: [quodom]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res, data]
+                properties:
+                  res: { type: boolean }
+                  data: { type: array, items: { $ref: '#/components/schemas/VQuodom' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom/misQuodom:
+    get:
+      tags: [quodom]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/VQuodom' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom/porccompletado/{id}:
+    get:
+      tags: [quodom]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      responses:
+        '200':
+          description: OK (null si no existe)
+          content:
+            application/json:
+              schema:
+                type: object
+                nullable: true
+                properties:
+                  cantproductos: { type: integer, nullable: true }
+                  porccompletado: { type: number, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom/whatsapp/{id}:
+    get:
+      tags: [quodom]
+      summary: Arma el link wa.me y pasa el Quodom a ENVIADO
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res, link]
+                properties:
+                  res: { type: boolean }
+                  link: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom/activo/{idrubro}:
+    get:
+      tags: [quodom]
+      summary: El Quodom abierto (CREADO) del usuario en ese rubro, o null
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: idrubro, in: path, required: true, schema: { type: string }, description: 'Entero positivo; el handler lo valida y contesta idrubro_invalido' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res]
+                properties:
+                  res: { type: boolean }
+                  data: { allOf: [{ $ref: '#/components/schemas/VQuodom' }], nullable: true }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom/create:
+    post:
+      tags: [quodom]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [descripcion, idrubro]
+              properties:
+                descripcion: { type: string }
+                idrubro: { type: integer }
+                iddireccion: { type: integer, nullable: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res, idquodom]
+                properties:
+                  res: { type: boolean }
+                  idquodom: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /quodom/repetir/{id}:
+    post:
+      tags: [quodom]
+      summary: Crea un Quodom nuevo con las líneas de uno ENVIADO
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res, idquodom]
+                properties:
+                  res: { type: boolean }
+                  idquodom: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /quodom/{id}:
+    get:
+      tags: [quodom]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/VQuodom' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [quodom]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                descripcion: { type: string }
+                iddireccion: { type: integer, nullable: true }
+      responses:
+        '200': { description: 'OK (el cuerpo es true)', content: { application/json: { schema: { type: boolean } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [quodom]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /quodom_lines/lines/{id}:
+    get:
+      tags: [quodom_lines]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IntId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  idproducto: { type: integer }
+                  detalleProducto: { type: string, nullable: true }
+                  cantidad: { type: number }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom_lines/atributos:
+    get:
+      tags: [quodom_lines]
+      summary: Valores elegibles de un grupo de atributo de un producto
+      parameters:
+        - { name: idproducto, in: query, required: false, schema: { type: integer } }
+        - { name: nombreatributo, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Atributo' } } } } }
+  /quodom_lines/add:
+    post:
+      tags: [quodom_lines]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idquodom, idproducto, cantidad]
+              properties:
+                idquodom: { type: string }
+                idproducto: { type: integer }
+                cantidad: { type: integer }
+                nombreProducto: { type: string }
+                atributo1: { type: string }
+                atributo2: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res, id]
+                properties:
+                  res: { type: boolean }
+                  id: { type: integer }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /quodom_lines/{id}:
+    get:
+      tags: [quodom_lines]
+      summary: Líneas de un Quodom (id = id del Quodom)
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/VQuodomLine' } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [quodom_lines]
+      summary: Cambiar cantidad o atributo elegido (id = id de la línea)
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cantidad: { type: integer }
+                atributo1: { type: string }
+                atributo2: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [quodom_lines]
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }

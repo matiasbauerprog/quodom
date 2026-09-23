@@ -7,7 +7,7 @@ const validateRequest = require('../middleware/validate-request');
 
 router.get('/lines/:id', auth.verifyToken(), getById);
 router.get('/atributos', getAtributos);
-router.get('/:idquodom', auth.verifyToken(), getAllbyIdQuodom);
+router.get('/:id', auth.verifyToken(), getAllbyIdQuodom);
 router.post('/add', auth.verifyToken(), addSchema, add);
 router.put('/:id', auth.verifyToken(), updateSchema, update);
 router.delete('/:id', auth.verifyToken(), _delete);
@@ -42,7 +42,9 @@ function add(req, res, next) {
 }
 
 function getAllbyIdQuodom(req, res, next) {
-  Controler.getAll(req.params.idquodom, req.user.id)
+  // :id is the Quodom id here (PUT/DELETE /:id take a line id); one name so
+  // the path is a single template in openapi.yaml.
+  Controler.getAll(req.params.id, req.user.id)
     .then(data => res.json(data))
     .catch(next);
 }
