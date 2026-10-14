@@ -1,0 +1,126 @@
+/* Corre sobre el panel oscuro (sidebar derecho y barra inferior), así que los
+   colores claros van sobre --color-panel-oscuro, igual que MisQuodomsSidebar. */
+.arbol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  background: var(--color-panel-oscuro);
+  color: #fff;
+}
+
+.arbol-rama {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.arbol-rubro,
+.arbol-quodom {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+}
+
+.arbol-rubro {
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-prompt);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.arbol-flecha {
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+.arbol-rama-abierta .arbol-flecha { transform: rotate(90deg); }
+
+.arbol-cuenta {
+  margin-left: auto;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--sp-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-acento);
+  border-radius: 50%;
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+}
+
+.arbol-vacio {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-input);
+  font-family: var(--font-work);
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+.arbol-hijos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--sp-4);
+}
+
+.arbol-quodom {
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-work);
+  font-size: var(--fs-small);
+  border-left: 3px solid transparent;
+}
+
+.arbol-punto {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.arbol-nombre {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arbol-n {
+  flex-shrink: 0;
+  font-size: var(--fs-tiny);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* El abierto es el destino de lo que se agrega: se marca en verde. */
+.arbol-quodom[aria-expanded="true"] {
+  background: rgba(45, 171, 102, 0.18);
+  border-left-color: var(--color-exito);
+}
+.arbol-quodom[aria-expanded="true"] .arbol-punto {
+  background: var(--color-exito);
+  border-color: var(--color-exito);
+}
+
+.arbol-rubro:hover,
+.arbol-quodom:hover { background-color: rgba(255, 255, 255, 0.14); }
+
+.arbol-rubro:focus-visible,
+.arbol-quodom:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
