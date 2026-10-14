@@ -2,7 +2,8 @@ import { useCallback, useRef, useState } from 'react';
 import { ApiError } from '../api/client';
 import type { Quodom } from '../api/types';
 import { quodom as quodomApi } from '../api/quodom';
-import { abiertoDe, abrirQuodom } from './quodomAbierto';
+import { abrirQuodom } from './quodomAbierto';
+import { conAbierto } from './agregarProducto';
 
 type Lote<T> = { idrubro: number; items: T; candidatos: Quodom[] };
 
@@ -33,11 +34,8 @@ export function useDestinoLote<T>({ agregar, descripcion }: Opts<T>) {
 
   /** Devuelve el id del Quodom que recibió el lote, o null si queda esperando destino. */
   const resolver = useCallback(async (idrubro: number, items: T): Promise<string | null> => {
-    const abierto = abiertoDe(idrubro);
-    if (abierto) {
-      await agregar(abierto, items);
-      return abierto;
-    }
+    const abierto = await conAbierto(idrubro, id => agregar(id, items));
+    if (abierto) return abierto;
     const candidatos = await quodomApi.activosPorRubro(idrubro);
     setError(null);
     setDestino({ idrubro, items, candidatos });

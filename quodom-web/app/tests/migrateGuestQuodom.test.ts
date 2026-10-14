@@ -4,6 +4,7 @@ import { quodom as quodomApi } from '../src/api/quodom';
 import { quodomLines } from '../src/api/quodom_lines';
 import { categorias } from '../src/api/categorias';
 import { addGuestLine, clearGuestQuodoms, getGuestCart } from '../src/guest/guestQuodom';
+import { abiertoDe } from '../src/quodom/quodomAbierto';
 
 vi.mock('../src/api/quodom', () => ({
   quodom: { activosPorRubro: vi.fn(), create: vi.fn(), eliminar: vi.fn() }
@@ -32,6 +33,7 @@ const LAVANDINA = { idproducto: 100, nombreProducto: 'Lavandina 1L', cantidad: 1
 describe('guest migration by rubro', () => {
   beforeEach(() => {
     clearGuestQuodoms();
+    localStorage.clear();
     [activosPorRubro, create, eliminar, addLine, raiz].forEach(m => m.mockReset());
     raiz.mockResolvedValue(RUBROS_HABILITADOS);
     create.mockResolvedValue({ res: true, idquodom: 'q-new' });
@@ -109,6 +111,25 @@ describe('guest migration by rubro', () => {
     expect(activosPorRubro).not.toHaveBeenCalled();
     expect(eliminar).not.toHaveBeenCalled();
     expect(getGuestCart(7).lines).toHaveLength(0);
+  });
+
+  it('deja el Quodom recién migrado como el abierto del rubro', async () => {
+    // Si no, el próximo "+" de ese rubro preguntaría a cuál sumar y ofrecería
+    // el Quodom que se acaba de crear con el carrito del propio usuario.
+    addGuestLine(7, GASEOSA);
+
+    await migrarRubro(7);
+
+    expect(abiertoDe(7)).toBe('q-new');
+  });
+
+  it('no deja nada abierto si la migración falla', async () => {
+    addGuestLine(7, GASEOSA);
+    addLine.mockRejectedValue(new Error('network down'));
+
+    await expect(migrarRubro(7)).rejects.toThrow();
+
+    expect(abiertoDe(7)).toBeNull();
   });
 
   it('sends every guest line, unmerged, to the new quodom', async () => {

@@ -1,6 +1,7 @@
 import { quodom as quodomApi } from '../api/quodom';
 import { quodomLines } from '../api/quodom_lines';
 import { rubrosDisponibles } from '../quodom/rubrosDisponibles';
+import { abrirQuodom } from '../quodom/quodomAbierto';
 import { clearGuestCart, getGuestCart, guestRubrosConLineas } from './guestQuodom';
 
 export type PlanMigracion = {
@@ -74,6 +75,9 @@ export async function migrarRubro(idrubro: number): Promise<string | null> {
   }
 
   clearGuestCart(idrubro);
+  // Recién creado con el carrito del propio usuario: el próximo "+" de este
+  // rubro va ahí en vez de preguntar lo que ya se sabe.
+  abrirQuodom(idrubro, idquodom);
   window.dispatchEvent(new Event('quodom:changed'));
   return idquodom;
 }

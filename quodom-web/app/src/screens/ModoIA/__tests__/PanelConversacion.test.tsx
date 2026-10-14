@@ -7,6 +7,7 @@ import { quodom } from '../../../api/quodom';
 import { quodomLines } from '../../../api/quodom_lines';
 import { useAuth } from '../../../auth/AuthContext';
 import { abrirQuodom, abiertoDe } from '../../../quodom/quodomAbierto';
+import { ApiError } from '../../../api/client';
 
 vi.mock('../../../api/ia', () => ({
   iaApi: { chat: vi.fn() }
@@ -179,6 +180,21 @@ describe('PanelConversacion (confirming a proposal, same destination rule as the
     expect(abiertoDe(5)).toBeNull();
     // La propuesta sigue en pantalla para poder decidir de nuevo.
     expect(screen.getByRole('button', { name: /agregar al quodom/i })).toBeEnabled();
+  });
+
+  // Igual que el "+" de una tarjeta: si el Quodom recordado ya no existe
+  // (borrado o enviado en otra pestaña) se olvida y se pregunta, no se falla.
+  it('forgets an open Quodom that no longer exists and asks where to put it', async () => {
+    abrirQuodom(5, 'Q-GONE');
+    vi.mocked(quodomLines.add).mockRejectedValueOnce(new ApiError('Quodom no encontrado', 404));
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue([OTRO]);
+
+    await enviarYProponer();
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    expect(abiertoDe(5)).toBeNull();
+    expect(screen.queryByText('Quodom no encontrado')).toBeNull();
   });
 
   it('shows the failure as an assistant message and leaves the proposal on screen', async () => {

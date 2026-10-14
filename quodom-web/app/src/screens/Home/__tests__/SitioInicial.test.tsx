@@ -13,12 +13,21 @@ vi.mock('../../../api/busqueda', () => ({ busqueda: { buscar: vi.fn() } }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 const agregarSpy = vi.hoisted(() => vi.fn());
 const destinoMock = vi.hoisted(() => ({ value: null as null | { idrubro: number; candidatos: never[]; items: never[] } }));
-vi.mock('../../../quodom/useAgregarProducto', () => ({
-  useAgregarProducto: () => ({
-    agregar: agregarSpy, agregando: false, error: null, destino: destinoMock.value,
-    elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn()
-  })
-}));
+vi.mock('../../../quodom/useAgregarProducto', async () => {
+  const { useState } = await import('react');
+  return {
+    // Con estado propio: abrir y cancelar el diálogo tiene que volver a
+    // renderizar la pantalla, como el hook de verdad.
+    useAgregarProducto: () => {
+      const [destino, setDestino] = useState<typeof destinoMock.value>(null);
+      return {
+        agregar: (...args: unknown[]) => { agregarSpy(...args); if (destinoMock.value) setDestino(destinoMock.value); },
+        agregando: false, error: null, destino,
+        elegir: vi.fn(), crear: vi.fn(), cancelar: () => setDestino(null)
+      };
+    }
+  };
+});
 vi.mock('../../ModoIA/PanelConversacion', () => ({ PanelConversacion: () => <p>panel chat</p> }));
 // Subir un archivo está apagado en el home; vuelve junto con su bloque en
 // SitioInicial.tsx y el describe comentado al final de este archivo.
@@ -458,6 +467,18 @@ describe('SitioInicial (agregar desde el buscador con la sesión iniciada)', () 
     await elegirResultado();
 
     await waitFor(() => expect(agregarSpy).toHaveBeenCalled());
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.queryByText(/agregado ✓/i)).toBeNull();
+  });
+
+  it('no dice "Agregado" si el usuario cancela el diálogo de destino', async () => {
+    destinoMock.value = { idrubro: 7, candidatos: [], items: [] };
+    await elegirResultado();
+    await screen.findByRole('dialog');
+
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.queryByText(/agregado ✓/i)).toBeNull();
   });
 });

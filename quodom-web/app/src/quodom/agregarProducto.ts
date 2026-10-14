@@ -23,23 +23,35 @@ export async function agregarProducto(line: GuestLine, opts: Opts): Promise<Agre
     return { estado: 'agregado', idquodom: null };
   }
 
-  const abierto = abiertoDe(opts.idrubro);
+  const abierto = await conAbierto(opts.idrubro, id => agregarAlServidor(id, line));
   if (abierto) {
-    try {
-      await agregarAlServidor(abierto, line);
-      notificarCambio();
-      return { estado: 'agregado', idquodom: abierto };
-    } catch (e) {
-      // Un error de red o de validación no dice nada sobre el Quodom: se muestra.
-      if (!(e instanceof ApiError)) throw e;
-      // El abierto ya no existe (borrado o enviado en otra pestaña). Se cae al
-      // camino de elegir, que es el mismo que si nunca hubiera habido uno.
-      cerrarQuodom(opts.idrubro);
-    }
+    notificarCambio();
+    return { estado: 'agregado', idquodom: abierto };
   }
 
   const candidatos = await quodomApi.activosPorRubro(opts.idrubro);
   return { estado: 'elegir_destino', idrubro: opts.idrubro, candidatos };
+}
+
+/**
+ * Corre `agregar` contra el Quodom abierto del rubro y devuelve su id, o null si
+ * no hay ninguno. Es la regla que comparten el "+" de una línea y el volcado de
+ * un lote (useDestinoLote): un error de red no dice nada sobre el Quodom y se
+ * propaga; un ApiError sí puede decir que ya no existe (borrado o enviado en
+ * otra pestaña), y entonces se olvida y el llamador cae al camino de elegir,
+ * igual que si nunca hubiera habido uno abierto.
+ */
+export async function conAbierto(idrubro: number, agregar: (idquodom: string) => Promise<void>): Promise<string | null> {
+  const abierto = abiertoDe(idrubro);
+  if (!abierto) return null;
+  try {
+    await agregar(abierto);
+    return abierto;
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw e;
+    cerrarQuodom(idrubro);
+    return null;
+  }
 }
 
 /** El usuario eligió un Quodom existente: la línea va ahí y queda como el abierto. */

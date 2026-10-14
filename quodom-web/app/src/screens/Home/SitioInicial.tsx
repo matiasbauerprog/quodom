@@ -145,6 +145,13 @@ export function SitioInicial() {
   // lo recibe sin preguntar, y si no hay ninguno el hook abre el diálogo de
   // destino. Un rubro admite varios Quodoms, así que no hay conflicto que
   // resolver acá.
+  // Cancelar el diálogo de destino es no haber agregado nada: el acuse que
+  // se anticipó al tocar el resultado ya no es verdad.
+  function cancelarDestino() {
+    setAgregado(null);
+    cancelar();
+  }
+
   function elegirSugerencia(r: BusquedaResult) {
     setSugerencias(null);
     setQ('');
@@ -254,7 +261,7 @@ export function SitioInicial() {
         candidatos={destino.candidatos}
         onElegir={elegir}
         onCrear={crear}
-          onCancelar={cancelar}
+          onCancelar={cancelarDestino}
           ocupado={agregando}
           error={errAgregar}
         />
