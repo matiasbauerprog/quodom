@@ -22,7 +22,7 @@ export function BusquedaScreen() {
   const [results, setResults] = useState<BusquedaResult[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [hist, setHist] = useState<string[]>([]);
-  const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir, crear, cancelar } = useAgregarProducto();
+  const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir, pedirDestino, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
     if (!user) return;
@@ -59,6 +59,10 @@ export function BusquedaScreen() {
     agregarLinea({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 }, r.categoriaPadre);
   }
 
+  function agregarEnOtro(r: BusquedaResult) {
+    pedirDestino({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 }, r.categoriaPadre);
+  }
+
   return (
     <section className="container busqueda">
       <h1>Buscar productos</h1>
@@ -82,9 +86,14 @@ export function BusquedaScreen() {
                     <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
                     <span className="prod-name">{r.nombre}</span>
                   </span>
-                  <button className="prod-add" aria-label={'Agregar ' + r.nombre} disabled={agregando} onClick={() => agregar(r)}>
-                    <IconoMas />
-                  </button>
+                  <div className="prod-botones">
+                    <button className="prod-otro" aria-label={'Agregar ' + r.nombre + ' a otro Quodom'} disabled={agregando} onClick={() => agregarEnOtro(r)}>
+                      ···
+                    </button>
+                    <button className="prod-add" aria-label={'Agregar ' + r.nombre} disabled={agregando} onClick={() => agregar(r)}>
+                      <IconoMas />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

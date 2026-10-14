@@ -196,7 +196,9 @@
   min-height: 0;
   font-size: var(--fs-small);
 }
-.prod-item-row .prod-add { align-self: center; }
+.prod-item-row .prod-add,
+.prod-item-row .prod-otro { align-self: center; }
+.prod-item-row .prod-botones { align-items: center; }
 
 @media (min-width: 601px) {
   .prod-list { grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); max-width: 720px; }
