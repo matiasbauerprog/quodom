@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { resumenCarritosInvitado } from '../../guest/resumenInvitado';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
 import { ArbolQuodoms } from './ArbolQuodoms';
 import { PanelQuodomsActivos, type ItemActivo } from './PanelQuodomsActivos';
 import { abiertoDe } from '../../quodom/quodomAbierto';
+import { nombreRubro } from '../../quodom/rubros';
+import { PanelVacio } from './PanelVacio';
 import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
 import './BarraQuodomInferior.css';
 
@@ -27,6 +30,8 @@ function itemsCarritosInvitado(): ItemActivo[] {
 export function BarraQuodomInferior() {
   const { user } = useAuth();
   const { list, ramas, refresh } = useQuodomsEnArmado(user?.id);
+  const [params] = useSearchParams();
+  const enPantalla = Number(params.get('rubro')) || null;
   const [invitados, setInvitados] = useState<ItemActivo[]>(itemsCarritosInvitado);
   const [abierto, setAbierto] = useState(false);
   // El abierto de cada rubro vive en localStorage: sin suscribirse, el resumen
@@ -65,18 +70,37 @@ export function BarraQuodomInferior() {
   const enArmado = ramas.reduce((n, r) => n + r.quodoms.length, 0);
   const total = enArmado + invitados.length;
 
-  if (list === null || total === 0) return null;
+  // La barra está siempre, con Quodoms o sin ellos: es la única entrada al panel
+  // en celular, y esconderla justo cuando no hay nada deja al que recién llega
+  // sin ver que el panel existe. Lo único que espera es la primera respuesta,
+  // para no mostrar "ninguno" un instante antes de mostrar los que hay.
+  if (list === null) return null;
 
-  // A qué Quodom suma cada rubro: sólo cuenta el abierto que sigue en la lista.
-  const sumando = ramas.flatMap(r => {
-    const q = r.quodoms.find(x => x.id === abiertoDe(r.idrubro));
-    return q ? [{ idrubro: r.idrubro, texto: `${r.nombre} · ${q.descripcion || q.nro}` }] : [];
-  });
+  // A qué Quodom suma **el rubro que estoy mirando**. Antes listaba el abierto
+  // de todos los rubros, así que en celular decía "Sumando a: Limpieza" todo el
+  // tiempo, incluso navegando Pinturería: el dato era cierto y la respuesta a la
+  // pregunta que nadie hizo. El rubro de la pantalla es el que manda, igual que
+  // en el panel de escritorio.
+  const rama = enPantalla === null ? null : ramas.find(r => r.idrubro === enPantalla);
+  const abiertoAcá = rama?.quodoms.find(q => q.id === abiertoDe(rama.idrubro)) ?? null;
+
+  const etiqueta = (() => {
+    if (enPantalla !== null) {
+      // El nombre sale de la rama; si ese rubro no tiene rama (retirado, o la
+      // lista de rubros no cargó), del catálogo local.
+      const nombre = rama?.nombre ?? nombreRubro(enPantalla);
+      if (abiertoAcá) return { prefijo: 'Sumando a:', texto: abiertoAcá.descripcion || abiertoAcá.nro };
+      return { prefijo: nombre + ' ·', texto: 'elegís el Quodom al agregar' };
+    }
+    if (total === 0) return { prefijo: null, texto: 'Ningún Quodom en armado' };
+    return { prefijo: null, texto: total === 1 ? '1 Quodom en armado' : total + ' Quodoms en armado' };
+  })();
 
   return (
     <div className="barra-quodom-wrap" ref={contenedor}>
       {abierto && (
         <div className="barra-quodom-panel" id="barra-quodom-panel" role="region" aria-label="Quodoms activos">
+          {total === 0 && <PanelVacio />}
           {ramas.length > 0 && (
             <ArbolQuodoms ramas={ramas} onCambio={refresh} />
           )}
@@ -96,16 +120,10 @@ export function BarraQuodomInferior() {
         aria-controls={abierto ? 'barra-quodom-panel' : undefined}
         onClick={() => setAbierto(a => !a)}
       >
-        <span className="barra-quodom-count">{total}</span>
+        {total > 0 && <span className="barra-quodom-count">{total}</span>}
         <span className="barra-quodom-label">
-          {sumando.length === 0 ? (
-            <span className="barra-quodom-nada">Ningún Quodom abierto</span>
-          ) : (
-            <>
-              <span className="barra-quodom-prefijo">Sumando a:</span>
-              {sumando.map(s => <span key={s.idrubro} className="barra-quodom-destino">{s.texto}</span>)}
-            </>
-          )}
+          {etiqueta.prefijo && <span className="barra-quodom-prefijo">{etiqueta.prefijo}</span>}
+          <span className="barra-quodom-destino">{etiqueta.texto}</span>
         </span>
         <span className="barra-quodom-arrow" aria-hidden="true">{abierto ? '⌄' : '⌃'}</span>
       </button>

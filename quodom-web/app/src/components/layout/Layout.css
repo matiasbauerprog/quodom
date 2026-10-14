@@ -1,5 +1,20 @@
-.layout { min-height: 100vh; }
-.layout-main { display: flex; flex-direction: column; min-height: 100vh; }
+/* `dvh` mide lo que realmente se ve en el celular; `vh` no descuenta la barra
+   de direcciones, así que el layout queda más alto que la pantalla y la barra
+   inferior fija cae debajo del borde visible hasta que uno scrollea. La línea
+   con `vh` es la reserva para quien no soporte `dvh`. */
+.layout { min-height: 100vh; min-height: 100dvh; }
+.layout-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* La barra inferior es fija y está siempre: sin reservarle el lugar, lo último
+   de cada pantalla queda abajo de ella y no hay forma de llegar. */
+@media (max-width: 1024px) {
+  .layout-main > main { padding-bottom: 72px; }
+}
 
 @media (min-width: 1025px) {
   .layout { display: grid; grid-template-columns: 70% 30%; }

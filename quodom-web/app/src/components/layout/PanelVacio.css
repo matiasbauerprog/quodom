@@ -1,0 +1,52 @@
+/* Va sobre el panel oscuro, en las dos superficies. */
+.pv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-4);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+}
+
+.pv-titulo {
+  margin: 0;
+  font-family: var(--font-prompt);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pv-pasos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pv-pasos li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: var(--sp-3);
+  align-items: start;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pv-n {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  font-family: var(--font-prompt);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.pv-ingresar { background: #fff; color: var(--color-acento); }

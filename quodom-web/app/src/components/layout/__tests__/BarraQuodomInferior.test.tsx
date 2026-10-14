@@ -21,6 +21,8 @@ const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-1', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, createdBy: 'u-1', iddireccion: null };
 const OBRA = { id: 'q-4', descripcion: 'Obra', estado: 'CREADO', nro: 'QD-2', idrubro: 4, nombrerubro: 'Construcción', cantproductos: 1, createdBy: 'u-1', iddireccion: null };
 const CASA = { id: 'p1', descripcion: 'Casa', estado: 'CREADO', nro: 'QD-1', idrubro: 5, nombrerubro: 'Pinturería', cantproductos: 2, porccompletado: 100 };
+const DEPTO = { id: 'p2', descripcion: 'Depto', estado: 'CREADO', nro: 'QD-5', idrubro: 5, nombrerubro: 'Pinturería', cantproductos: 1, porccompletado: 100 };
+const OFICINA = { id: 'l1', descripcion: 'Oficina', estado: 'CREADO', nro: 'QD-3', idrubro: 1, nombrerubro: 'Limpieza', cantproductos: 3, porccompletado: 100 };
 const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 2 };
 
 function login() {
@@ -33,6 +35,10 @@ function logout() {
 
 // El árbol desplegado, aparte del botón de la barra, cuyo texto también nombra el destino.
 const arbol = () => within(screen.getByRole('region', { name: /Quodoms activos/i }));
+
+function montar(url = '/') {
+  return render(<MemoryRouter initialEntries={[url]}><BarraQuodomInferior /></MemoryRouter>);
+}
 
 const toggle = () => screen.getByTestId('barra-toggle');
 const findToggle = () => screen.findByTestId('barra-toggle');
@@ -50,15 +56,35 @@ describe('BarraQuodomInferior', () => {
     login();
   });
 
-  it('stays hidden when there is no open quodom', async () => {
+  // Es la única entrada al panel en celular: esconderla justo cuando no hay nada
+  // deja al que recién llega sin ver que el panel existe.
+  it('sin Quodoms sigue estando, y lo dice', async () => {
     misQuodom.mockResolvedValue([]);
-    const { container } = render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    await waitFor(() => expect(container.querySelector('.barra-quodom')).toBeNull());
+    montar();
+
+    expect(await screen.findByText(/ningún quodom en armado/i)).toBeInTheDocument();
+    expect(screen.getByTestId('barra-toggle')).toBeInTheDocument();
+  });
+
+  it('sin Quodoms el panel ofrece los tres pasos', async () => {
+    misQuodom.mockResolvedValue([]);
+    montar();
+
+    fireEvent.click(await findToggle());
+
+    expect(screen.getByText(/armá tu primer quodom/i)).toBeInTheDocument();
+  });
+
+  it('no parpadea: espera la primera respuesta antes de mostrarse', () => {
+    misQuodom.mockReturnValue(new Promise(() => {}));
+    const { container } = montar();
+
+    expect(container.querySelector('.barra-quodom')).toBeNull();
   });
 
   it('shows the number of quodoms in armado, collapsed', async () => {
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar();
 
     expect(await screen.findByText('2')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Bebidas oficina/ })).toBeNull();
@@ -66,7 +92,7 @@ describe('BarraQuodomInferior', () => {
 
   it('expands the tree on click and lists each open quodom', async () => {
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar();
 
     fireEvent.click(await findToggle());
 
@@ -76,7 +102,7 @@ describe('BarraQuodomInferior', () => {
 
   it('collapses again on a second click', async () => {
     misQuodom.mockResolvedValue([BEBIDAS]);
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar();
 
     await findToggle();
     fireEvent.click(toggle());
@@ -88,7 +114,7 @@ describe('BarraQuodomInferior', () => {
 
   it('refreshes the list when quodom:changed fires', async () => {
     misQuodom.mockResolvedValue([BEBIDAS]);
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar();
     await waitFor(() => expect(misQuodom).toHaveBeenCalledTimes(1));
 
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
@@ -102,7 +128,7 @@ describe('BarraQuodomInferior', () => {
     // in localStorage. Without this it becomes unreachable once logged in.
     addGuestLine(4, { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 1 });
     misQuodom.mockResolvedValue([BEBIDAS]);
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar();
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument()); // 1 server + 1 guest
 
     fireEvent.click(toggle());
@@ -119,41 +145,67 @@ describe('BarraQuodomInferior tree', () => {
     login();
   });
 
-  it('dice a qué Quodom está sumando cada rubro', async () => {
+  it('dice a qué Quodom suma el rubro que está en pantalla', async () => {
     abrirQuodom(5, 'p1');
-    misQuodom.mockResolvedValue([CASA]);
+    misQuodom.mockResolvedValue([CASA, DEPTO]);
 
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar('/?rubro=5');
 
     expect(await screen.findByText(/sumando a/i)).toBeInTheDocument();
-    expect(screen.getByText(/Casa/)).toBeInTheDocument();
+    expect(screen.getByText('Casa')).toBeInTheDocument();
+  });
+
+  // El defecto que esto arregla: la barra listaba el abierto de TODOS los
+  // rubros, así que navegando Pintura decía "Sumando a: Limpieza · Oficina"
+  // todo el tiempo. Cierto, y la respuesta a una pregunta que nadie hizo.
+  it('el Quodom abierto de otro rubro no aparece', async () => {
+    abrirQuodom(1, 'l1');
+    misQuodom.mockResolvedValue([OFICINA]);
+
+    montar('/?rubro=5');
+
+    await screen.findByTestId('barra-toggle');
+    expect(screen.getByTestId('barra-toggle')).not.toHaveTextContent('Oficina');
+    expect(screen.getByTestId('barra-toggle')).not.toHaveTextContent(/sumando a/i);
+  });
+
+  it('en un rubro sin destino dice que se elige al agregar', async () => {
+    misQuodom.mockResolvedValue([CASA, DEPTO]);
+
+    montar('/?rubro=5');
+
+    expect(await screen.findByText(/elegís el Quodom al agregar/i)).toBeInTheDocument();
+    expect(screen.getByTestId('barra-toggle')).toHaveTextContent('Pinturería');
+  });
+
+  // Fuera de un rubro no hay un destino que nombrar: lo que queda por decir es
+  // cuánto hay en armado.
+  it('fuera de un rubro cuenta lo que hay en armado', async () => {
+    abrirQuodom(1, 'l1');
+    misQuodom.mockResolvedValue([OFICINA, CASA]);
+
+    montar();
+
+    expect(await screen.findByText(/2 Quodoms en armado/i)).toBeInTheDocument();
   });
 
   it('al desplegarla aparece el mismo árbol', async () => {
     misQuodom.mockResolvedValue([CASA]);
 
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar();
     fireEvent.click(await findToggle());
 
     expect(arbol().getByRole('button', { name: /Casa/ })).toBeInTheDocument();
   });
 
-  it('con uno abierto, la barra sigue diciendo "sumando a" y el árbol lo muestra', async () => {
+  it('con uno abierto, la barra lo nombra y el árbol lo muestra', async () => {
     abrirQuodom(5, 'p1');
-    misQuodom.mockResolvedValue([CASA]);
+    misQuodom.mockResolvedValue([CASA, DEPTO]);
 
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar('/?rubro=5');
     fireEvent.click(await screen.findByRole('button', { name: /sumando a/i }));
 
     expect(arbol().getByRole('button', { name: /Casa/ })).toBeInTheDocument();
-  });
-
-  it('sin nada abierto lo dice en vez de mentir', async () => {
-    misQuodom.mockResolvedValue([CASA]);
-
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-
-    expect(await screen.findByText(/ningún quodom abierto/i)).toBeInTheDocument();
   });
 });
 
@@ -163,16 +215,21 @@ describe('BarraQuodomInferior for guests', () => {
     logout();
   });
 
-  it('stays hidden when the guest has no cart with lines', async () => {
-    const { container } = render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    await waitFor(() => expect(container.querySelector('.barra-quodom')).toBeNull());
+  it('sin carritos sigue estando, con los tres pasos y el link de ingresar', async () => {
+    montar();
+
+    fireEvent.click(await findToggle());
+
+    expect(screen.getByText(/armá tu primer quodom/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ingresar/i })).toBeInTheDocument();
+    // Sin sesión no se le pide nada al servidor.
     expect(misQuodom).not.toHaveBeenCalled();
   });
 
   it('shows the count of guest carts with lines and expands to list them', async () => {
     addGuestLine(7, GASEOSA);
     addGuestLine(4, { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 1 });
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    montar();
 
     expect(await screen.findByText('2')).toBeInTheDocument();
 
@@ -183,12 +240,12 @@ describe('BarraQuodomInferior for guests', () => {
   });
 
   it('refreshes on quodom:changed as a guest adds a product', async () => {
-    const { container } = render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    expect(container.querySelector('.barra-quodom')).toBeNull();
+    montar();
+    expect(await screen.findByText(/ningún quodom en armado/i)).toBeInTheDocument();
 
     addGuestLine(7, GASEOSA);
     act(() => { window.dispatchEvent(new Event('quodom:changed')); });
 
-    await waitFor(() => expect(container.querySelector('.barra-quodom')).not.toBeNull());
+    await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
   });
 });

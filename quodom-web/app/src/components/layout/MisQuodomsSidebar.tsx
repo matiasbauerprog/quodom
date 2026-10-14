@@ -10,6 +10,7 @@ import { ArbolQuodoms, cuentaProductos } from './ArbolQuodoms';
 import { RotuloRubro } from './RotuloRubro';
 import { TarjetaDestino } from './TarjetaDestino';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
+import { PanelVacio } from './PanelVacio';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
 import { bloqueoDeEnvio, conFaltaConcreta, type FaltaAtributo } from '../../quodom/bloqueosEnvio';
 import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
@@ -108,17 +109,7 @@ export function MisQuodomsSidebar() {
         </p>
       )}
 
-      {vacio && (
-        <div className="mq-sidebar-empty">
-          <p className="mq-sidebar-empty-titulo">Armá tu primer Quodom</p>
-          <ol className="mq-sidebar-pasos">
-            <li><span className="mq-sidebar-paso-n">1</span><span>Elegí un rubro en el catálogo.</span></li>
-            <li><span className="mq-sidebar-paso-n">2</span><span>Tocá + en un producto, o arrastralo hasta acá.</span></li>
-            <li><span className="mq-sidebar-paso-n">3</span><span>Cotizá el Quodom por WhatsApp.</span></li>
-          </ol>
-          {!user && <Link to="/login" className="btn btn-block">Ingresar</Link>}
-        </div>
-      )}
+      {vacio && <PanelVacio />}
 
       {/* Un carrito de invitado se dibuja como el Quodom que todavía no es: la
           misma tarjeta del destino, con el chip "Sin guardar" en vez del verde. */}

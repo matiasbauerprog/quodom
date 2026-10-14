@@ -8,7 +8,10 @@
 .prod-list {
   display: grid;
   gap: var(--sp-2);
-  grid-template-columns: repeat(3, 1fr);
+  /* Dos columnas, no tres: en un teléfono de 390px, tres daban tarjetas de
+     ~110px y la de la derecha quedaba cortada contra el borde. Es además la
+     regla del proyecto para la base mobile (1-2 columnas). */
+  grid-template-columns: repeat(2, 1fr);
   width: 100%;
   max-width: 640px;
 }

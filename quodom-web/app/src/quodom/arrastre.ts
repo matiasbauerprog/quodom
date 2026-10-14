@@ -33,6 +33,12 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   onSoltar: (blanco: Blanco) => void;
 }): void {
   if (ev.button !== 0) return;
+  // Sólo con mouse. El árbol donde se suelta es el panel de escritorio (desde
+  // 1025px); en celular el panel es la barra inferior plegada, así que no hay
+  // dónde soltar y lo único que lograba el gesto era comerse el scroll de la
+  // lista de productos. Todo lo que hace arrastrar se puede hacer con el `+` y
+  // con el clic en el producto, que es lo que hay en celular.
+  if (ev.pointerType && ev.pointerType !== 'mouse') return;
   const x0 = ev.clientX;
   const y0 = ev.clientY;
   let vivo = false;

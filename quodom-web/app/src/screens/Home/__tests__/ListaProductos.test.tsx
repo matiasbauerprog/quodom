@@ -450,6 +450,36 @@ describe('ListaProductos · arrastrar al árbol', () => {
   });
 });
 
+// En celular no hay árbol a la vista donde soltar: el panel es la barra inferior
+// plegada. Lo único que lograba el gesto era comerse el scroll de la lista.
+describe('ListaProductos · arrastrar es de escritorio', () => {
+  it('un toque no levanta el arrastre', async () => {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+    const info = document.querySelector('.prod-info')!;
+
+    fireEvent.pointerDown(info, { clientX: 100, clientY: 100, button: 0, pointerType: 'touch' });
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 300, clientY: 300 }));
+
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+    expect(document.querySelector('.arrastre-fantasma')).toBeNull();
+  });
+
+  it('con mouse sí', async () => {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+    const info = document.querySelector('.prod-info')!;
+
+    fireEvent.pointerDown(info, { clientX: 100, clientY: 100, button: 0, pointerType: 'mouse' });
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 300, clientY: 300 }));
+
+    expect(document.body.classList.contains('arrastrando')).toBe(true);
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 300, clientY: 300 }));
+  });
+});
+
 describe('ListaProductos · el clic que sigue a un arrastre', () => {
   async function tarjeta() {
     porCategoria.mockResolvedValue([COCA]);
