@@ -47,26 +47,22 @@ export function GrupoRubro({
   const pendientes = items.filter(it => !agregadosRef.current.has(it.idproducto));
   const todoAgregado = agregadoEn !== null && pendientes.length === 0;
 
-  async function agregarLineas(idquodom: string, elegidos: IaProposalItem[]) {
-    for (const it of elegidos) {
-      if (agregadosRef.current.has(it.idproducto)) continue;
-      await quodomLines.add({
-        idquodom,
-        idproducto: it.idproducto,
-        cantidad: it.cantidad,
-        nombreProducto: it.nombreProducto
-      });
-      agregadosRef.current.add(it.idproducto);
-    }
-    window.dispatchEvent(new Event('quodom:changed'));
-    setAgregadoEn(idquodom);
+  async function agregarLinea(idquodom: string, it: IaProposalItem) {
+    if (agregadosRef.current.has(it.idproducto)) return;
+    await quodomLines.add({
+      idquodom,
+      idproducto: it.idproducto,
+      cantidad: it.cantidad,
+      nombreProducto: it.nombreProducto
+    });
+    agregadosRef.current.add(it.idproducto);
   }
 
   function mensajeDeError(e: unknown) {
     return e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo agregar al Quodom.';
   }
 
-  const lote = useDestinoLote<IaProposalItem[]>({ agregar: agregarLineas, descripcion: descripcionLista });
+  const lote = useDestinoLote<IaProposalItem>({ agregarItem: agregarLinea, descripcion: descripcionLista });
 
   // Va al Quodom abierto del rubro; sin ninguno abierto pregunta a cuál sumarlo
   // (o si crear uno nuevo) en vez de crear como efecto secundario.
@@ -74,7 +70,8 @@ export function GrupoRubro({
     setConfirming(true);
     setError(null);
     try {
-      await lote.resolver(grupo.idrubro, elegidos);
+      const id = await lote.resolver(grupo.idrubro, elegidos);
+      if (id) setAgregadoEn(id);
     } catch (e) {
       setError(mensajeDeError(e));
     } finally {
@@ -130,8 +127,8 @@ export function GrupoRubro({
         <DialogoDestino
           nombreRubro={grupo.rubro || nombreRubro(grupo.idrubro)}
           candidatos={lote.destino.candidatos}
-          onElegir={lote.elegir}
-          onCrear={lote.crear}
+          onElegir={async idquodom => { const id = await lote.elegir(idquodom); if (id) setAgregadoEn(id); }}
+          onCrear={async () => { const id = await lote.crear(); if (id) setAgregadoEn(id); }}
           onCancelar={lote.cancelar}
           ocupado={lote.ocupado}
           error={lote.error}

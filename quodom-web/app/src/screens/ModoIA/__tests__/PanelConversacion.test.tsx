@@ -197,6 +197,42 @@ describe('PanelConversacion (confirming a proposal, same destination rule as the
     expect(screen.queryByText('Quodom no encontrado')).toBeNull();
   });
 
+  // Retomar, no reiniciar: si la línea 2 falla con el Quodom recordado, el
+  // diálogo de destino sólo recibe lo que falta. Si no, la 1 llega dos veces.
+  it('resumes a partly added batch instead of re-adding what already landed', async () => {
+    (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      type: 'proposal' as const,
+      text: 'Listo, esto te propongo:',
+      idrubro: 5,
+      items: [
+        { idproducto: 301, cantidad: 1, motivo: 'a', nombreProducto: 'Producto Uno' },
+        { idproducto: 302, cantidad: 1, motivo: 'b', nombreProducto: 'Producto Dos' },
+        { idproducto: 303, cantidad: 1, motivo: 'c', nombreProducto: 'Producto Tres' }
+      ]
+    });
+    abrirQuodom(5, 'Q-GONE');
+    const llegaron: string[] = [];
+    let fallo = true;
+    vi.mocked(quodomLines.add).mockImplementation((async (l: { idquodom: string; idproducto: number }) => {
+      if (l.idproducto === 302 && fallo) { fallo = false; throw new ApiError('Quodom no encontrado', 404); }
+      llegaron.push(l.idquodom + ':' + l.idproducto);
+      return { res: true, id: 1 };
+    }) as never);
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue([OTRO]);
+
+    renderWith();
+    fireEvent.change(screen.getByPlaceholderText(/escrib/i), { target: { value: 'quiero pintar' } });
+    fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
+    await waitFor(() => expect(screen.getByText('Producto Uno')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /casa/i }));
+
+    await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
+    // La 301 entró en el Quodom recordado; al resolver el diálogo sólo faltaban 302 y 303.
+    expect(llegaron).toEqual(['Q-GONE:301', 'Q-EXIST:302', 'Q-EXIST:303']);
+  });
+
   it('shows the failure as an assistant message and leaves the proposal on screen', async () => {
     abrirQuodom(5, 'Q-EXIST');
     vi.mocked(quodomLines.add).mockRejectedValue(new Error('Sin conexión.'));

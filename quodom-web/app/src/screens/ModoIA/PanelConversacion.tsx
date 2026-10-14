@@ -25,17 +25,14 @@ function descripcionIa() {
     + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
 }
 
-async function agregarItemsAlQuodom(idquodom: string, items: IaProposalItem[]) {
-  for (const it of items) {
-    await agregarAlServidor(idquodom, {
-      idproducto: it.idproducto,
-      cantidad: it.cantidad,
-      nombreProducto: it.nombreProducto,
-      ...(it.atributo1 ? { atributo1: it.atributo1 } : {}),
-      ...(it.atributo2 ? { atributo2: it.atributo2 } : {})
-    });
-  }
-  window.dispatchEvent(new Event('quodom:changed'));
+function agregarItemAlQuodom(idquodom: string, it: IaProposalItem) {
+  return agregarAlServidor(idquodom, {
+    idproducto: it.idproducto,
+    cantidad: it.cantidad,
+    nombreProducto: it.nombreProducto,
+    ...(it.atributo1 ? { atributo1: it.atributo1 } : {}),
+    ...(it.atributo2 ? { atributo2: it.atributo2 } : {})
+  });
 }
 
 export function PanelConversacion() {
@@ -46,7 +43,7 @@ export function PanelConversacion() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const lote = useDestinoLote<IaProposalItem[]>({ agregar: agregarItemsAlQuodom, descripcion: descripcionIa });
+  const lote = useDestinoLote<IaProposalItem>({ agregarItem: agregarItemAlQuodom, descripcion: descripcionIa });
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
