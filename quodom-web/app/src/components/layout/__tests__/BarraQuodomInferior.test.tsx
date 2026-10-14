@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BarraQuodomInferior } from '../BarraQuodomInferior';
 import { quodom as quodomApi } from '../../../api/quodom';
@@ -30,6 +30,9 @@ function login() {
 function logout() {
   vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
 }
+
+// El árbol desplegado, aparte del botón de la barra, cuyo texto también nombra el destino.
+const arbol = () => within(screen.getByRole('region', { name: /Quodoms activos/i }));
 
 function reiniciar() {
   misQuodom.mockReset();
@@ -129,17 +132,17 @@ describe('BarraQuodomInferior tree', () => {
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
 
-    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+    expect(arbol().getByRole('button', { name: /Casa/ })).toBeInTheDocument();
   });
 
-  it('con uno abierto, el botón se llama "sumando a" y el árbol lo muestra', async () => {
+  it('con uno abierto, la barra sigue diciendo "sumando a" y el árbol lo muestra', async () => {
     abrirQuodom(5, 'p1');
     misQuodom.mockResolvedValue([CASA]);
 
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: /sumando a/i }));
 
-    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+    expect(arbol().getByRole('button', { name: /Casa/ })).toBeInTheDocument();
   });
 
   it('sin nada abierto lo dice en vez de mentir', async () => {
@@ -157,7 +160,7 @@ describe('BarraQuodomInferior tree', () => {
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
 
-    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+    expect(arbol().getByRole('button', { name: /Casa/ })).toBeInTheDocument();
   });
 
   it('no cierra los abiertos cuando falla la lista de Quodoms', async () => {

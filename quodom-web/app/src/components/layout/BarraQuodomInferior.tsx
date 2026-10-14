@@ -113,7 +113,7 @@ export function BarraQuodomInferior() {
   return (
     <div className="barra-quodom-wrap" ref={contenedor}>
       {abierto && (
-        <div className="barra-quodom-panel">
+        <div className="barra-quodom-panel" id="barra-quodom-panel" role="region" aria-label="Quodoms activos">
           {ramas.length > 0 && (
             <ArbolQuodoms ramas={ramas} onCambio={() => setNonce(n => n + 1)} />
           )}
@@ -129,11 +129,12 @@ export function BarraQuodomInferior() {
         type="button"
         className="barra-quodom"
         aria-expanded={abierto}
+        aria-controls="barra-quodom-panel"
         onClick={() => setAbierto(a => !a)}
       >
         <span className="barra-quodom-count">{total}</span>
         <span className="barra-quodom-label">
-          {abierto ? 'Mis Quodoms activos' : sumando.length === 0 ? (
+          {sumando.length === 0 ? (
             <span className="barra-quodom-nada">Ningún Quodom abierto</span>
           ) : (
             <>
