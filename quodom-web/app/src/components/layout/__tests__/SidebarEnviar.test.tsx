@@ -7,12 +7,16 @@ import { useAuth } from '../../../auth/AuthContext';
 import { openWhatsappLink } from '../../../utils/whatsapp';
 import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
 import { users as usersApi } from '../../../api/users';
+import { abrirQuodom } from '../../../quodom/quodomAbierto';
 
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(), whatsapp: vi.fn() } }));
 vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { porQuodom: vi.fn().mockResolvedValue([]), update: vi.fn(), eliminar: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../../../quodom/rubrosDisponibles', () => ({
+  rubrosDisponibles: vi.fn(() => Promise.resolve([1, 2, 3, 4, 5, 6, 7, 8]))
+}));
 vi.mock('../../../utils/whatsapp', () => ({ openWhatsappLink: vi.fn() }));
 vi.mock('../../../api/users', () => ({ users: { getDirecciones: vi.fn() } }));
 
@@ -31,14 +35,17 @@ const ENVIADA = {
   fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
 };
 
+// El Quodom abierto del árbol: ahí abajo viven las líneas y el envío.
 function tarjetaBebidas(): HTMLElement {
-  return screen.getByText('Bebidas oficina').closest('article') as HTMLElement;
+  return screen.getByText('Bebidas oficina').closest('li') as HTMLElement;
 }
 
 beforeEach(() => {
   misQuodom.mockReset(); whatsapp.mockReset(); getDirecciones.mockReset();
   vi.mocked(openWhatsappLink).mockReset();
-  clearGuestQuodoms();
+  clearGuestQuodoms(); localStorage.clear();
+  // El envío vive bajo el Quodom abierto del árbol.
+  abrirQuodom(7, 'q-7');
   vi.mocked(useAuth).mockReturnValue({ user: { id: 'u-1' } } as unknown as ReturnType<typeof useAuth>);
   misQuodom.mockResolvedValue([BEBIDAS]);
   whatsapp.mockResolvedValue({ res: true, link: 'https://wa.me/?text=hola' });
@@ -48,13 +55,11 @@ beforeEach(() => {
 });
 
 describe('sidebar: enviar por WhatsApp', () => {
-  it('la tarjeta activa ofrece enviar además de continuar', async () => {
+  it('el Quodom abierto ofrece enviar', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
 
-    const tarjeta = tarjetaBebidas();
-    expect(within(tarjeta).getByRole('button', { name: /continuar/i })).toBeInTheDocument();
-    expect(within(tarjeta).getByRole('button', { name: /enviar/i })).toBeInTheDocument();
+    expect(await within(tarjetaBebidas()).findByRole('button', { name: /enviar/i })).toBeInTheDocument();
   });
 
   it('un carrito de invitado no ofrece enviar: eso exige login y migración', async () => {
@@ -87,29 +92,12 @@ describe('sidebar: enviar por WhatsApp', () => {
     window.removeEventListener('quodom:changed', escuchado);
   });
 
-  it('queda a la vista marcado ENVIADO, no desaparece de golpe', async () => {
+  it('una vez enviado deja el árbol: su lugar es Mis Quodoms', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
 
     misQuodom.mockResolvedValue([ENVIADA]);
     fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /enviar/i }));
-
-    await waitFor(() => expect(within(tarjetaBebidas()).getByText(/ENVIADO/)).toBeInTheDocument());
-    expect(screen.getByText('Bebidas oficina')).toBeInTheDocument();
-  });
-
-  it('al recargar la página ya no está: su lugar es Mis Quodoms', async () => {
-    const { unmount } = render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-    await screen.findByText('Bebidas oficina');
-
-    misQuodom.mockResolvedValue([ENVIADA]);
-    fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /enviar/i }));
-    await waitFor(() => expect(within(tarjetaBebidas()).getByText(/ENVIADO/)).toBeInTheDocument());
-
-    // Remontar es el equivalente a un F5: el "recién enviado" es estado de
-    // componente y no sobrevive.
-    unmount();
-    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
     await waitFor(() => expect(screen.queryByText('Bebidas oficina')).toBeNull());
   });

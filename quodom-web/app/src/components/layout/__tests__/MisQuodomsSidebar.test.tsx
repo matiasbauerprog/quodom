@@ -1,16 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act, within } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MisQuodomsSidebar } from '../MisQuodomsSidebar';
 import { quodom as quodomApi } from '../../../api/quodom';
 import { useAuth } from '../../../auth/AuthContext';
 import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
-import { ApiError } from '../../../api/client';
+import { rubrosDisponibles } from '../../../quodom/rubrosDisponibles';
+import { leerAbiertos, abrirQuodom } from '../../../quodom/quodomAbierto';
 
 vi.mock('../../../api/quodom', () => ({
   quodom: { misQuodom: vi.fn(), repetir: vi.fn(), activoPorRubro: vi.fn(), eliminar: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../../../quodom/rubrosDisponibles', () => ({
+  rubrosDisponibles: vi.fn(() => Promise.resolve([1, 2, 3, 4, 5, 6, 7, 8]))
+}));
 // El sidebar pregunta si el usuario tiene dirección para saber si puede
 // enviar. Sin mockearlo sale un fetch real que falla en tiempos distintos
 // cada vez y vuelve intermitentes a los tests de al lado.
@@ -33,7 +37,7 @@ const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', n
 const OBRA = { id: 'q-4', descripcion: 'Obra San Isidro', estado: 'CREADO', nro: 'QD-2', idrubro: 4, nombrerubro: 'Construcción', cantproductos: 1, createdBy: 'u-1', iddireccion: null };
 
 describe('MisQuodomsSidebar', () => {
-  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); login(); });
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); localStorage.clear(); login(); });
 
   it('lists every open quodom with its rubro', async () => {
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
@@ -41,7 +45,6 @@ describe('MisQuodomsSidebar', () => {
 
     await waitFor(() => expect(screen.getByText('Bebidas')).toBeInTheDocument());
     expect(screen.getByText('Construcción')).toBeInTheDocument();
-    expect(screen.getByText(/Quodoms activos/i)).toBeInTheDocument();
     // The quodom's own name stays visible alongside its rubro label — it is
     // never hidden just because a user could type the rubro's name too.
     expect(screen.getByText('Bebidas oficina')).toBeInTheDocument();
@@ -139,142 +142,100 @@ describe('MisQuodomsSidebar con sesión y carritos huérfanos', () => {
   });
 });
 
-// Los enviados eran historial invisible: había que ir a Mis Quodoms para
-// volver a pedir lo mismo. Ahora quedan abajo, en verde, listos para repetir.
-// No hace falta programar la mudanza: al enviarlo el backend lo pasa a ENVIADO
-// y `quodom:changed` recarga, así que cae solo de una sección a la otra.
-describe('MisQuodomsSidebar (repetí un pedido)', () => {
-  const repetir = quodomApi.repetir as unknown as ReturnType<typeof vi.fn>;
-  const enviado = (n: number, rubro: string, idrubro: number) => ({
-    id: 'q-e' + n, descripcion: 'Pedido ' + n, estado: 'ENVIADO', nro: 'QD-E' + n,
-    idrubro, nombrerubro: rubro, cantproductos: 3, createdBy: 'u-1', iddireccion: null
-  });
+describe('sidebar: el árbol', () => {
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); localStorage.clear(); login(); });
 
-  beforeEach(() => { misQuodom.mockReset(); repetir.mockReset(); clearGuestQuodoms(); login(); });
+  it('agrupa los Quodoms por rubro', async () => {
+    misQuodom.mockResolvedValue([
+      { id: 'p1', descripcion: 'Casa', estado: 'CREADO', nro: 'QD-1', idrubro: 5, nombrerubro: 'Pinturería', cantproductos: 2, porccompletado: 100 },
+      { id: 'p2', descripcion: 'Depto', estado: 'CREADO', nro: 'QD-2', idrubro: 5, nombrerubro: 'Pinturería', cantproductos: 1, porccompletado: 100 },
+      { id: 'l1', descripcion: 'Oficina', estado: 'CREADO', nro: 'QD-3', idrubro: 1, nombrerubro: 'Limpieza', cantproductos: 3, porccompletado: 100 }
+    ]);
 
-  it('muestra los terminados aparte de los activos', async () => {
-    misQuodom.mockResolvedValue([BEBIDAS, enviado(1, 'Pintura', 5)]);
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    await waitFor(() => expect(screen.getByText(/repetí un pedido/i)).toBeInTheDocument());
-    expect(screen.getByText(/Quodoms activos/i)).toBeInTheDocument();
-    expect(screen.getByText('Pedido 1')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Casa/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Depto/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Oficina/ })).toBeInTheDocument();
   });
 
-  it('muestra como mucho los últimos cinco', async () => {
-    misQuodom.mockResolvedValue([1, 2, 3, 4, 5, 6, 7].map(n => enviado(n, 'Pintura', 5)));
-    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+  it('no muestra los enviados: ésos viven en Mis Quodoms', async () => {
+    misQuodom.mockResolvedValue([
+      { id: 'p1', descripcion: 'Casa', estado: 'CREADO', nro: 'QD-1', idrubro: 5, cantproductos: 2, porccompletado: 100 },
+      { id: 'p9', descripcion: 'Frente', estado: 'ENVIADO', nro: 'QD-9', idrubro: 5, cantproductos: 2, porccompletado: 100, fechaenvio: new Date().toISOString() }
+    ]);
 
-    await waitFor(() => expect(screen.getByText(/repetí un pedido/i)).toBeInTheDocument());
-    expect(screen.getAllByRole('button', { name: /repetir/i })).toHaveLength(5);
-    expect(screen.getByText('Pedido 1')).toBeInTheDocument();
-    expect(screen.queryByText('Pedido 6')).toBeNull();
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByRole('button', { name: /Casa/ });
+
+    expect(screen.queryByText(/Frente/)).toBeNull();
   });
 
-  it('no muestra la sección cuando no hay ninguno terminado', async () => {
-    misQuodom.mockResolvedValue([BEBIDAS]);
+  it('ofrece el botón Mis Quodoms', async () => {
+    misQuodom.mockResolvedValue([]);
+
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    await waitFor(() => expect(screen.getByText(/Quodoms activos/i)).toBeInTheDocument());
+    expect(await screen.findByRole('link', { name: /mis quodoms/i })).toHaveAttribute('href', '/mis-quodoms');
+  });
+
+  it('ya no muestra Repetí un pedido', async () => {
+    misQuodom.mockResolvedValue([
+      { id: 'p9', descripcion: 'Frente', estado: 'ENVIADO', nro: 'QD-9', idrubro: 5, cantproductos: 2, porccompletado: 100, fechaenvio: new Date().toISOString() }
+    ]);
+
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByRole('link', { name: /mis quodoms/i });
+
     expect(screen.queryByText(/repetí un pedido/i)).toBeNull();
   });
 
-  it('repetir uno crea el Quodom nuevo y refresca', async () => {
-    misQuodom.mockResolvedValue([enviado(1, 'Pintura', 5)]);
-    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+  it('no ofrece un rubro que ya no está disponible', async () => {
+    vi.mocked(rubrosDisponibles).mockResolvedValueOnce([5]);
+    misQuodom.mockResolvedValue([BEBIDAS, { ...OBRA, idrubro: 5, nombrerubro: 'Pintura' }]);
+
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    await waitFor(() => expect(screen.getByText(/repetí un pedido/i)).toBeInTheDocument());
-    await act(async () => { screen.getByRole('button', { name: /repetir/i }).click(); });
-
-    expect(repetir).toHaveBeenCalledWith('q-e1');
-  });
-
-  it('avisa cuando ya hay un Quodom abierto de ese rubro', async () => {
-    misQuodom.mockResolvedValue([enviado(1, 'Pintura', 5)]);
-    repetir.mockRejectedValue(new Error('Ya tenés un Quodom abierto de Pintura.'));
-    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-
-    await waitFor(() => expect(screen.getByText(/repetí un pedido/i)).toBeInTheDocument());
-    await act(async () => { screen.getByRole('button', { name: /repetir/i }).click(); });
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/ya tenés un quodom abierto/i);
+    expect(await screen.findByText('Obra San Isidro')).toBeInTheDocument();
+    expect(screen.queryByText('Bebidas oficina')).toBeNull();
   });
 });
 
-// Repetir crea un Quodom, así que choca con la regla de uno abierto por rubro y
-// el backend contesta 409. Antes eso llegaba como un mensaje de error y el
-// usuario quedaba sin salida; ahora se le ofrece reemplazar el que tiene.
-describe('MisQuodomsSidebar (repetir con un Quodom abierto del rubro)', () => {
-  const repetir = quodomApi.repetir as unknown as ReturnType<typeof vi.fn>;
-  const activoPorRubro = quodomApi.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
-  const eliminar = quodomApi.eliminar as unknown as ReturnType<typeof vi.fn>;
-  const ENVIADO_PINTURA = {
-    id: 'q-viejo', descripcion: 'Pintura living', estado: 'ENVIADO', nro: 'QD-E1',
-    idrubro: 5, nombrerubro: 'Pintura', cantproductos: 4, createdBy: 'u-1', iddireccion: null
-  };
-  const ABIERTO_PINTURA = {
-    id: 'q-abierto', descripcion: 'Pintura cocina', estado: 'CREADO', nro: 'QD-9',
-    idrubro: 5, nombrerubro: 'Pintura', cantproductos: 2, createdBy: 'u-1', iddireccion: null
-  };
+// sanearAbiertos descarta todo lo que no esté en la lista que recibe: llamarla
+// con una lista que no salió de una carga buena cerraría los Quodoms abiertos.
+describe('sidebar: saneo de los Quodoms abiertos', () => {
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); localStorage.clear(); login(); });
 
-  beforeEach(() => {
-    misQuodom.mockReset(); repetir.mockReset(); activoPorRubro.mockReset(); eliminar.mockReset();
-    clearGuestQuodoms(); login();
-    misQuodom.mockResolvedValue([ENVIADO_PINTURA]);
-  });
+  it('descarta el abierto que ya no existe, tras una carga buena', async () => {
+    abrirQuodom(7, 'q-fantasma');
+    misQuodom.mockResolvedValue([BEBIDAS]);
 
-  async function tocarRepetir() {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByText(/repetí un pedido/i)).toBeInTheDocument());
-    await act(async () => { screen.getByRole('button', { name: /^repetir$/i }).click(); });
-  }
+    await screen.findByText('Bebidas oficina');
 
-  it('ofrece reemplazar en vez de dejar el error', async () => {
-    repetir.mockRejectedValue(new ApiError('Ya tenés un Quodom abierto de Pintura.', 409));
-    activoPorRubro.mockResolvedValue(ABIERTO_PINTURA);
-
-    await tocarRepetir();
-
-    // Tiene que nombrar a los dos: el que está abierto y el que se quiere
-    // repetir, que es lo que el usuario necesita para decidir.
-    const dialogo = await screen.findByRole('dialog');
-    expect(dialogo).toHaveTextContent(/QD-9/);
-    expect(dialogo).toHaveTextContent(/repetir QD-E1/i);
-    // Integrar no se ofrece: repetir siempre crea uno nuevo.
-    expect(within(dialogo).queryByRole('button', { name: /sumar todo/i })).toBeNull();
-    expect(eliminar).not.toHaveBeenCalled();
+    await waitFor(() => expect(leerAbiertos()).toEqual({}));
   });
 
-  it('al aceptar descarta el abierto y repite', async () => {
-    repetir.mockRejectedValueOnce(new ApiError('Ya tenés un Quodom abierto de Pintura.', 409));
-    activoPorRubro.mockResolvedValue(ABIERTO_PINTURA);
-    eliminar.mockResolvedValue({ res: true });
-    await tocarRepetir();
+  it('conserva los abiertos si la carga falla', async () => {
+    abrirQuodom(7, 'q-7');
+    misQuodom.mockRejectedValue(new Error('network down'));
 
-    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
-    await act(async () => { screen.getByRole('button', { name: /reemplazar/i }).click(); });
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    await screen.findByRole('link', { name: /mis quodoms/i });
 
-    expect(eliminar).toHaveBeenCalledWith('q-abierto');
-    expect(repetir).toHaveBeenLastCalledWith('q-viejo');
+    expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });
 
-  it('cancelar no toca nada', async () => {
-    repetir.mockRejectedValue(new ApiError('Ya tenés un Quodom abierto de Pintura.', 409));
-    activoPorRubro.mockResolvedValue(ABIERTO_PINTURA);
-    await tocarRepetir();
+  it('conserva los abiertos si no se pudo saber qué rubros hay', async () => {
+    vi.mocked(rubrosDisponibles).mockRejectedValueOnce(new Error('sin red'));
+    abrirQuodom(7, 'q-7');
+    misQuodom.mockResolvedValue([BEBIDAS]);
 
-    await act(async () => { screen.getByRole('button', { name: /cancelar/i }).click(); });
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    await screen.findByRole('link', { name: /mis quodoms/i });
 
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(eliminar).not.toHaveBeenCalled();
-  });
-
-  it('avisa que se agregó cuando repetir sale bien', async () => {
-    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
-
-    await tocarRepetir();
-
-    expect(await screen.findByText(/agregado/i)).toBeInTheDocument();
+    expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });
 });

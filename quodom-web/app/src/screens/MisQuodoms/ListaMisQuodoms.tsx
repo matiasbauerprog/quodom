@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -17,6 +17,11 @@ export function ListaMisQuodoms() {
   const [nonce, setNonce] = useState(0);
   const [eligiendoRubro, setEligiendoRubro] = useState(false);
   const [creando, setCreando] = useState(false);
+  const [repitiendo, setRepitiendo] = useState<string | null>(null);
+  // Id del Quodom recién creado al repetir: el acuse de que algo pasó, porque
+  // el nuevo aparece en el árbol del panel derecho y no acá.
+  const [agregado, setAgregado] = useState<string | null>(null);
+  const [errRepetir, setErrRepetir] = useState<string | null>(null);
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
   useEffect(() => {
@@ -34,6 +39,29 @@ export function ListaMisQuodoms() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [eligiendoRubro, creando]);
+
+  // El acuse avisa que algo pasó y se va; si se queda, a la segunda repetición
+  // ya no se sabe a cuál se refiere.
+  useEffect(() => {
+    if (!agregado) return;
+    const t = setTimeout(() => setAgregado(null), 4000);
+    return () => clearTimeout(t);
+  }, [agregado]);
+
+  const terminados = (list ?? []).filter(q => q.estado === 'ENVIADO').slice(0, 5);
+
+  async function repetirQuodom(q: Quodom) {
+    if (repitiendo) return;
+    setRepitiendo(q.id); setErrRepetir(null);
+    try {
+      const creado = await quodomApi.repetir(q.id);
+      window.dispatchEvent(new Event('quodom:changed'));
+      refresh();
+      setAgregado(creado.idquodom);
+    } catch (e) {
+      setErrRepetir(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el Quodom.');
+    } finally { setRepitiendo(null); }
+  }
 
   const rubrosOcupados = new Set((list ?? []).filter(q => q.estado === 'CREADO').map(q => q.idrubro));
 
@@ -116,6 +144,36 @@ export function ListaMisQuodoms() {
         {!err && !list && <Loader />}
         {list && list.length === 0 && (
           <EmptyState title="Todavía no tenés Quodoms" description="Armá uno desde el catálogo o creá uno vacío." />
+        )}
+        {agregado && (
+          <p className="mq-agregado" role="status">
+            Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregado)}>ver Quodom</Link>
+          </p>
+        )}
+        {errRepetir && <p className="mq-repetir-err" role="alert">{errRepetir}</p>}
+        {terminados.length > 0 && (
+          <section className="mq-repetir">
+            <h2 className="mq-repetir-titulo">Repetí un pedido</h2>
+            <ul className="mq-list">
+              {terminados.map(q => (
+                <li key={q.id} className="mq-terminado hoja">
+                  <span className="mq-terminado-datos">
+                    <strong className="mq-terminado-rubro">{q.nombrerubro || nombreRubro(q.idrubro)}</strong>
+                    <span className="mq-terminado-desc">{q.descripcion}</span>
+                    <span className="mq-terminado-meta">{q.nro} · {q.cantproductos ?? 0} productos</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="btn mq-terminado-repetir"
+                    disabled={repitiendo !== null}
+                    onClick={() => repetirQuodom(q)}
+                  >
+                    {repitiendo === q.id ? 'Repitiendo…' : 'Repetir'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
         {list && list.length > 0 && (
           <ul className="mq-list">

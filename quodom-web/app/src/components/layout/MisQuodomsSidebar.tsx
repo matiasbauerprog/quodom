@@ -5,15 +5,15 @@ import { quodom as quodomApi } from '../../api/quodom';
 import { ApiError } from '../../api/client';
 import { openWhatsappLink } from '../../utils/whatsapp';
 import type { Quodom } from '../../api/types';
-import { QuodomCard } from '../QuodomCard';
 import { TarjetaQuodomInvitado } from '../TarjetaQuodomInvitado';
 import { LineasQuodomSidebar } from './LineasQuodomSidebar';
+import { ArbolQuodoms } from './ArbolQuodoms';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
-import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
-import type { AccionRubro } from '../../guest/migrateGuestQuodom';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
-import { nombreRubro } from '../../quodom/rubros';
 import { bloqueoDeEnvio } from '../../quodom/bloqueosEnvio';
+import { sanearAbiertos } from '../../quodom/quodomAbierto';
+import { ramasDeQuodoms } from '../../quodom/ramas';
+import { rubrosDisponibles } from '../../quodom/rubrosDisponibles';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import './MisQuodomsSidebar.css';
 
@@ -21,24 +21,13 @@ export function MisQuodomsSidebar() {
   const { user } = useAuth();
   const tieneDireccion = useTieneDireccion(!!user);
   const [list, setList] = useState<Quodom[] | null>(null);
+  const [disponibles, setDisponibles] = useState<number[]>([]);
   const [invitado, setInvitado] = useState<ResumenInvitado[]>(resumenCarritosInvitado);
   const [nonce, setNonce] = useState(0);
-  // Clave del Quodom desplegado: 'q:<id>' para los del servidor, 'g:<rubro>'
-  // para los carritos. Uno solo a la vez — el elegido sube al tope, y eso no
-  // tendría sentido con varios abiertos.
+  // Clave del carrito de invitado desplegado ('g:<rubro>'). Los del servidor se
+  // despliegan en el árbol, que recuerda su propio abierto por rubro.
   const [abierto, setAbierto] = useState<string | null>(null);
-  // Quodoms enviados en esta visita. Siguen a la vista, ya marcados ENVIADO,
-  // para que el envío se vea confirmado donde estaba la tarjeta. Es estado de
-  // componente a propósito: no sobrevive a un F5, y después de recargar el
-  // Quodom queda sólo en Mis Quodoms, que es su lugar.
-  const [reciénEnviados, setReciénEnviados] = useState<string[]>([]);
   const [enviando, setEnviando] = useState<string | null>(null);
-  const [repitiendo, setRepitiendo] = useState<string | null>(null);
-  const [conflictoRepetir, setConflictoRepetir] = useState<{ origen: Quodom; abierto: Quodom } | null>(null);
-  // Id del Quodom recién creado al repetir. Es sólo el acuse de que algo pasó:
-  // el Quodom nuevo aparece arriba, entre los activos, y sin este aviso el
-  // botón parecía no haber hecho nada.
-  const [agregado, setAgregado] = useState<string | null>(null);
   const [errEnviar, setErrEnviar] = useState<string | null>(null);
   // Guards against `quodom:changed` firing repeatedly in quick succession:
   // only the response for the most recently started request is applied, so
@@ -54,8 +43,16 @@ export function MisQuodomsSidebar() {
       setInvitado(resumenCarritosInvitado());
       if (!user) { setList([]); return; }
       const requestId = ++requestIdRef.current;
-      quodomApi.misQuodom()
-        .then(d => { if (alive && requestId === requestIdRef.current) setList(d); })
+      Promise.all([quodomApi.misQuodom(), rubrosDisponibles()])
+        .then(([d, rubros]) => {
+          if (!alive || requestId !== requestIdRef.current) return;
+          setList(d);
+          setDisponibles(rubros);
+          // Sólo tras una carga buena: sanear descarta todo lo que no esté en
+          // la lista, así que con una carga pendiente o fallida cerraría los
+          // Quodoms que el usuario tenía abiertos sin motivo.
+          sanearAbiertos(d.filter(q => q.estado === 'CREADO').map(q => q.id));
+        })
         .catch(() => {
           if (!alive || requestId !== requestIdRef.current) return;
           // A refresh triggered by `quodom:changed` can fail transiently
@@ -82,81 +79,11 @@ export function MisQuodomsSidebar() {
 
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
-  // El acuse avisa que algo pasó y se va; si se queda, a la segunda repetición
-  // ya no se sabe a cuál se refiere.
-  useEffect(() => {
-    if (!agregado) return;
-    const t = setTimeout(() => setAgregado(null), 4000);
-    return () => clearTimeout(t);
-  }, [agregado]);
-
-  // A la derecha van sólo los activos: los enviados son historial y viven en
-  // Mis Quodoms, a un clic de "Ver todos".
-  const activos = list
-    ? list.filter(q => q.estado === 'CREADO' || reciénEnviados.includes(q.id))
-    : [];
-  const hayActivos = activos.length > 0 || invitado.length > 0;
-
-  // Una sola lista de carritos de invitado y Quodoms del servidor. El orden
-  // NO cambia al desplegar: mover la tarjeta bajo el dedo hace saltar todo lo
-  // demás y cuesta volver a encontrar dónde estabas.
-  type Item =
-    | { clave: string; tipo: 'invitado'; resumen: ResumenInvitado }
-    | { clave: string; tipo: 'servidor'; quodom: Quodom };
-  const items: Item[] = [
-    ...invitado.map((r): Item => ({ clave: 'g:' + r.idrubro, tipo: 'invitado', resumen: r })),
-    ...activos.map((q): Item => ({ clave: 'q:' + q.id, tipo: 'servidor', quodom: q }))
-  ];
+  // A la derecha va sólo lo que está en armado: los enviados son historial y
+  // viven en Mis Quodoms, a un clic del pie del árbol.
+  const ramas = ramasDeQuodoms(list ?? [], disponibles);
+  const hayInvitado = invitado.length > 0;
   const toggle = (clave: string) => setAbierto(a => (a === clave ? null : clave));
-
-  // Los terminados no se mudan acá con código: al enviarlo el backend lo pasa a
-  // ENVIADO y `quodom:changed` recarga la lista, así que sale de "activos" y
-  // entra acá solo. Los recién enviados de esta visita se excluyen a propósito:
-  // siguen arriba, donde el usuario los dejó, hasta que recargue.
-  const terminados = list
-    ? list.filter(q => q.estado === 'ENVIADO' && !reciénEnviados.includes(q.id)).slice(0, 5)
-    : [];
-
-  async function repetirQuodom(q: Quodom) {
-    if (repitiendo) return;
-    setRepitiendo(q.id); setErrEnviar(null);
-    try {
-      await hacerRepetir(q);
-    } catch (e) {
-      // Repetir crea un Quodom, así que choca con la regla de uno abierto por
-      // rubro: 409. En vez de dejar el error, se ofrece reemplazar el que hay —
-      // que es lo único que la regla permite para tener este pedido en armado.
-      if (e instanceof ApiError && e.status === 409) {
-        const abierto = await quodomApi.activoPorRubro(q.idrubro).catch(() => null);
-        if (abierto) { setConflictoRepetir({ origen: q, abierto }); return; }
-      }
-      setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el Quodom.');
-    } finally { setRepitiendo(null); }
-  }
-
-  async function hacerRepetir(q: Quodom) {
-    const creado = await quodomApi.repetir(q.id);
-    window.dispatchEvent(new Event('quodom:changed'));
-    refresh();
-    setAgregado(creado.idquodom);
-  }
-
-  async function reemplazarYRepetir() {
-    if (!conflictoRepetir) return;
-    const { origen, abierto } = conflictoRepetir;
-    setRepitiendo(origen.id); setErrEnviar(null);
-    try {
-      // Reemplazar descarta el Quodom entero: el DELETE se lleva cabecera y
-      // líneas mientras el estado sea CREADO. Va antes de repetir porque el
-      // backend no admite dos abiertos del mismo rubro.
-      await quodomApi.eliminar(abierto.id);
-      await hacerRepetir(origen);
-      setConflictoRepetir(null);
-    } catch (e) {
-      setConflictoRepetir(null);
-      setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el Quodom.');
-    } finally { setRepitiendo(null); }
-  }
 
   async function enviar(q: Quodom) {
     if (enviando) return;
@@ -164,30 +91,22 @@ export function MisQuodomsSidebar() {
     try {
       const r = await quodomApi.whatsapp(q.id);
       openWhatsappLink(r.link);
-      setReciénEnviados(ids => (ids.includes(q.id) ? ids : [...ids, q.id]));
-      // Un Quodom enviado ya no se edita.
-      setAbierto(a => (a === 'q:' + q.id ? null : a));
-      // El estado lo cambia el backend al dar el link: sin este aviso el
-      // sidebar y la barra inferior se quedaban mostrándolo activo.
+      // El estado lo cambia el backend al dar el link: este aviso hace que el
+      // árbol y la barra inferior lo suelten, en vez de seguir mostrándolo activo.
       window.dispatchEvent(new Event('quodom:changed'));
       refresh();
     } catch (e) {
       setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo enviar.');
     } finally { setEnviando(null); }
   }
+
   // Sin sesión ya se ven los carritos de invitado, así que "ingresá para ver
   // tus Quodoms" dejó de ser cierto: el vacío es el mismo mensaje para los dos.
-  const vacio = invitado.length === 0 && (!user || (list !== null && list.length === 0));
+  const vacio = !hayInvitado && (!user || (list !== null && ramas.length === 0));
 
   return (
     <aside className="mq-sidebar" aria-label="Mis Quodoms">
       <h2 className="mq-sidebar-title">MIS QUODOMS</h2>
-
-      {agregado && (
-        <p className="mq-sidebar-agregado" role="status">
-          Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregado)}>ver Quodom</Link>
-        </p>
-      )}
 
       {vacio && (
         <div className="mq-sidebar-empty">
@@ -197,35 +116,17 @@ export function MisQuodomsSidebar() {
         </div>
       )}
 
-      {hayActivos && (
+      {hayInvitado && (
         <section className="mq-sidebar-section">
           <h3 className="mq-sidebar-section-title">Quodoms activos</h3>
           <ul className="mq-sidebar-list">
-            {items.map(it => {
-              const abierta = abierto === it.clave;
+            {invitado.map(r => {
+              const clave = 'g:' + r.idrubro;
+              const abierta = abierto === clave;
               return (
-                <li key={it.clave} className={'mq-sidebar-item' + (abierta ? ' mq-sidebar-item-abierta' : '')}>
-                  {it.tipo === 'invitado' ? (
-                    <>
-                      <TarjetaQuodomInvitado resumen={it.resumen} expandido={abierta} onToggle={() => toggle(it.clave)} />
-                      {abierta && <LineasQuodomSidebar modo="invitado" idrubro={it.resumen.idrubro} onChange={refresh} />}
-                    </>
-                  ) : (
-                    <>
-                      <QuodomCard
-                        quodom={it.quodom}
-                        variant="sidebar"
-                        rubroLabel={it.quodom.nombrerubro || nombreRubro(it.quodom.idrubro)}
-                        onChange={refresh}
-                        expandido={abierta}
-                        onToggle={() => toggle(it.clave)}
-                        onEnviar={() => enviar(it.quodom)}
-                        enviando={enviando === it.quodom.id}
-                        bloqueo={bloqueoDeEnvio(it.quodom, tieneDireccion)}
-                      />
-                      {abierta && <LineasQuodomSidebar modo="servidor" idquodom={it.quodom.id} onChange={refresh} />}
-                    </>
-                  )}
+                <li key={clave} className={'mq-sidebar-item' + (abierta ? ' mq-sidebar-item-abierta' : '')}>
+                  <TarjetaQuodomInvitado resumen={r} expandido={abierta} onToggle={() => toggle(clave)} />
+                  {abierta && <LineasQuodomSidebar modo="invitado" idrubro={r.idrubro} onChange={refresh} />}
                 </li>
               );
             })}
@@ -233,59 +134,46 @@ export function MisQuodomsSidebar() {
         </section>
       )}
 
-      {errEnviar && <p className="mq-sidebar-err" role="alert">{errEnviar}</p>}
-
-      {!user && invitado.length > 0 && <AvisoSinGuardar />}
-
-      {terminados.length > 0 && (
-        <section className="mq-sidebar-section mq-sidebar-repetir">
-          <h3 className="mq-sidebar-section-title">Repetí un pedido</h3>
-          <ul className="mq-sidebar-list">
-            {terminados.map(q => (
-              <li key={q.id} className="mq-terminado hoja">
-                <span className="mq-terminado-datos">
-                  <strong className="mq-terminado-rubro">{q.nombrerubro || nombreRubro(q.idrubro)}</strong>
-                  <span className="mq-terminado-desc">{q.descripcion}</span>
-                  <span className="mq-terminado-meta">{q.nro} · {q.cantproductos ?? 0} productos</span>
-                </span>
-                <button
-                  type="button"
-                  className="btn mq-terminado-repetir"
-                  disabled={repitiendo !== null}
-                  onClick={() => repetirQuodom(q)}
-                >
-                  {repitiendo === q.id ? 'Repitiendo…' : 'Repetir'}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Al pie de todo: es la salida al historial completo, y lo que se ve
-          arriba —activos y últimos terminados— ya es el resumen de lo que hay. */}
-      {user && list && list.length > 0 && (
-        <Link to="/mis-quodoms" className="btn mq-sidebar-vermas">Ver todos</Link>
-      )}
-
-      {conflictoRepetir && (
-        <DialogoConflictoRubro
-          conflicto={{
-            idrubro: conflictoRepetir.origen.idrubro,
-            quodomExistente: conflictoRepetir.abierto,
-            lineasInvitado: conflictoRepetir.origen.cantproductos ?? 0
+      {ramas.length > 0 && (
+        <ArbolQuodoms
+          ramas={ramas}
+          onCambio={refresh}
+          renderAbierto={q => {
+            const bloqueo = bloqueoDeEnvio(q, tieneDireccion);
+            return (
+              <>
+                <LineasQuodomSidebar modo="servidor" idquodom={q.id} onChange={refresh} />
+                <div className="mq-sidebar-enviar">
+                  <button
+                    type="button"
+                    className="btn btn-block"
+                    disabled={enviando === q.id || !!bloqueo}
+                    onClick={() => { if (!bloqueo) enviar(q); }}
+                  >
+                    {enviando === q.id ? 'Enviando…' : 'Enviar por WhatsApp'}
+                  </button>
+                  {bloqueo && (
+                    <p className="mq-sidebar-bloqueo">
+                      {bloqueo.texto}{' '}
+                      {bloqueo.motivo === 'direccion'
+                        ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
+                        : <span>{bloqueo.accion}</span>}
+                    </p>
+                  )}
+                </div>
+              </>
+            );
           }}
-          descripcionEntrante={'querés repetir ' + conflictoRepetir.origen.nro}
-          ocupado={repitiendo !== null}
-          permitirCancelar
-          etiquetaCancelar="Cancelar"
-          // Integrar no se ofrece: /quodom/repetir siempre crea uno nuevo, así
-          // que la única salida que la regla de un Quodom por rubro permite es
-          // reemplazar al que está abierto.
-          soloReemplazar
-          onElegir={(accion: AccionRubro | null) => (accion === 'reemplazar' ? reemplazarYRepetir() : setConflictoRepetir(null))}
         />
       )}
+
+      {errEnviar && <p className="mq-sidebar-err" role="alert">{errEnviar}</p>}
+
+      {!user && hayInvitado && <AvisoSinGuardar />}
+
+      {/* Al pie de todo: lo enviado y repetir un pedido viven en la pantalla
+          completa, y este panel queda para lo que está en armado. */}
+      {user && <Link to="/mis-quodoms" className="btn btn-block mq-sidebar-vermas">Mis Quodoms</Link>}
     </aside>
   );
 }

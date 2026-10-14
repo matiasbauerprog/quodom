@@ -12,6 +12,9 @@ vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn(), atributos: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../../../quodom/rubrosDisponibles', () => ({
+  rubrosDisponibles: vi.fn(() => Promise.resolve([1, 2, 3, 4, 5, 6, 7, 8]))
+}));
 // El sidebar pregunta si el usuario tiene dirección para saber si puede
 // enviar. Sin mockearlo sale un fetch real que falla en tiempos distintos
 // cada vez y vuelve intermitentes a los tests de al lado.
@@ -32,19 +35,13 @@ const LINEAS_BEBIDAS = [
   { id: 12, idquodom: 'q-7', idproducto: 701, cantidad: 6, nombreProducto: 'Agua 500ml' }
 ];
 
-// Las tarjetas exponen su número de Quodom, así que sirve para leer el orden
-// de la lista sin depender de la descripción que escribió el usuario.
-function tarjetas(): HTMLElement[] {
-  return screen.getAllByRole('button', { name: /QD-/ });
-}
-
 function lineaDe(nombre: string): HTMLElement {
   return screen.getByText(nombre).closest('li') as HTMLElement;
 }
 
 beforeEach(() => {
   misQuodom.mockReset(); porQuodom.mockReset(); update.mockReset(); eliminar.mockReset();
-  clearGuestQuodoms();
+  clearGuestQuodoms(); localStorage.clear();
   vi.mocked(useAuth).mockReturnValue({ user: { id: 'u-1' } } as unknown as ReturnType<typeof useAuth>);
   misQuodom.mockResolvedValue([BEBIDAS, LIMPIEZA, ENVIADO]);
   porQuodom.mockResolvedValue(LINEAS_BEBIDAS);
@@ -52,20 +49,16 @@ beforeEach(() => {
   eliminar.mockResolvedValue({ res: true });
 });
 
-describe('sidebar: sólo activos', () => {
-  // Un enviado ya no se edita, así que no puede estar entre los activos ni
-  // desplegarse. Pero desde 2026-09-22 tampoco desaparece: baja a "Repetí un
-  // pedido", al pie del sidebar.
-  it('saca los enviados de los activos y los baja a repetir', async () => {
+describe('sidebar: sólo en armado', () => {
+  // Un enviado ya no se edita y su lugar es Mis Quodoms: ni se lista ni se
+  // ofrece repetirlo desde acá.
+  it('no lista los enviados ni ofrece repetirlos', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
     await screen.findByText('Bebidas oficina');
-    const activos = screen.getByRole('heading', { name: /quodoms activos/i }).closest('section')!;
-    expect(within(activos).queryByText('Pintura living')).toBeNull();
-
-    const repetir = screen.getByRole('heading', { name: /repetí un pedido/i }).closest('section')!;
-    expect(within(repetir).getByText('Pintura living')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ver todos/i })).toBeInTheDocument();
+    expect(screen.queryByText('Pintura living')).toBeNull();
+    expect(screen.queryByRole('heading', { name: /repetí un pedido/i })).toBeNull();
+    expect(screen.getByRole('link', { name: /mis quodoms/i })).toHaveAttribute('href', '/mis-quodoms');
   });
 });
 
@@ -81,20 +74,6 @@ describe('sidebar: mini editor', () => {
     expect(porQuodom).toHaveBeenCalledWith('q-7');
   });
 
-  it('la lista no se reordena al desplegar: la tarjeta se abre donde está', async () => {
-    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-    await screen.findByText('Limpieza mensual');
-    expect(tarjetas()[0]).toHaveTextContent('Bebidas oficina');
-
-    porQuodom.mockResolvedValue([{ id: 21, idquodom: 'q-1', idproducto: 400, cantidad: 1, nombreProducto: 'Lavandina 1L' }]);
-    fireEvent.click(screen.getByText('Limpieza mensual'));
-    await screen.findByText('Lavandina 1L');
-
-    // Mover la tarjeta bajo el dedo hace saltar el resto de la lista.
-    expect(tarjetas()[0]).toHaveTextContent('Bebidas oficina');
-    expect(tarjetas()[1]).toHaveTextContent('Limpieza mensual');
-  });
-
   it('el segundo clic minimiza los productos', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
@@ -107,17 +86,18 @@ describe('sidebar: mini editor', () => {
     await waitFor(() => expect(screen.queryByText('Coca Cola 2L')).toBeNull());
   });
 
-  it('abrir otro cierra el anterior: hay uno solo desplegado', async () => {
+  it('abrir otro del mismo rubro cierra el anterior: cada rubro tiene un solo abierto', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS, { ...BEBIDAS, id: 'q-8', descripcion: 'Bebidas fiesta', nro: 'QD-8' }]);
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
 
     fireEvent.click(screen.getByText('Bebidas oficina'));
     await screen.findByText('Coca Cola 2L');
 
-    porQuodom.mockResolvedValue([{ id: 21, idquodom: 'q-1', idproducto: 400, cantidad: 1, nombreProducto: 'Lavandina 1L' }]);
-    fireEvent.click(screen.getByText('Limpieza mensual'));
+    porQuodom.mockResolvedValue([{ id: 21, idquodom: 'q-8', idproducto: 702, cantidad: 1, nombreProducto: 'Tónica 1L' }]);
+    fireEvent.click(screen.getByText('Bebidas fiesta'));
 
-    expect(await screen.findByText('Lavandina 1L')).toBeInTheDocument();
+    expect(await screen.findByText('Tónica 1L')).toBeInTheDocument();
     expect(screen.queryByText('Coca Cola 2L')).toBeNull();
   });
 
@@ -223,7 +203,7 @@ describe('MisQuodomsSidebar (elegir el atributo que falta)', () => {
 
   beforeEach(() => {
     misQuodom.mockReset(); porQuodom.mockReset(); update.mockReset();
-    eliminar.mockReset(); atributosApi.mockReset(); clearGuestQuodoms();
+    eliminar.mockReset(); atributosApi.mockReset(); clearGuestQuodoms(); localStorage.clear();
     vi.mocked(useAuth).mockReturnValue({ user: { id: 'u-1' } } as unknown as ReturnType<typeof useAuth>);
     misQuodom.mockResolvedValue([BEBIDAS]);
     porQuodom.mockResolvedValue([SIN_LITROS]);

@@ -85,39 +85,8 @@
   .mq-sidebar-agregado { margin: 0; color: #B9F0CE; font-size: var(--fs-small); text-align: center; }
   .mq-sidebar-agregado a { color: #fff; }
 
-  .mq-sidebar-repetir { margin-top: var(--sp-5); }
-  /* Verde apenas insinuado: el sidebar es panel oscuro, así que el tinte va con
-     alfa baja sobre el fondo y no en blanco. Alcanza para que se lean como
-     cerrados de un vistazo, sin competir con los activos, que son lo vivo. */
-  .mq-terminado {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-3);
-    padding: var(--sp-3);
-    background: rgba(45, 171, 102, 0.16);
-    border: 1px solid rgba(45, 171, 102, 0.42);
-  }
-  .mq-terminado-datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .mq-terminado-rubro { font-family: var(--font-prompt); font-size: 14px; color: #fff; }
-  .mq-terminado-desc {
-    font-size: 13px; color: rgba(255,255,255,0.85);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .mq-terminado-meta { font-size: var(--fs-tiny); color: rgba(255,255,255,0.6); }
-  /* `.btn` trae min-height: 44px, el mínimo para tocar con el dedo, y eso es lo
-     que lo dejaba alto: el padding chico no alcanzaba para bajarlo. Acá se
-     puede ajustar al texto porque este sidebar existe sólo de 1025px para
-     arriba, donde se apunta con el mouse. */
-  .mq-terminado-repetir {
-    flex: 0 0 auto;
-    min-height: 0;
-    padding: 5px 10px;
-    font-size: 12px;
-    line-height: 1.2;
-    background: var(--color-exito);
-    color: #fff;
-    border: none;
-  }
-  .mq-terminado-repetir:disabled { opacity: 0.6; cursor: default; }
+  .mq-sidebar-enviar { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-2) 0 var(--sp-3); }
+  .mq-sidebar-bloqueo { margin: 0; color: rgba(255,255,255,0.8); font-size: var(--fs-tiny); }
+  .mq-sidebar-bloqueo a { color: #fff; }
+  .mq-sidebar-vermas:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 }

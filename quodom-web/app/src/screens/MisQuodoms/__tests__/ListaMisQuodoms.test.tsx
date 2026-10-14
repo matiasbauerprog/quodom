@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ListaMisQuodoms } from '../ListaMisQuodoms';
 import { quodom as quodomApi } from '../../../api/quodom';
 
-vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(), create: vi.fn() } }));
+vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(), create: vi.fn(), repetir: vi.fn() } }));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const create = quodomApi.create as unknown as ReturnType<typeof vi.fn>;
@@ -68,5 +68,71 @@ describe('ListaMisQuodoms: nuevo por rubro', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Construcción' }));
 
     await waitFor(() => expect(create).toHaveBeenCalledWith({ descripcion: 'Mi Quodom', idrubro: 4 }));
+  });
+});
+
+describe('ListaMisQuodoms: Repetí un pedido', () => {
+  const repetir = quodomApi.repetir as unknown as ReturnType<typeof vi.fn>;
+  beforeEach(() => { misQuodom.mockReset(); repetir.mockReset(); });
+
+  const enviado = (n: number) => ({
+    id: 'p' + n, descripcion: 'Pedido ' + n, estado: 'ENVIADO', nro: 'QD-' + n, idrubro: 5, nombrerubro: 'Pintura',
+    cantproductos: 2, porccompletado: 100, fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  });
+
+  // La lista completa de abajo también ofrece repetir en cada tarjeta; el
+  // bloque de arriba es el que se acota a cinco.
+  async function bloqueRepetir() {
+    return (await screen.findByRole('heading', { name: /repetí un pedido/i })).closest('section') as HTMLElement;
+  }
+
+  it('muestra Repetí un pedido con los últimos enviados', async () => {
+    misQuodom.mockResolvedValue([
+      { id: 'p9', descripcion: 'Frente', estado: 'ENVIADO', nro: 'QD-9', idrubro: 5, cantproductos: 2, porccompletado: 100, fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString() }
+    ]);
+
+    render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+
+    expect(await screen.findByText(/repetí un pedido/i)).toBeInTheDocument();
+  });
+
+  it('muestra como mucho los últimos cinco', async () => {
+    misQuodom.mockResolvedValue([1, 2, 3, 4, 5, 6, 7].map(enviado));
+    render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+
+    const bloque = await bloqueRepetir();
+    expect(within(bloque).getAllByRole('button', { name: /^repetir$/i })).toHaveLength(5);
+  });
+
+  it('no muestra la sección cuando no hay enviados', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS_ABIERTO]);
+    render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+
+    await screen.findByRole('heading', { name: 'Mis Quodoms' });
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    expect(screen.queryByText(/repetí un pedido/i)).toBeNull();
+  });
+
+  it('repetir uno crea el Quodom nuevo y avisa', async () => {
+    misQuodom.mockResolvedValue([enviado(1)]);
+    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+    render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+
+    const bloque = await bloqueRepetir();
+    await act(async () => { within(bloque).getByRole('button', { name: /^repetir$/i }).click(); });
+
+    expect(repetir).toHaveBeenCalledWith('p1');
+    expect(await screen.findByText(/agregado/i)).toBeInTheDocument();
+  });
+
+  it('muestra el error cuando repetir falla', async () => {
+    misQuodom.mockResolvedValue([enviado(1)]);
+    repetir.mockRejectedValue(new Error('No se pudo repetir.'));
+    render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+
+    const bloque = await bloqueRepetir();
+    await act(async () => { within(bloque).getByRole('button', { name: /^repetir$/i }).click(); });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo repetir/i);
   });
 });
