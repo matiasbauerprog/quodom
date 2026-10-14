@@ -124,3 +124,33 @@
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+
+/* Soltar un producto: la zona de "Quodom nuevo" sólo existe mientras se arrastra. */
+.arbol-nuevo {
+  display: none;
+  margin-left: var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  border: 2px dashed rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-work);
+  font-size: var(--fs-small);
+  text-align: center;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+}
+body.arrastrando { user-select: none; cursor: grabbing; }
+body.arrastrando .arbol-nuevo { display: block; }
+
+.arbol-quodom.arrastre-encima,
+.arbol-nuevo.arrastre-encima {
+  background: rgba(45, 171, 102, 0.3);
+  border-color: var(--color-exito);
+  outline: 2px solid var(--color-exito);
+}
+.arbol-quodom.arrastre-rechaza,
+.arbol-nuevo.arrastre-rechaza {
+  background: rgba(230, 57, 70, 0.22);
+  border-color: var(--color-acento);
+  outline: 2px solid var(--color-acento);
+  cursor: not-allowed;
+}

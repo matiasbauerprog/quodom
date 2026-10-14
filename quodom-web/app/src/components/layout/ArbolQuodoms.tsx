@@ -32,6 +32,17 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
     return () => window.removeEventListener('quodom:abierto', releer);
   }, []);
 
+  // Arrastrando un producto sobre un rubro plegado, se despliega: plegado no tiene
+  // Quodoms montados y no habría dónde soltar. El aviso lo manda quien arrastra.
+  useEffect(() => {
+    const desplegar = (e: Event) => {
+      const { idrubro } = (e as CustomEvent<{ idrubro: number }>).detail;
+      setPlegados(p => (p[idrubro] ? { ...p, [idrubro]: false } : p));
+    };
+    window.addEventListener('arrastre:sobre-rubro', desplegar);
+    return () => window.removeEventListener('arrastre:sobre-rubro', desplegar);
+  }, []);
+
   function alternarRubro(idrubro: number) {
     setPlegados(p => ({ ...p, [idrubro]: !p[idrubro] }));
   }
@@ -52,6 +63,7 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
             <button
               type="button"
               className="arbol-rubro"
+              data-rubro-cab={rama.idrubro}
               aria-expanded={desplegado}
               onClick={() => alternarRubro(rama.idrubro)}
             >
@@ -84,6 +96,12 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {desplegado && (
+              <div className="arbol-nuevo" data-nuevo={rama.idrubro} data-rubro={rama.idrubro}>
+                + Soltar en un Quodom nuevo
+              </div>
             )}
           </section>
         );

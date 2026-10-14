@@ -1,11 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ListaProductos } from '../ListaProductos';
 import { productos } from '../../../api/productos';
 import { useAgregarProducto } from '../../../quodom/useAgregarProducto';
+import { agregarADestino, crearYAgregar } from '../../../quodom/agregarProducto';
 
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({ useAgregarProducto: vi.fn() }));
+vi.mock('../../../quodom/agregarProducto', () => ({ agregarADestino: vi.fn(), crearYAgregar: vi.fn() }));
 const auth = vi.hoisted(() => ({ user: { id: 'u-1' } as { id: string } | null }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: () => ({ user: auth.user }) }));
 
@@ -261,5 +263,124 @@ describe('ListaProductos · ··· y la sesión', () => {
     render(<ListaProductos idsubcategoria={70} />);
 
     expect(await screen.findByRole('button', { name: /a otro quodom/i })).toBeInTheDocument();
+  });
+});
+
+describe('ListaProductos · arrastrar al árbol', () => {
+  function bajoElPuntero(html: string) {
+    const host = document.createElement('div');
+    host.id = 'destinos';
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(host.firstElementChild);
+  }
+
+  function arrastrarTarjeta(origen: Element) {
+    fireEvent.pointerDown(origen, { clientX: 100, clientY: 100, button: 0 });
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 160, clientY: 160 }));
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 160, clientY: 160 }));
+  }
+
+  async function tarjetaDeCoca() {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+    return document.querySelector('.prod-item')!;
+  }
+
+  beforeEach(() => {
+    vi.mocked(agregarADestino).mockReset().mockResolvedValue(undefined);
+    vi.mocked(crearYAgregar).mockReset().mockResolvedValue('q-nuevo');
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.getElementById('destinos')?.remove();
+  });
+
+  it('soltar la tarjeta sobre un Quodom de su rubro lo agrega ahí', async () => {
+    const tarjeta = await tarjetaDeCoca();
+    bajoElPuntero('<button data-destino="q-7" data-rubro="7"></button>');
+
+    arrastrarTarjeta(tarjeta.querySelector('.prod-name')!);
+
+    expect(agregarADestino).toHaveBeenCalledWith(
+      expect.objectContaining({ idproducto: 700, cantidad: 1 }), 7, 'q-7'
+    );
+  });
+
+  it('el atributo elegido en la tarjeta viaja con lo que se suelta', async () => {
+    porCategoria.mockResolvedValue([BOLSA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Bolsa de residuos');
+    fireEvent.change(screen.getByLabelText(/TIPO de Bolsa/), { target: { value: 'Cristal 50 x 70' } });
+    bajoElPuntero('<button data-destino="q-7" data-rubro="7"></button>');
+
+    arrastrarTarjeta(document.querySelector('.prod-name')!);
+
+    expect(agregarADestino).toHaveBeenCalledWith(
+      expect.objectContaining({ idproducto: 41, atributo1: 'Cristal 50 x 70' }), 7, 'q-7'
+    );
+  });
+
+  it('soltar sobre un Quodom de otro rubro no agrega en ningún lado', async () => {
+    const tarjeta = await tarjetaDeCoca();
+    bajoElPuntero('<button data-destino="q-1" data-rubro="1"></button>');
+
+    arrastrarTarjeta(tarjeta.querySelector('.prod-name')!);
+
+    expect(agregarADestino).not.toHaveBeenCalled();
+    expect(crearYAgregar).not.toHaveBeenCalled();
+  });
+
+  it('soltar en la zona de Quodom nuevo crea uno con nombre provisional y agrega', async () => {
+    const tarjeta = await tarjetaDeCoca();
+    bajoElPuntero('<button data-nuevo="7" data-rubro="7"></button>');
+
+    arrastrarTarjeta(tarjeta.querySelector('.prod-name')!);
+
+    expect(crearYAgregar).toHaveBeenCalledWith(
+      expect.objectContaining({ idproducto: 700 }), 7, expect.stringMatching(/\S/)
+    );
+    expect(agregarADestino).not.toHaveBeenCalled();
+  });
+
+  it('soltar en el vacío no hace nada', async () => {
+    const tarjeta = await tarjetaDeCoca();
+    bajoElPuntero('<div></div>');
+
+    arrastrarTarjeta(tarjeta.querySelector('.prod-name')!);
+
+    expect(agregarADestino).not.toHaveBeenCalled();
+    expect(crearYAgregar).not.toHaveBeenCalled();
+  });
+
+  it('un pointerdown que nace en un botón no arrastra', async () => {
+    const tarjeta = await tarjetaDeCoca();
+    bajoElPuntero('<button data-destino="q-7" data-rubro="7"></button>');
+
+    arrastrarTarjeta(tarjeta.querySelector('.prod-add')!);
+
+    expect(document.querySelector('.arrastre-fantasma')).toBeNull();
+    expect(agregarADestino).not.toHaveBeenCalled();
+  });
+
+  it('un invitado no arrastra: no hay Quodoms a dónde soltar', async () => {
+    auth.user = null;
+    const tarjeta = await tarjetaDeCoca();
+    bajoElPuntero('<button data-destino="q-7" data-rubro="7"></button>');
+
+    arrastrarTarjeta(tarjeta.querySelector('.prod-name')!);
+
+    expect(agregarADestino).not.toHaveBeenCalled();
+  });
+
+  it('un fallo al soltar se muestra en vez de perderse', async () => {
+    vi.mocked(agregarADestino).mockRejectedValue(new Error('boom'));
+    const tarjeta = await tarjetaDeCoca();
+    bajoElPuntero('<button data-destino="q-7" data-rubro="7"></button>');
+
+    arrastrarTarjeta(tarjeta.querySelector('.prod-name')!);
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
 });

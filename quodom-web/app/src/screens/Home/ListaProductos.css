@@ -213,3 +213,39 @@
      foto de catálogo y muy poco producto visible sin scrollear. */
   .prod-list { grid-template-columns: repeat(6, 1fr); max-width: 1040px; }
 }
+
+/* Lo que se lleva al arrastrar una tarjeta. El contenedor sigue al cursor con
+   left/top y SIN transición, para no quedar atrás; el que se achica es el interior. */
+.arrastre-fantasma {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+}
+.arrastre-interior {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 200px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-tarjeta);
+  color: var(--color-texto);
+  font-family: var(--font-work);
+  font-size: var(--fs-small);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.14s;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+}
+.arrastre-interior.entrando { transform: translate(-50%, -50%) scale(0.52); }
+.arrastre-rubro {
+  font-family: var(--font-prompt);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-acento);
+}
+.prod-item { touch-action: pan-y; }
+.prod-item img { -webkit-user-drag: none; }
+@media (prefers-reduced-motion: reduce) {
+  .arrastre-interior { transition: none; }
+}

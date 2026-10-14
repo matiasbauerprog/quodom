@@ -10,6 +10,8 @@ import { useAuth } from '../../auth/AuthContext';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
+import { agregarADestino, crearYAgregar } from '../../quodom/agregarProducto';
+import { iniciarArrastre, type Blanco } from '../../quodom/arrastre';
 import { DetalleProducto } from './DetalleProducto';
 import './ListaProductos.css';
 
@@ -23,6 +25,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   const [selected, setSelected] = useState<Product | null>(null);
   const [elegido, setElegido] = useState<Record<number, Eleccion>>({});
   const [nonce, setNonce] = useState(0);
+  const [errSoltar, setErrSoltar] = useState<string | null>(null);
   const { user } = useAuth();
   const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, pedirDestino, crear, cancelar } = useAgregarProducto();
 
@@ -81,6 +84,34 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     );
   }
 
+  // Soltar la tarjeta en el árbol. El rubro ya lo validó el arrastre (otro rubro no
+  // llega acá); lo que puede fallar es el servidor, y eso se muestra.
+  async function soltarEn(p: Product, blanco: Blanco) {
+    setErrSoltar(null);
+    try {
+      if (blanco.tipo === 'quodom') await agregarADestino(lineaDe(p), blanco.idrubro, blanco.idquodom);
+      else await crearYAgregar(lineaDe(p), blanco.idrubro, 'Nuevo Quodom de ' + nombreRubro(blanco.idrubro));
+    } catch (e) {
+      setErrSoltar(e instanceof ApiError ? e.message : 'No se pudo agregar el producto.');
+    }
+  }
+
+  function agarrar(ev: React.PointerEvent, p: Product) {
+    // Sin sesión no hay Quodoms en el árbol a dónde soltar. Y un clic que nace en
+    // un botón es del botón (+, ···, selectores): si no, dejarían de funcionar.
+    if (!user) return;
+    // La excepción es `.prod-info`: es un botón (abre el detalle) pero también casi
+    // toda la tarjeta, y el umbral del arrastre deja pasar el clic.
+    const boton = (ev.target as HTMLElement).closest('button, select, a, input');
+    if (boton && !boton.classList.contains('prod-info')) return;
+    iniciarArrastre(ev.nativeEvent, {
+      idrubro: p.categoriaPadre,
+      nombre: p.nombreproducto,
+      nombreRubro: nombreRubro(p.categoriaPadre),
+      onSoltar: blanco => { void soltarEn(p, blanco); }
+    });
+  }
+
   function selector(p: Product, slot: 1 | 2) {
     const nombre = slot === 1 ? p.atributo1 : p.atributo2;
     const valores = slot === 1 ? p.valoresAtributo1 : p.valoresAtributo2;
@@ -103,12 +134,13 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     <div className="prods">
       {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
       {errAgregar && <p className="prods-add-error" role="alert">{errAgregar}</p>}
+      {errSoltar && <p className="prods-add-error" role="alert">{errSoltar}</p>}
       {!err && !prods && <Loader />}
       {prods && prods.length === 0 && <p className="prods-empty">No hay productos en esta subcategoría.</p>}
       {prods && prods.length > 0 && (
         <ul className="prod-list">
           {prods.map(p => (
-            <li key={p.id} className="prod-item">
+            <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()}>
               <button className="prod-info" onClick={() => setSelected(p)}>
                 <span className="prod-media">
                   <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
