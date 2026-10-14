@@ -101,12 +101,12 @@ describe('quodom', () => {
     expect(res.body.cantproductos).toBe(1);
   });
 
-  it('GET /quodom/activo/:idrubro returns the open quodom of that rubro', async () => {
-    const res = await request(app).get('/quodom/activo/5')
+  it('GET /quodom/activos/:idrubro lists the open quodoms of that rubro', async () => {
+    const res = await request(app).get('/quodom/activos/5')
       .set('Authorization', 'Bearer ' + token);
     expect(res.status).toBe(200);
     expect(res.body.res).toBe(true);
-    expect(res.body.data.id).toBe(idquodom);
+    expect(res.body.data[0].id).toBe(idquodom);
   });
 
   it('GET /quodom/:id of another user fails', async () => {
@@ -160,9 +160,8 @@ describe('quodom', () => {
   });
 
   it('POST /quodom/repetir/:id copies descripcion, iddireccion and all lines into a new quodom', async () => {
-    // repetir on an already-open (CREADO) quodom of the same rubro would collide with
-    // the one-open-quodom-per-rubro rule, so mark the source ENVIADO first, matching
-    // how repetir is actually used (repeat something you already sent).
+    // Mark the source ENVIADO first, matching how repetir is actually used
+    // (repeat something you already sent).
     const source = await db.Quodom.findByPk(idquodom);
     source.estado = 'ENVIADO';
     await source.save();

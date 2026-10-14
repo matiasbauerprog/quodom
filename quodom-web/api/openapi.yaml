@@ -43,7 +43,7 @@ components:
       description: Demasiados intentos
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
     Conflict:
-      description: Choca con un Quodom abierto (rubro_duplicado / rubro_mismatch)
+      description: El pedido choca con el estado actual (rubro_mismatch)
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
     EnvioBloqueado:
       description: >
@@ -734,10 +734,10 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409': { $ref: '#/components/responses/EnvioBloqueado' }
-  /quodom/activo/{idrubro}:
+  /quodom/activos/{idrubro}:
     get:
       tags: [quodom]
-      summary: El Quodom abierto (CREADO) del usuario en ese rubro, o null
+      summary: Los Quodoms en armado (CREADO) del usuario en ese rubro, del más nuevo al más viejo
       security: [{ cookieAuth: [] }, { bearerAuth: [] }]
       parameters:
         - { name: idrubro, in: path, required: true, schema: { type: string }, description: 'Entero positivo; el handler lo valida y contesta idrubro_invalido' }
@@ -748,10 +748,10 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [res]
+                required: [res, data]
                 properties:
                   res: { type: boolean }
-                  data: { oneOf: [{ $ref: '#/components/schemas/VQuodom' }, { type: string, nullable: true, enum: [null] }] }
+                  data: { type: array, items: { $ref: '#/components/schemas/VQuodom' } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /quodom/create:

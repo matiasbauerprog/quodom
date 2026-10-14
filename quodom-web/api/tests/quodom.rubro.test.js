@@ -156,7 +156,7 @@ describe('add line enforces the quodom rubro', () => {
   });
 });
 
-describe('GET /quodom/activo/:idrubro', () => {
+describe('GET /quodom/activos/:idrubro', () => {
   let token;
   let userId;
 
@@ -167,39 +167,71 @@ describe('GET /quodom/activo/:idrubro', () => {
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
 
-  it('returns null and creates nothing when there is no open quodom of that rubro', async () => {
+  it('returns an empty list and creates nothing when there is no open quodom of that rubro', async () => {
     const antes = await db.Quodom.count();
 
-    const res = await request(app).get('/quodom/activo/7')
+    const res = await request(app).get('/quodom/activos/7')
       .set('Authorization', 'Bearer ' + token);
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toBeNull();
+    expect(res.body.data).toEqual([]);
     expect(await db.Quodom.count()).toBe(antes);
   });
 
-  it('returns the open quodom of that rubro with its nombrerubro', async () => {
+  it('returns the open quodoms of that rubro with their nombrerubro', async () => {
     const creado = await request(app).post('/quodom/create')
       .set('Authorization', 'Bearer ' + token)
       .send({ descripcion: 'Bebidas', idrubro: 7 });
 
-    const res = await request(app).get('/quodom/activo/7')
+    const res = await request(app).get('/quodom/activos/7')
       .set('Authorization', 'Bearer ' + token);
 
-    expect(res.body.data.id).toBe(creado.body.idquodom);
-    expect(res.body.data.nombrerubro).toBe('Bebidas');
+    expect(res.body.data[0].id).toBe(creado.body.idquodom);
+    expect(res.body.data[0].nombrerubro).toBe('Bebidas');
+  });
+
+  it('devuelve todos los Quodoms en armado de un rubro, del más nuevo al más viejo', async () => {
+    await db.Quodom.destroy({ where: { createdBy: userId } });
+    await request(app).post('/quodom/create').set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Viejo', idrubro: 7 });
+    await request(app).post('/quodom/create').set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Nuevo', idrubro: 7 });
+
+    const res = await request(app).get('/quodom/activos/7')
+      .set('Authorization', 'Bearer ' + token);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data[0].descripcion).toBe('Nuevo');
+  });
+
+  it('no incluye los enviados ni los de otros rubros', async () => {
+    const q = await request(app).post('/quodom/create').set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Se envía', idrubro: 7 });
+    await db.Quodom.update({ estado: 'ENVIADO' }, { where: { id: q.body.idquodom } });
+    const otro = await request(app).post('/quodom/create').set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Otro rubro', idrubro: 1 });
+
+    const res = await request(app).get('/quodom/activos/7')
+      .set('Authorization', 'Bearer ' + token);
+
+    expect(res.body.data.length).toBeGreaterThan(0);
+    expect(res.body.data.every(x => x.estado === 'CREADO')).toBe(true);
+    expect(res.body.data.every(x => x.idrubro === 7)).toBe(true);
+    // El siguiente test espera que el rubro 1 esté vacío.
+    await db.Quodom.destroy({ where: { id: otro.body.idquodom } });
   });
 
   it('ignores quodoms of other rubros and other users', async () => {
-    const res = await request(app).get('/quodom/activo/1')
+    const res = await request(app).get('/quodom/activos/1')
       .set('Authorization', 'Bearer ' + token);
-    expect(res.body.data).toBeNull();
+    expect(res.body.data).toEqual([]);
   });
 
   it.each(['abc', '7abc', '0'])('rejects an invalid idrubro (%s) with 400 and creates nothing', async (idrubro) => {
     const antes = await db.Quodom.count();
 
-    const res = await request(app).get('/quodom/activo/' + idrubro)
+    const res = await request(app).get('/quodom/activos/' + idrubro)
       .set('Authorization', 'Bearer ' + token);
 
     expect(res.status).toBe(400);

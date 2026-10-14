@@ -1268,14 +1268,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/quodom/activo/{idrubro}": {
+    "/quodom/activos/{idrubro}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** El Quodom abierto (CREADO) del usuario en ese rubro, o null */
+        /** Los Quodoms en armado (CREADO) del usuario en ese rubro, del más nuevo al más viejo */
         get: {
             parameters: {
                 query?: never;
@@ -1296,7 +1296,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             res: boolean;
-                            data?: components["schemas"]["VQuodom"] | (null);
+                            data: components["schemas"]["VQuodom"][];
                         };
                     };
                 };
@@ -2537,7 +2537,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Choca con un Quodom abierto (rubro_duplicado / rubro_mismatch) */
+        /** @description El pedido choca con el estado actual (rubro_mismatch) */
         Conflict: {
             headers: {
                 [name: string]: unknown;

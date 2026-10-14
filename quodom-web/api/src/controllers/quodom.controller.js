@@ -10,7 +10,7 @@ module.exports = {
     create,
     update,
     delete: _delete,
-    getActivoPorRubro,
+    getActivosPorRubro,
     getQuodomCreados,
     whatsappLink,
     repetir
@@ -90,16 +90,15 @@ async function _delete(id, userId) {
     return true;
 }
 
-// The open ('CREADO') quodom of a rubro, or null. Deliberately does NOT create:
-// creating a quodom now needs the user to confirm, so it cannot be a side effect
-// of a lookup.
-async function getActivoPorRubro(userId, idrubro) {
-    const quodom = await db.v_Quodoms.findOne({
+// The open ('CREADO') quodoms of a rubro, newest first. Deliberately does NOT
+// create: creating a quodom needs the user to confirm, so it cannot be a side
+// effect of a lookup.
+async function getActivosPorRubro(userId, idrubro) {
+    return await db.v_Quodoms.findAll({
         where: { createdBy: userId, estado: 'CREADO', idrubro: idrubro },
         attributes: { exclude: ['createdBy', 'updatedAt'] },
         order: [['createdAt', 'DESC']]
     });
-    return quodom || null;
 }
 
 async function getQuodomCreados(userId) {

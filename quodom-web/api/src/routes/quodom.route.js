@@ -9,7 +9,7 @@ router.get('/getQuodomCreados', auth.verifyToken(), getQuodomCreados);
 router.get('/misQuodom/', auth.verifyToken(), getMyQuodoms);
 router.get('/porccompletado/:id', auth.verifyToken(), getPorcById);
 router.get('/whatsapp/:id', auth.verifyToken(), whatsappLink);
-router.get('/activo/:idrubro', auth.verifyToken(), getActivo);
+router.get('/activos/:idrubro', auth.verifyToken(), getActivos);
 router.get('/:id', auth.verifyToken(), getById);
 router.post('/create', auth.verifyToken(), omitEmpty(['iddireccion'], [null]), create);
 router.post('/repetir/:id', auth.verifyToken(), repetir);
@@ -54,12 +54,12 @@ function _delete(req, res, next) {
     .catch(next);
 }
 
-function getActivo(req, res, next) {
+function getActivos(req, res, next) {
   const idrubro = parseInt(req.params.idrubro, 10);
   if (!/^\d+$/.test(req.params.idrubro) || idrubro <= 0) {
     return next(httpError(400, 'idrubro_invalido', 'El rubro indicado no es válido.'));
   }
-  Controler.getActivoPorRubro(req.user.id, idrubro)
+  Controler.getActivosPorRubro(req.user.id, idrubro)
     .then((data) => res.json({ res: true, data }))
     .catch(next);
 }
