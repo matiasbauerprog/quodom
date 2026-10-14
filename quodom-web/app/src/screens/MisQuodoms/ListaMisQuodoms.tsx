@@ -63,8 +63,6 @@ export function ListaMisQuodoms() {
     } finally { setRepitiendo(null); }
   }
 
-  const rubrosOcupados = new Set((list ?? []).filter(q => q.estado === 'CREADO').map(q => q.idrubro));
-
   function cerrarPicker() {
     if (creando) return;
     setEligiendoRubro(false);
@@ -103,22 +101,18 @@ export function ListaMisQuodoms() {
           >
             <h2 id="mq-rubros-titulo" className="mq-rubros-titulo">¿De qué rubro es el Quodom?</h2>
             <ul className="mq-rubros-list">
-              {Object.entries(RUBROS).map(([id, nombre]) => {
-                const idrubro = Number(id);
-                const ocupado = rubrosOcupados.has(idrubro);
-                return (
-                  <li key={id}>
-                    <button
-                      type="button"
-                      className="btn btn-block"
-                      disabled={ocupado || creando}
-                      onClick={() => crearDeRubro(idrubro)}
-                    >
-                      {nombre}{ocupado ? ' — ya tenés uno abierto' : ''}
-                    </button>
-                  </li>
-                );
-              })}
+              {Object.entries(RUBROS).map(([id, nombre]) => (
+                <li key={id}>
+                  <button
+                    type="button"
+                    className="btn btn-block"
+                    disabled={creando}
+                    onClick={() => crearDeRubro(Number(id))}
+                  >
+                    {nombre}
+                  </button>
+                </li>
+              ))}
             </ul>
             <button type="button" className="btn btn-ghost" onClick={cerrarPicker} disabled={creando}>Cancelar</button>
           </section>

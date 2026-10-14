@@ -9,7 +9,7 @@ import { quodomLines } from '../../../api/quodom_lines';
 import { openWhatsappLink } from '../../../utils/whatsapp';
 import { categorias } from '../../../api/categorias';
 import { users } from '../../../api/users';
-import type { Quodom } from '../../../api/types';
+import { abrirQuodom } from '../../../quodom/quodomAbierto';
 
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn(() => ({ user: null })) }));
 vi.mock('../../../api/quodom', () => ({
@@ -18,7 +18,7 @@ vi.mock('../../../api/quodom', () => ({
     porId: vi.fn(),
     update: vi.fn(),
     whatsapp: vi.fn(),
-    activoPorRubro: vi.fn(),
+    activosPorRubro: vi.fn(),
     create: vi.fn(),
     eliminar: vi.fn()
   }
@@ -40,13 +40,6 @@ const CEMENTO = { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 1 }
 const USUARIO_LOGUEADO = {
   id: 'u1', username: 'ana', email: 'ana@test.com', nombre: 'Ana'
 };
-
-function quodomExistente(overrides: Partial<Quodom> = {}): Quodom {
-  return {
-    id: 'Q-EXIST', descripcion: 'Bebidas de la oficina', estado: 'CREADO', nro: 'Q-100',
-    createdBy: 'u1', iddireccion: null, idrubro: 7, cantproductos: 2, ...overrides
-  };
-}
 
 function renderEn(ruta: string) {
   return render(<MemoryRouter initialEntries={[ruta]}><DetalleQuodom /></MemoryRouter>);
@@ -143,7 +136,7 @@ describe('DetalleQuodom con un carrito de un rubro dado de baja', () => {
 
   it('no ofrece enviar tampoco con el usuario logueado', async () => {
     vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
-    vi.mocked(quodom.activoPorRubro).mockResolvedValue(null);
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue([]);
     addGuestLine(4, CEMENTO);
 
     renderEn('/quodom?rubro=4');
@@ -173,9 +166,8 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
     vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
   });
 
-  it('migrates the cart and opens the WhatsApp link when the rubro has no open Quodom', async () => {
+  it('migrates the cart and opens the WhatsApp link', async () => {
     addGuestLine(7, GASEOSA);
-    vi.mocked(quodom.activoPorRubro).mockResolvedValue(null);
     vi.mocked(quodom.create).mockResolvedValue({ res: true, idquodom: 'Q-NEW' });
     vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
     vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/?text=hola-bebidas' });
@@ -194,33 +186,29 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
     expect(getGuestCart(7).lines).toHaveLength(0);
   });
 
-  it('shows the conflict dialog and, on "integrar", sends the lines to the existing Quodom', async () => {
+  it('migrates to a new Quodom without asking even when the rubro already has an open one', async () => {
+    // Un rubro admite varios Quodoms abiertos: ya no hay conflicto que resolver.
     addGuestLine(7, GASEOSA);
-    const existente = quodomExistente();
-    vi.mocked(quodom.activoPorRubro).mockResolvedValue(existente);
+    vi.mocked(quodom.create).mockResolvedValue({ res: true, idquodom: 'Q-NEW' });
     vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 2 });
-    vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/?text=hola-integrado' });
+    vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/?text=hola-nuevo' });
 
     renderEn('/quodom?rubro=7');
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
 
-    await waitFor(() => expect(screen.getByText('Quodom de Bebidas ya abierto')).toBeInTheDocument());
-
-    fireEvent.click(screen.getByRole('button', { name: 'Sumar todo a ese Quodom' }));
-
-    await waitFor(() => expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola-integrado'));
-
-    // Integrar sends the guest's lines onto the existing Quodom, not a new one.
-    expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-EXIST', idproducto: 700 }));
-    expect(quodom.create).not.toHaveBeenCalled();
+    await waitFor(() => expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola-nuevo'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(quodom.create).toHaveBeenCalledWith(expect.objectContaining({ idrubro: 7 }));
+    expect(quodom.eliminar).not.toHaveBeenCalled();
+    expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-NEW', idproducto: 700 }));
     expect(getGuestCart(7).lines).toHaveLength(0);
   });
 
   it('keeps the cart in localStorage when the migration fails', async () => {
     addGuestLine(7, GASEOSA);
-    vi.mocked(quodom.activoPorRubro).mockResolvedValue(null);
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue([]);
     vi.mocked(quodom.create).mockRejectedValue(new Error('network down'));
 
     renderEn('/quodom?rubro=7');
@@ -262,7 +250,7 @@ describe('DetalleQuodom con el envío bloqueado', () => {
 
   it('deja enviar cuando el atributo está elegido', async () => {
     addGuestLine(7, { ...GASEOSA, nombreAtributo1: 'LITROS', atributo1: '2 litros' });
-    vi.mocked(quodom.activoPorRubro).mockResolvedValue(null);
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue([]);
     vi.mocked(quodom.create).mockResolvedValue({ res: true, idquodom: 'Q-NEW' });
     vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
     vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/?text=ok' });
@@ -315,5 +303,52 @@ describe('DetalleQuodom avisa al resto de la app', () => {
 
     await waitFor(() => expect(escuchado).toHaveBeenCalled());
     window.removeEventListener('quodom:changed', escuchado);
+  });
+});
+
+// Un usuario con sesión que cae en /quodom?rubro=X con el carrito de invitado
+// ya vacío (migrado, p. ej. al ingresar) va al Quodom del servidor de ese
+// rubro: el abierto si lo hay, y si no el más reciente.
+describe('DetalleQuodom: carrito de invitado vacío con la sesión iniciada', () => {
+  const LISTA = [
+    { id: 'Q-RECIENTE', idrubro: 7 },
+    { id: 'Q-ABIERTO', idrubro: 7 }
+  ] as never;
+
+  beforeEach(() => {
+    clearGuestQuodoms();
+    localStorage.clear();
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
+    vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+    vi.mocked(quodom.porId).mockResolvedValue({ id: 'x', descripcion: 'x', estado: 'CREADO', idrubro: 7 } as never);
+    vi.mocked(quodomLines.porQuodom).mockResolvedValue([]);
+  });
+
+  it('va al Quodom abierto del rubro, aunque haya otro más reciente', async () => {
+    abrirQuodom(7, 'Q-ABIERTO');
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue(LISTA);
+
+    renderEn('/quodom?rubro=7');
+
+    await waitFor(() => expect(quodom.porId).toHaveBeenCalledWith('Q-ABIERTO'));
+  });
+
+  it('sin uno abierto va al más reciente', async () => {
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue(LISTA);
+
+    renderEn('/quodom?rubro=7');
+
+    await waitFor(() => expect(quodom.porId).toHaveBeenCalledWith('Q-RECIENTE'));
+  });
+
+  it('se queda donde está si el rubro no tiene ninguno', async () => {
+    vi.mocked(quodom.activosPorRubro).mockResolvedValue([]);
+
+    renderEn('/quodom?rubro=7');
+
+    await waitFor(() => expect(quodom.activosPorRubro).toHaveBeenCalledWith(7));
+    expect(quodom.porId).not.toHaveBeenCalled();
   });
 });

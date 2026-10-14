@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { PanelLista } from '../PanelLista';
 import { useAuth } from '../../../auth/AuthContext';
 import { listaApi } from '../../../api/lista';
-import { quodom as quodomApi } from '../../../api/quodom';
+import { abrirQuodom } from '../../../quodom/quodomAbierto';
 import { quodomLines } from '../../../api/quodom_lines';
 
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
@@ -13,14 +13,13 @@ vi.mock('../../../api/lista', async (importOriginal) => {
   return { ...actual, listaApi: { procesar: vi.fn() } };
 });
 vi.mock('../../../api/quodom', () => ({
-  quodom: { activoPorRubro: vi.fn(), create: vi.fn() }
+  quodom: { activosPorRubro: vi.fn(), create: vi.fn() }
 }));
 vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { add: vi.fn() }
 }));
 
 const mockProcesar = listaApi.procesar as unknown as ReturnType<typeof vi.fn>;
-const mockActivoPorRubro = quodomApi.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
 const mockAdd = quodomLines.add as unknown as ReturnType<typeof vi.fn>;
 
 const RESPUESTA = {
@@ -42,7 +41,7 @@ const RESPUESTA = {
 
 beforeEach(() => {
   mockProcesar.mockReset();
-  mockActivoPorRubro.mockReset();
+  localStorage.clear();
   mockAdd.mockReset();
   vi.mocked(useAuth).mockReturnValue(
     { user: { id: 'u1', nombre: 'Ana' }, signout: vi.fn() } as unknown as ReturnType<typeof useAuth>
@@ -92,7 +91,8 @@ describe('PanelLista', () => {
   });
 
   it('confirmar un grupo no navega ni oculta los demás: el segundo grupo sigue confirmable', async () => {
-    mockActivoPorRubro.mockResolvedValue({ id: 'Q-1' });
+    abrirQuodom(1, 'Q-1');
+    abrirQuodom(2, 'Q-2');
     mockAdd.mockResolvedValue(undefined);
 
     renderYEnviar();
@@ -303,7 +303,8 @@ describe('PanelLista (ambigua resuelve al mismo producto de un grupo existente)'
   });
 
   it('el input de cantidad muestra la suma fusionada, y confirmar manda esa cantidad', async () => {
-    mockActivoPorRubro.mockResolvedValue({ id: 'Q-1' });
+    abrirQuodom(1, 'Q-1');
+    abrirQuodom(2, 'Q-2');
     mockAdd.mockResolvedValue(undefined);
 
     await enviarCon(crearListaMismoProducto());
@@ -377,7 +378,8 @@ describe('PanelLista (un re-render ajeno no vuelve a sumar la cantidad fusionada
 
 describe('PanelLista (una segunda carga no hereda el estado de la primera)', () => {
   it('un rubro y producto repetidos entre dos cargas vuelven a ser confirmables', async () => {
-    mockActivoPorRubro.mockResolvedValue({ id: 'Q-1' });
+    abrirQuodom(1, 'Q-1');
+    abrirQuodom(2, 'Q-2');
     mockAdd.mockResolvedValue(undefined);
 
     renderYEnviar();

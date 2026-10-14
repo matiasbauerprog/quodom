@@ -16,10 +16,9 @@ import { SelectorAtributo } from './SelectorAtributo';
 import { ProductImage } from '../../components/ProductImage';
 import { openWhatsappLink } from '../../utils/whatsapp';
 import { migrarRubro } from '../../guest/migrateGuestQuodom';
-import type { AccionRubro, ConflictoRubro } from '../../guest/migrateGuestQuodom';
-import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
 import { nombreRubro } from '../../quodom/rubros';
 import { rubroDisponible } from '../../quodom/rubrosDisponibles';
+import { abiertoDe } from '../../quodom/quodomAbierto';
 import { bloqueoDeEnvioPorLineas } from '../../quodom/bloqueosEnvio';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import './DetalleQuodom.css';
@@ -49,7 +48,6 @@ export function DetalleQuodom() {
   const [server, setServer] = useState<{ quodom: Quodom; lines: QuodomLine[] } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [conflicto, setConflicto] = useState<ConflictoRubro | null>(null);
   const [attr, setAttr] = useState<{ lineIndex?: number; lineId?: number; idproducto: number; nombreatributo: string; slot: 1 | 2; actual: string | null | undefined } | null>(null);
   const [nonce, setNonce] = useState(0);
   // A cart can outlive its rubro: guest carts live in the user's own
@@ -94,13 +92,16 @@ export function DetalleQuodom() {
   // A logged-in user landing on /quodom?rubro=X whose guest cart for that
   // rubro is already empty (migrated already, e.g. by the login screen, or
   // it never had lines) gets sent to the server Quodom for that rubro, if
-  // one exists.
+  // one exists. A rubro can have several: the open one wins (it is the one
+  // the user was working in), otherwise the most recent.
   useEffect(() => {
     if (mode !== 'guest' || idrubro === null || !user || guest.lines.length > 0) return;
     let alive = true;
-    quodomApi.activoPorRubro(idrubro)
-      .then(activo => {
-        if (alive && activo) navigate('/quodom?id=' + encodeURIComponent(activo.id), { replace: true });
+    quodomApi.activosPorRubro(idrubro)
+      .then(lista => {
+        const abierto = abiertoDe(idrubro);
+        const destino = lista.find(q => q.id === abierto) ?? lista[0];
+        if (alive && destino) navigate('/quodom?id=' + encodeURIComponent(destino.id), { replace: true });
       })
       .catch(() => {});
     return () => { alive = false; };
@@ -152,43 +153,25 @@ export function DetalleQuodom() {
     } catch (e) { setErr(e instanceof ApiError ? e.message : 'No se pudo actualizar el atributo.'); }
   }
 
-  // Migrates just this rubro's guest cart and sends it. Called either
-  // directly (no conflicting server Quodom for this rubro) or after the
-  // user resolves DialogoConflictoRubro. The cart is only cleared by
-  // migrarRubro once every line is confirmed on the server, so a failure
-  // here always leaves the guest cart intact to retry.
-  const enviarGuestConAccion = useCallback(async (rubro: number, accion: AccionRubro) => {
-    setBusy(true);
-    setErr(null);
-    try {
-      const idquodom = await migrarRubro(rubro, accion);
-      if (!idquodom) { setErr('No hay productos en el Quodom.'); return; }
-      const r = await quodomApi.whatsapp(idquodom);
-      openWhatsappLink(r.link);
-      setConflicto(null);
-      navigate('/mis-quodoms', { replace: true });
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : 'No se pudo enviar.');
-    } finally {
-      setBusy(false);
-    }
-  }, [navigate]);
-
   async function enviarWhatsapp() {
     if (mode === 'guest') {
       if (idrubro === null) return;
       if (!user) { navigate('/login', { state: { from: '/quodom?rubro=' + idrubro } }); return; }
       setBusy(true);
+      setErr(null);
       try {
-        const existente = await quodomApi.activoPorRubro(idrubro);
-        if (existente) {
-          setConflicto({ idrubro, quodomExistente: existente, lineasInvitado: guest.lines.length });
-          setBusy(false);
-          return;
-        }
-        await enviarGuestConAccion(idrubro, 'crear');
+        // Migrates just this rubro's guest cart into a new Quodom and sends it.
+        // A rubro can have many open Quodoms, so there is no conflict to ask
+        // about. The cart is only cleared by migrarRubro once every line is
+        // confirmed on the server, so a failure here leaves it intact to retry.
+        const idquodom = await migrarRubro(idrubro);
+        if (!idquodom) { setErr('No hay productos en el Quodom.'); return; }
+        const r = await quodomApi.whatsapp(idquodom);
+        openWhatsappLink(r.link);
+        navigate('/mis-quodoms', { replace: true });
       } catch (e) {
         setErr(e instanceof ApiError ? e.message : 'No se pudo enviar.');
+      } finally {
         setBusy(false);
       }
       return;
@@ -332,20 +315,6 @@ export function DetalleQuodom() {
               const l = lines.find(x => (mode === 'guest' ? Number(x.key.slice(2)) === attr.lineIndex : Number(x.key.slice(2)) === attr.lineId));
               l?.onAttr(attr.slot, valor);
               setAttr(null);
-            }}
-          />
-        )}
-
-        {conflicto && (
-          <DialogoConflictoRubro
-            conflicto={conflicto}
-            ocupado={busy}
-            // Acá el usuario abrió el diálogo a propósito, al mandar por
-            // WhatsApp: cancelar lo devuelve a su carrito sin ensuciar nada.
-            permitirCancelar
-            onElegir={accion => {
-              if (!accion) { setConflicto(null); return; }
-              enviarGuestConAccion(conflicto.idrubro, accion);
             }}
           />
         )}

@@ -2,17 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { categorias } from '../../api/categorias';
 import { busqueda as busquedaApi } from '../../api/busqueda';
-import type { Category, BusquedaResult, Quodom } from '../../api/types';
+import type { Category, BusquedaResult } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { ProductImage } from '../../components/ProductImage';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
-import { crearYAgregar } from '../../quodom/agregarProducto';
-import { quodom as quodomApi } from '../../api/quodom';
-import { useAuth } from '../../auth/AuthContext';
-import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
-import type { AccionRubro } from '../../guest/migrateGuestQuodom';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
 import { RubroSelector } from './RubroSelector';
@@ -43,9 +38,6 @@ export function SitioInicial() {
   // Nombre del último producto agregado desde el buscador: sin este acuse,
   // tocar un resultado no se ve por ningún lado.
   const [agregado, setAgregado] = useState<string | null>(null);
-  const [conflicto, setConflicto] = useState<{ producto: BusquedaResult; quodomExistente: Quodom } | null>(null);
-  const [errReemplazo, setErrReemplazo] = useState<string | null>(null);
-  const { user } = useAuth();
   const {
     agregar: agregarLinea, agregando, error: errAgregar, destino, elegir, crear, cancelar
   } = useAgregarProducto();
@@ -145,48 +137,19 @@ export function SitioInicial() {
     setParams(modo === 'chat' ? {} : { ia: 'chat' });
   }
 
-  const lineaDe = (r: BusquedaResult) => ({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 });
-
   // Tocar un resultado agrega el producto y deja al usuario donde estaba. Antes
   // llevaba a la pantalla de búsqueda, o sea a buscar de nuevo lo que ya había
   // encontrado para recién ahí poder agregarlo.
   //
-  // Si el rubro ya tiene un Quodom abierto no se suma solo: se pregunta. Meter
-  // un producto suelto en la lista que el usuario venía armando, sin avisar, es
-  // el mismo problema que tenía la propuesta del asistente.
-  async function elegirSugerencia(r: BusquedaResult) {
+  // Va por el mismo camino que cualquier otro "+": el Quodom abierto del rubro
+  // lo recibe sin preguntar, y si no hay ninguno el hook abre el diálogo de
+  // destino. Un rubro admite varios Quodoms, así que no hay conflicto que
+  // resolver acá.
+  function elegirSugerencia(r: BusquedaResult) {
     setSugerencias(null);
     setQ('');
-    setAgregado(null);
-    if (user) {
-      const activo = await quodomApi.activoPorRubro(r.categoriaPadre).catch(() => null);
-      if (activo) { setConflicto({ producto: r, quodomExistente: activo }); return; }
-    }
     setAgregado(r.nombre);
-    agregarLinea(lineaDe(r), r.categoriaPadre);
-  }
-
-  async function resolverConflicto(accion: AccionRubro | null) {
-    if (!conflicto) return;
-    const { producto, quodomExistente } = conflicto;
-    if (!accion) { setConflicto(null); return; }
-    setConflicto(null);
-    if (accion === 'integrar') {
-      setAgregado(producto.nombre);
-      agregarLinea(lineaDe(producto), producto.categoriaPadre);
-      return;
-    }
-    // Empezar uno nuevo del mismo rubro sólo puede significar reemplazar: el
-    // backend admite un único Quodom abierto por rubro. Se llama derecho a
-    // crearYAgregar en vez de pasar por `agregar`, que al no encontrar
-    // ninguno abierto abriría un segundo diálogo para pedir lo ya decidido.
-    try {
-      await quodomApi.eliminar(quodomExistente.id);
-      await crearYAgregar(lineaDe(producto), producto.categoriaPadre, 'Mi Quodom');
-      setAgregado(producto.nombre);
-    } catch (e) {
-      setErrReemplazo(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo crear el Quodom.');
-    }
+    agregarLinea({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 }, r.categoriaPadre);
   }
 
   if (err) return <div className="container"><ErrorState message={err} onRetry={() => setNonce(n => n + 1)} /></div>;
@@ -238,25 +201,9 @@ export function SitioInicial() {
       </form>
       )}
 
-      {agregado && <p className="home-agregado" role="status">Agregado ✓ {agregado}</p>}
-      {(errAgregar || errReemplazo) && (
-        <p className="home-agregar-error" role="alert">{errAgregar || errReemplazo}</p>
-      )}
-
-      {conflicto && (
-        <DialogoConflictoRubro
-          conflicto={{
-            idrubro: conflicto.producto.categoriaPadre,
-            quodomExistente: conflicto.quodomExistente,
-            lineasInvitado: 1
-          }}
-          descripcionEntrante={'querés agregar ' + conflicto.producto.nombre}
-          etiquetaIntegrar="Agregarlo a ese Quodom"
-          permitirCancelar
-          etiquetaCancelar="Cancelar"
-          onElegir={resolverConflicto}
-        />
-      )}
+      {/* Mientras el diálogo de destino pregunta todavía no se agregó nada. */}
+      {agregado && !destino && !errAgregar && <p className="home-agregado" role="status">Agregado ✓ {agregado}</p>}
+      {errAgregar && !destino && <p className="home-agregar-error" role="alert">{errAgregar}</p>}
 
       {/* El botón es también la única forma de cerrar la conversación: la
           pantalla de chat con su flecha de volver ya no existe, así que si

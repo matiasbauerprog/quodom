@@ -25,14 +25,16 @@ describe('ListaMisQuodoms: nuevo por rubro', () => {
     expect(screen.getByRole('button', { name: 'Construcción' })).toBeEnabled();
   });
 
-  it('disables a rubro that already has an open quodom', async () => {
+  it('lets you create another quodom of a rubro that already has an open one', async () => {
     misQuodom.mockResolvedValue([BEBIDAS_ABIERTO]);
     render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
     await waitFor(() => screen.getByRole('button', { name: /nuevo/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /nuevo/i }));
 
-    expect(screen.getByRole('button', { name: /Bebidas/ })).toBeDisabled();
+    // Un rubro admite varios Quodoms abiertos: nada se deshabilita ni se anota.
+    expect(screen.getByRole('button', { name: 'Bebidas' })).toBeEnabled();
+    expect(screen.queryByText(/ya tenés uno abierto/i)).toBeNull();
   });
 
   it('makes the background inert while picking a rubro', async () => {

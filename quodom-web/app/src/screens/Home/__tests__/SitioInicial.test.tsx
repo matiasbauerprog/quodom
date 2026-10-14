@@ -5,20 +5,17 @@ import { SitioInicial } from '../SitioInicial';
 import { categorias } from '../../../api/categorias';
 import { productos } from '../../../api/productos';
 import { busqueda } from '../../../api/busqueda';
-import { quodom as quodomApi } from '../../../api/quodom';
 import { useAuth } from '../../../auth/AuthContext';
 
 vi.mock('../../../api/categorias', () => ({ categorias: { raiz: vi.fn(), subs: vi.fn() } }));
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
 vi.mock('../../../api/busqueda', () => ({ busqueda: { buscar: vi.fn() } }));
-vi.mock('../../../api/quodom', () => ({ quodom: { activoPorRubro: vi.fn(), eliminar: vi.fn() } }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
-const crearYAgregarSpy = vi.hoisted(() => vi.fn());
-vi.mock('../../../quodom/agregarProducto', () => ({ crearYAgregar: crearYAgregarSpy }));
 const agregarSpy = vi.hoisted(() => vi.fn());
+const destinoMock = vi.hoisted(() => ({ value: null as null | { idrubro: number; candidatos: never[]; items: never[] } }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({
   useAgregarProducto: () => ({
-    agregar: agregarSpy, agregando: false, error: null, destino: null,
+    agregar: agregarSpy, agregando: false, error: null, destino: destinoMock.value,
     elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn()
   })
 }));
@@ -31,8 +28,6 @@ const raiz = categorias.raiz as unknown as ReturnType<typeof vi.fn>;
 const subs = categorias.subs as unknown as ReturnType<typeof vi.fn>;
 const porCategoria = productos.porCategoria as unknown as ReturnType<typeof vi.fn>;
 const buscar = busqueda.buscar as unknown as ReturnType<typeof vi.fn>;
-const activoPorRubro = quodomApi.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
-const eliminarQuodom = quodomApi.eliminar as unknown as ReturnType<typeof vi.fn>;
 
 const RUBROS = [
   { id: 7, nombrecategoria: 'Bebidas', idcategoriapadre: 0, imagen: null, refreshImage: null, orden: 1 },
@@ -54,8 +49,7 @@ function montar(url: string) {
 beforeEach(() => {
   raiz.mockReset(); subs.mockReset(); porCategoria.mockReset(); buscar.mockReset(); agregarSpy.mockReset();
   buscar.mockResolvedValue([]);
-  activoPorRubro.mockReset(); eliminarQuodom.mockReset(); crearYAgregarSpy.mockReset();
-  activoPorRubro.mockResolvedValue(null);
+  destinoMock.value = null;
   vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
   raiz.mockResolvedValue(RUBROS);
   subs.mockResolvedValue(SUBS_BEBIDAS);
@@ -286,8 +280,7 @@ describe('SitioInicial (buscador con sugerencias)', () => {
 
   it('avisa cuando no hay resultados en vez de dejar el desplegable vacío', async () => {
     buscar.mockResolvedValue([]);
-  activoPorRubro.mockReset(); eliminarQuodom.mockReset(); crearYAgregarSpy.mockReset();
-  activoPorRubro.mockResolvedValue(null);
+  destinoMock.value = null;
   vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
     montar('/');
     await screen.findByRole('link', { name: /bebidas/i });
@@ -425,15 +418,12 @@ describe('SitioInicial (buscador y Modo IA)', () => {
   });
 });
 
-// Agregar desde el buscador no puede meter un producto suelto, en silencio, en
-// la lista que el usuario venía armando: se pregunta, con las mismas salidas
-// que usa la propuesta del asistente.
-describe('SitioInicial (agregar con un Quodom abierto del rubro)', () => {
+// Agregar desde el buscador pasa por el mismo flujo que cualquier otro "+":
+// un rubro admite varios Quodoms abiertos, así que ya no hay conflicto que
+// preguntar ni nada que descartar. Qué Quodom recibe el producto lo decide el
+// hook (el abierto del rubro, o el diálogo de destino si no hay ninguno).
+describe('SitioInicial (agregar desde el buscador con la sesión iniciada)', () => {
   const COCA_RESULT = { id: 700, nombre: 'Coca Cola 2L', descripcion: null, imagen: null, refreshImagen: null, categoriaPadre: 7 };
-  const ABIERTO = {
-    id: 'Q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7',
-    idrubro: 7, createdBy: 'u1', iddireccion: null, cantproductos: 3
-  };
 
   async function elegirResultado() {
     buscar.mockResolvedValue([COCA_RESULT]);
@@ -453,52 +443,21 @@ describe('SitioInicial (agregar con un Quodom abierto del rubro)', () => {
     expect(await screen.findByText('+ Agregar')).toBeInTheDocument();
   });
 
-  it('pregunta en vez de sumar solo', async () => {
-    activoPorRubro.mockResolvedValue(ABIERTO);
-
+  it('agrega por el hook, sin preguntar ni consultar el servidor por su cuenta', async () => {
     await elegirResultado();
-
-    const dialogo = await screen.findByRole('dialog');
-    expect(dialogo).toHaveTextContent(/QD-7/);
-    expect(dialogo).toHaveTextContent(/coca cola 2l/i);
-    expect(agregarSpy).not.toHaveBeenCalled();
-  });
-
-  it('elegir el Quodom que ya está lo agrega ahí', async () => {
-    activoPorRubro.mockResolvedValue(ABIERTO);
-    await elegirResultado();
-    await screen.findByRole('dialog');
-
-    fireEvent.click(screen.getByRole('button', { name: /agregarlo a ese quodom/i }));
 
     await waitFor(() => expect(agregarSpy).toHaveBeenCalledWith(
       { idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 }, 7
     ));
-    expect(eliminarQuodom).not.toHaveBeenCalled();
-  });
-
-  it('empezar uno nuevo descarta el anterior y no pide confirmación de nuevo', async () => {
-    activoPorRubro.mockResolvedValue(ABIERTO);
-    eliminarQuodom.mockResolvedValue({ res: true });
-    crearYAgregarSpy.mockResolvedValue('Q-NUEVO');
-    await elegirResultado();
-    await screen.findByRole('dialog');
-
-    await act(async () => { screen.getByRole('button', { name: /reemplazar/i }).click(); });
-
-    expect(eliminarQuodom).toHaveBeenCalledWith('Q-7');
-    expect(crearYAgregarSpy).toHaveBeenCalledWith(
-      { idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 }, 7, 'Mi Quodom'
-    );
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(await screen.findByText(/agregado/i)).toBeInTheDocument();
   });
 
-  it('sin Quodom abierto del rubro agrega sin preguntar', async () => {
-    activoPorRubro.mockResolvedValue(null);
-
+  it('no dice "Agregado" mientras el diálogo de destino sigue preguntando', async () => {
+    destinoMock.value = { idrubro: 7, candidatos: [], items: [] };
     await elegirResultado();
 
     await waitFor(() => expect(agregarSpy).toHaveBeenCalled());
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText(/agregado ✓/i)).toBeNull();
   });
 });

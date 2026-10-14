@@ -9,7 +9,7 @@ import { rubrosDisponibles } from '../../../quodom/rubrosDisponibles';
 import { leerAbiertos, abrirQuodom } from '../../../quodom/quodomAbierto';
 
 vi.mock('../../../api/quodom', () => ({
-  quodom: { misQuodom: vi.fn(), repetir: vi.fn(), activoPorRubro: vi.fn(), eliminar: vi.fn() }
+  quodom: { misQuodom: vi.fn(), repetir: vi.fn(), eliminar: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../../quodom/rubrosDisponibles', () => ({

@@ -4,9 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { GrupoRubro } from '../GrupoRubro';
 import { quodom } from '../../../api/quodom';
 import { quodomLines } from '../../../api/quodom_lines';
+import { abrirQuodom, abiertoDe } from '../../../quodom/quodomAbierto';
 
 vi.mock('../../../api/quodom', () => ({
-  quodom: { activoPorRubro: vi.fn(), create: vi.fn() }
+  quodom: { activosPorRubro: vi.fn(), create: vi.fn() }
 }));
 vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { add: vi.fn() }
@@ -20,12 +21,13 @@ const GRUPO = {
   ]
 };
 
-const mockActivo = quodom.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
+const mockActivos = quodom.activosPorRubro as unknown as ReturnType<typeof vi.fn>;
 const mockCreate = quodom.create as unknown as ReturnType<typeof vi.fn>;
 const mockAdd = quodomLines.add as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  mockActivo.mockReset();
+  localStorage.clear();
+  mockActivos.mockReset();
   mockCreate.mockReset();
   mockAdd.mockReset();
   mockAdd.mockResolvedValue({ res: true, id: 1 });
@@ -44,7 +46,7 @@ describe('GrupoRubro', () => {
   });
 
   it('agrega al Quodom abierto del rubro y queda marcado como agregado', async () => {
-    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    abrirQuodom(1, 'QD-9');
     renderGrupo();
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
@@ -56,8 +58,8 @@ describe('GrupoRubro', () => {
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
-  it('pide confirmación antes de crear un Quodom cuando no hay uno abierto', async () => {
-    mockActivo.mockResolvedValue(null);
+  it('pregunta a cuál sumarlo cuando no hay uno abierto, sin crear nada', async () => {
+    mockActivos.mockResolvedValue([]);
     renderGrupo();
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
@@ -68,22 +70,37 @@ describe('GrupoRubro', () => {
   });
 
   it('crea el Quodom al aceptar el diálogo y agrega las líneas', async () => {
-    mockActivo.mockResolvedValue(null);
+    mockActivos.mockResolvedValue([]);
     mockCreate.mockResolvedValue({ res: true, idquodom: 'QD-10' });
     renderGrupo();
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /crear quodom/i }));
+    fireEvent.click(screen.getByRole('button', { name: /un quodom nuevo de limpieza/i }));
 
     await waitFor(() => expect(mockAdd).toHaveBeenCalled());
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({ idrubro: 1 })
     );
+    expect(abiertoDe(1)).toBe('QD-10');
+  });
+
+  it('suma al Quodom existente que el usuario elige y lo deja abierto', async () => {
+    mockActivos.mockResolvedValue([{ id: 'QD-5', descripcion: 'Oficina', idrubro: 1, cantproductos: 2 }]);
+    renderGrupo();
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /oficina/i }));
+
+    await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
+    expect(mockAdd).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'QD-5', idproducto: 8001 }));
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(abiertoDe(1)).toBe('QD-5');
   });
 
   it('no crea nada si se cancela el diálogo', async () => {
-    mockActivo.mockResolvedValue(null);
+    mockActivos.mockResolvedValue([]);
     renderGrupo();
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
@@ -96,7 +113,7 @@ describe('GrupoRubro', () => {
   });
 
   it('muestra el error del servidor sin perder el grupo', async () => {
-    mockActivo.mockRejectedValue(new Error('No se pudo consultar el Quodom.'));
+    mockActivos.mockRejectedValue(new Error('No se pudo consultar el Quodom.'));
     renderGrupo();
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
@@ -106,7 +123,7 @@ describe('GrupoRubro', () => {
   });
 
   it('un reintento tras un error parcial no vuelve a agregar la línea que ya se guardó', async () => {
-    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    abrirQuodom(1, 'QD-9');
     mockAdd.mockReset();
     mockAdd
       .mockResolvedValueOnce({ res: true, id: 1 })
@@ -136,7 +153,7 @@ describe('GrupoRubro', () => {
 
 describe('GrupoRubro (le llega un producto después de confirmar)', () => {
   it('vuelve a mostrar la propuesta y sólo agrega lo nuevo', async () => {
-    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    abrirQuodom(1, 'QD-9');
     const { rerender } = render(<MemoryRouter><GrupoRubro grupo={GRUPO} /></MemoryRouter>);
 
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
@@ -160,14 +177,14 @@ describe('GrupoRubro (le llega un producto después de confirmar)', () => {
   });
 
   it('avisa cuántas líneas quedaron sin resolver arriba', () => {
-    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    abrirQuodom(1, 'QD-9');
     render(<MemoryRouter><GrupoRubro grupo={GRUPO} pendientesSinResolver={2} /></MemoryRouter>);
 
     expect(screen.getByText(/2 líneas .*sin resolver/i)).toBeInTheDocument();
   });
 
   it('no avisa nada si no quedan líneas sin resolver', () => {
-    mockActivo.mockResolvedValue({ id: 'QD-9', idrubro: 1 });
+    abrirQuodom(1, 'QD-9');
     render(<MemoryRouter><GrupoRubro grupo={GRUPO} pendientesSinResolver={0} /></MemoryRouter>);
 
     expect(screen.queryByText(/sin resolver/i)).toBeNull();

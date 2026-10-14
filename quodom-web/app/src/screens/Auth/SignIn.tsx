@@ -3,8 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { ApiError } from '../../api/client';
 import { planificarMigracion, migrarRubro } from '../../guest/migrateGuestQuodom';
-import type { AccionRubro, ConflictoRubro } from '../../guest/migrateGuestQuodom';
-import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
 import { nombreRubro } from '../../quodom/rubros';
 import './SignIn.css';
 
@@ -25,11 +23,6 @@ export function SignIn() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [conflictos, setConflictos] = useState<ConflictoRubro[]>([]);
-  const [resolviendo, setResolviendo] = useState(false);
-  // Sólo tras una migración fallida se ofrece seguir sin integrar: si no, un
-  // servidor caído dejaría al usuario encerrado en el login.
-  const [falloMigracion, setFalloMigracion] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,19 +38,15 @@ export function SignIn() {
       // en localStorage (migrarRubro sólo lo borra con todas sus líneas ya
       // confirmadas), así que se puede reintentar más tarde.
       const fallidos: number[] = [];
-      for (const idrubro of plan.sinConflicto) {
+      for (const idrubro of plan.aMigrar) {
         try {
-          await migrarRubro(idrubro, 'crear');
+          await migrarRubro(idrubro);
         } catch {
           fallidos.push(idrubro);
         }
       }
       if (fallidos.length > 0) setError(MENSAJE_MIGRACION_FALLIDA);
       else if (plan.noDisponibles.length > 0) setError(mensajeRubrosNoDisponibles(plan.noDisponibles));
-      if (plan.conflictos.length > 0) {
-        setConflictos(plan.conflictos);   // el diálogo los resuelve de a uno
-        return;                            // no navegamos todavía
-      }
       navigate(from ?? '/', { replace: true });
     } catch (err) {
       if (signedIn) {
@@ -77,35 +66,6 @@ export function SignIn() {
       }
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function resolverConflicto(accion: AccionRubro | null) {
-    const [actual, ...resto] = conflictos;
-    if (!accion) {
-      // La salida se ofrece sólo tras un fallo, y vale sólo para ese conflicto:
-      // sin este reset el siguiente rubro de la cola la seguiría ofreciendo y
-      // volvería a dejar carritos huérfanos sin que nada haya fallado.
-      setFalloMigracion(false);
-      setConflictos(resto);
-      if (resto.length === 0) navigate(from ?? '/', { replace: true });
-      return;
-    }
-    setError(null);
-    setResolviendo(true);
-    try {
-      await migrarRubro(actual.idrubro, accion);
-      setFalloMigracion(false);
-      setConflictos(resto);
-      if (resto.length === 0) navigate(from ?? '/', { replace: true });
-    } catch (err) {
-      // The guest cart for this rubro survives a failed migrarRubro (it only
-      // clears once every line is confirmed), so keep the conflict on screen
-      // instead of dropping it — the user can retry the same rubro.
-      setFalloMigracion(true);
-      setError(err instanceof ApiError || err instanceof Error ? err.message : 'No se pudo migrar el carrito.');
-    } finally {
-      setResolviendo(false);
     }
   }
 
@@ -131,15 +91,6 @@ export function SignIn() {
           <Link to="/registro">Crear cuenta</Link>
         </div>
       </div>
-      {conflictos.length > 0 && (
-        <DialogoConflictoRubro
-          conflicto={conflictos[0]}
-          onElegir={resolverConflicto}
-          ocupado={resolviendo}
-          permitirCancelar={falloMigracion}
-          etiquetaCancelar="Continuar sin integrar"
-        />
-      )}
     </div>
   );
 }

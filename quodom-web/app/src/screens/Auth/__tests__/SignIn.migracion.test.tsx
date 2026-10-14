@@ -13,7 +13,7 @@ import { addGuestLine, clearGuestQuodoms, getGuestCart } from '../../../guest/gu
 // de localStorage.
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../../api/quodom', () => ({
-  quodom: { activoPorRubro: vi.fn(), create: vi.fn(), eliminar: vi.fn() }
+  quodom: { activosPorRubro: vi.fn(), create: vi.fn(), eliminar: vi.fn() }
 }));
 vi.mock('../../../api/quodom_lines', () => ({ quodomLines: { add: vi.fn() } }));
 vi.mock('../../../api/categorias', () => ({ categorias: { raiz: vi.fn() } }));
@@ -54,7 +54,6 @@ describe('SignIn migrando carritos de invitado', () => {
     vi.mocked(useAuth).mockReturnValue({ signin } as unknown as ReturnType<typeof useAuth>);
     signin.mockResolvedValue(undefined);
     vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
-    vi.mocked(quodomApi.activoPorRubro).mockResolvedValue(null);
     vi.mocked(quodomApi.create).mockResolvedValue({ res: true, idquodom: 'q-new' });
     vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
   });
@@ -106,5 +105,21 @@ describe('SignIn migrando carritos de invitado', () => {
     expect(getGuestCart(1).lines).toHaveLength(1);
     expect(getGuestCart(7).lines).toHaveLength(0);
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 700 }));
+  });
+
+  it('migra a un Quodom nuevo aunque el rubro ya tenga uno abierto, sin preguntar', async () => {
+    // Un rubro admite varios Quodoms abiertos: ya no hay conflicto que resolver.
+    addGuestLine(7, GASEOSA);
+    vi.mocked(quodomApi.activosPorRubro).mockResolvedValue([{ id: 'q-viejo', idrubro: 7 } as never]);
+
+    renderLogin();
+    fillAndSubmit();
+
+    await screen.findByText('Inicio');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(quodomApi.create).toHaveBeenCalledWith(expect.objectContaining({ idrubro: 7 }));
+    expect(quodomApi.eliminar).not.toHaveBeenCalled();
+    expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-new', idproducto: 700 }));
+    expect(getGuestCart(7).lines).toHaveLength(0);
   });
 });

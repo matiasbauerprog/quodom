@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { PropuestaEditable } from '../ModoIA/PropuestaEditable';
-import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { DialogoDestino } from '../../quodom/DialogoDestino';
+import { useDestinoLote } from '../../quodom/useDestinoLote';
 import { nombreRubro } from '../../quodom/rubros';
-import { quodom as quodomApi } from '../../api/quodom';
 import { quodomLines } from '../../api/quodom_lines';
 import { ApiError } from '../../api/client';
 import type { ListaGrupo } from '../../api/lista';
@@ -24,7 +24,6 @@ export function GrupoRubro({
   pendientesSinResolver?: number;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const [pendiente, setPendiente] = useState<IaProposalItem[] | null>(null);
   const [agregadoEn, setAgregadoEn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,32 +66,15 @@ export function GrupoRubro({
     return e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo agregar al Quodom.';
   }
 
+  const lote = useDestinoLote<IaProposalItem[]>({ agregar: agregarLineas, descripcion: descripcionLista });
+
+  // Va al Quodom abierto del rubro; sin ninguno abierto pregunta a cuál sumarlo
+  // (o si crear uno nuevo) en vez de crear como efecto secundario.
   async function confirmar(elegidos: IaProposalItem[]) {
     setConfirming(true);
     setError(null);
     try {
-      const activo = await quodomApi.activoPorRubro(grupo.idrubro);
-      if (!activo) {
-        // Nunca se crea un Quodom como efecto secundario: primero se pregunta.
-        setPendiente(elegidos);
-        return;
-      }
-      await agregarLineas(activo.id, elegidos);
-    } catch (e) {
-      setError(mensajeDeError(e));
-    } finally {
-      setConfirming(false);
-    }
-  }
-
-  async function crearYConfirmar() {
-    if (!pendiente) return;
-    setConfirming(true);
-    setError(null);
-    try {
-      const creado = await quodomApi.create({ descripcion: descripcionLista(), idrubro: grupo.idrubro });
-      await agregarLineas(creado.idquodom, pendiente);
-      setPendiente(null);
+      await lote.resolver(grupo.idrubro, elegidos);
     } catch (e) {
       setError(mensajeDeError(e));
     } finally {
@@ -144,12 +126,15 @@ export function GrupoRubro({
 
       {error && <p className="gr-error" role="alert">{error}</p>}
 
-      {pendiente && (
-        <DialogoNuevoRubro
+      {lote.destino && (
+        <DialogoDestino
           nombreRubro={grupo.rubro || nombreRubro(grupo.idrubro)}
-          onConfirmar={crearYConfirmar}
-          onCancelar={() => setPendiente(null)}
-          ocupado={confirming}
+          candidatos={lote.destino.candidatos}
+          onElegir={lote.elegir}
+          onCrear={lote.crear}
+          onCancelar={lote.cancelar}
+          ocupado={lote.ocupado}
+          error={lote.error}
         />
       )}
     </section>

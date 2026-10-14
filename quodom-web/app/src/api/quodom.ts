@@ -10,10 +10,6 @@ export const quodom = {
   // Los Quodoms en armado de un rubro, del más nuevo al más viejo. Nunca crea.
   activosPorRubro: (idrubro: number) =>
     apiFetch<{ res: boolean; data: Quodom[] }>('/quodom/activos/' + idrubro).then(r => r.data),
-  // Compatibilidad hasta que los llamadores pasen a `activosPorRubro`: el
-  // endpoint viejo devolvía el más reciente, que ahora es el primero de la lista.
-  activoPorRubro: (idrubro: number): Promise<Quodom | null> =>
-    apiFetch<{ res: boolean; data: Quodom[] }>('/quodom/activos/' + idrubro).then(r => r.data[0] ?? null),
   update: (id: string, body: { descripcion?: string; iddireccion?: number | null }) =>
     apiFetch<Quodom>('/quodom/' + encodeURIComponent(id), { method: 'PUT', body }),
   eliminar: (id: string) =>

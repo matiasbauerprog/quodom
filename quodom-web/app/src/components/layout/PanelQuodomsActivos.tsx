@@ -1,6 +1,4 @@
 import { Link } from 'react-router-dom';
-import type { Quodom } from '../../api/types';
-import { nombreRubro } from '../../quodom/rubros';
 import './PanelQuodomsActivos.css';
 
 export type ItemActivo = {
@@ -28,16 +26,4 @@ export function PanelQuodomsActivos({ items, onNavegar }: { items: ItemActivo[];
       ))}
     </ul>
   );
-}
-
-export function quodomsAItems(list: Quodom[]): ItemActivo[] {
-  return list
-    .filter(q => q.estado === 'CREADO')
-    .map(q => ({
-      key: q.id,
-      to: '/quodom?id=' + encodeURIComponent(q.id),
-      nombreRubro: q.nombrerubro || nombreRubro(q.idrubro),
-      descripcion: q.descripcion,
-      cantproductos: q.cantproductos ?? 0
-    }));
 }

@@ -6,7 +6,7 @@ import { categorias } from '../src/api/categorias';
 import { addGuestLine, clearGuestQuodoms, getGuestCart } from '../src/guest/guestQuodom';
 
 vi.mock('../src/api/quodom', () => ({
-  quodom: { activoPorRubro: vi.fn(), create: vi.fn(), eliminar: vi.fn() }
+  quodom: { activosPorRubro: vi.fn(), create: vi.fn(), eliminar: vi.fn() }
 }));
 vi.mock('../src/api/quodom_lines', () => ({
   quodomLines: { add: vi.fn() }
@@ -15,7 +15,7 @@ vi.mock('../src/api/categorias', () => ({
   categorias: { raiz: vi.fn() }
 }));
 
-const activoPorRubro = quodomApi.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
+const activosPorRubro = quodomApi.activosPorRubro as unknown as ReturnType<typeof vi.fn>;
 const create = quodomApi.create as unknown as ReturnType<typeof vi.fn>;
 const eliminar = quodomApi.eliminar as unknown as ReturnType<typeof vi.fn>;
 const addLine = quodomLines.add as unknown as ReturnType<typeof vi.fn>;
@@ -32,39 +32,35 @@ const LAVANDINA = { idproducto: 100, nombreProducto: 'Lavandina 1L', cantidad: 1
 describe('guest migration by rubro', () => {
   beforeEach(() => {
     clearGuestQuodoms();
-    [activoPorRubro, create, eliminar, addLine, raiz].forEach(m => m.mockReset());
+    [activosPorRubro, create, eliminar, addLine, raiz].forEach(m => m.mockReset());
     raiz.mockResolvedValue(RUBROS_HABILITADOS);
     create.mockResolvedValue({ res: true, idquodom: 'q-new' });
     addLine.mockResolvedValue({ res: true, id: 1 });
     eliminar.mockResolvedValue({ res: true });
   });
 
-  it('splits rubros into conflicting and free ones', async () => {
+  it('plans every offered rubro to be migrated, without asking the server about open Quodoms', async () => {
+    // Ya no hay conflicto posible: un rubro puede tener varios Quodoms abiertos,
+    // así que el carrito siempre migra a uno nuevo y no hay nada que consultar.
     addGuestLine(7, GASEOSA);
     addGuestLine(1, LAVANDINA);
-    activoPorRubro.mockImplementation(async (r: number) => (r === 7 ? { id: 'q-7', idrubro: 7, nro: 'QD-1', cantproductos: 3 } : null));
 
     const plan = await planificarMigracion();
 
-    expect(plan.sinConflicto).toEqual([1]);
+    expect(plan.aMigrar).toEqual([1, 7]);
     expect(plan.noDisponibles).toEqual([]);
-    expect(plan.conflictos).toHaveLength(1);
-    expect(plan.conflictos[0].idrubro).toBe(7);
-    expect(plan.conflictos[0].lineasInvitado).toBe(1);
+    expect(activosPorRubro).not.toHaveBeenCalled();
   });
 
-  it('sets aside a cart whose rubro is not offered, without asking the server about it', async () => {
+  it('sets aside a cart whose rubro is not offered', async () => {
     // El backend responde 400 idrubro_invalido a un create de rubro 4, así que
     // planificar la migración de ese carrito sólo genera un error: se aparta.
     addGuestLine(4, CEMENTO);
-    activoPorRubro.mockResolvedValue(null);
 
     const plan = await planificarMigracion();
 
     expect(plan.noDisponibles).toEqual([4]);
-    expect(plan.sinConflicto).toEqual([]);
-    expect(plan.conflictos).toEqual([]);
-    expect(activoPorRubro).not.toHaveBeenCalled();
+    expect(plan.aMigrar).toEqual([]);
     // El carrito nunca se toca: sigue entero en localStorage.
     expect(getGuestCart(4).lines).toHaveLength(1);
   });
@@ -73,11 +69,10 @@ describe('guest migration by rubro', () => {
     addGuestLine(1, LAVANDINA);
     addGuestLine(4, CEMENTO);
     addGuestLine(7, GASEOSA);
-    activoPorRubro.mockResolvedValue(null);
 
     const plan = await planificarMigracion();
 
-    expect(plan.sinConflicto).toEqual([1, 7]);
+    expect(plan.aMigrar).toEqual([1, 7]);
     expect(plan.noDisponibles).toEqual([4]);
   });
 
@@ -86,18 +81,17 @@ describe('guest migration by rubro', () => {
     // como antes y cada rubro falla por su cuenta, si es que falla.
     addGuestLine(4, CEMENTO);
     raiz.mockRejectedValue(new Error('network down'));
-    activoPorRubro.mockResolvedValue(null);
 
     const plan = await planificarMigracion();
 
     expect(plan.noDisponibles).toEqual([]);
-    expect(plan.sinConflicto).toEqual([4]);
+    expect(plan.aMigrar).toEqual([4]);
   });
 
-  it('creates a new quodom for a rubro without conflict and clears its cart', async () => {
+  it('creates a new quodom and clears the cart once every line is on the server', async () => {
     addGuestLine(1, LAVANDINA);
 
-    const id = await migrarRubro(1, 'crear');
+    const id = await migrarRubro(1);
 
     expect(create).toHaveBeenCalledWith({ descripcion: 'Mi Quodom', idrubro: 1 });
     expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-new', idproducto: 100 }));
@@ -105,60 +99,53 @@ describe('guest migration by rubro', () => {
     expect(getGuestCart(1).lines).toEqual([]);
   });
 
-  it('integrar sends every guest line, unmerged, to the existing quodom', async () => {
-    // Merging same-product-same-attributes quantities is a server-side rule
-    // (quodom_lines.controller.js add()), not something migrarRubro computes
-    // itself. This asserts the frontend forwards each guest line intact, with
-    // its own cantidad, so the server can do that summing. Two distinct guest
-    // lines catch a regression that would batch or drop one of them.
+  it('migra el carrito a un Quodom nuevo aunque el rubro ya tenga uno abierto', async () => {
+    addGuestLine(7, GASEOSA);
+    create.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+
+    const id = await migrarRubro(7);
+
+    expect(id).toBe('q-nuevo');
+    expect(activosPorRubro).not.toHaveBeenCalled();
+    expect(eliminar).not.toHaveBeenCalled();
+    expect(getGuestCart(7).lines).toHaveLength(0);
+  });
+
+  it('sends every guest line, unmerged, to the new quodom', async () => {
     addGuestLine(7, GASEOSA); // idproducto 700, cantidad 2
     addGuestLine(7, { idproducto: 401, nombreProducto: 'Agua 500ml', cantidad: 3 });
-    activoPorRubro.mockResolvedValue({ id: 'q-7', idrubro: 7 });
 
-    const id = await migrarRubro(7, 'integrar');
+    await migrarRubro(7);
 
-    expect(create).not.toHaveBeenCalled();
-    expect(eliminar).not.toHaveBeenCalled();
     expect(addLine).toHaveBeenCalledTimes(2);
-    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 700, cantidad: 2 }));
-    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 401, cantidad: 3 }));
-    expect(id).toBe('q-7');
+    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-new', idproducto: 700, cantidad: 2 }));
+    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-new', idproducto: 401, cantidad: 3 }));
   });
 
-  it('integrar relies on the server to sum quantities for a repeated product', async () => {
-    // Simulates the server-side merge (covered end-to-end by
-    // api/tests/quodom_lines.merge.test.js): the quodom already has 5 units of
-    // idproducto 700, so adding the guest's 2 should leave 7, not 2 new units
-    // in a second line. This is what would break silently if the merge logic
-    // were ever removed from the controller.
-    addGuestLine(7, GASEOSA); // idproducto 700, cantidad 2
-    activoPorRubro.mockResolvedValue({ id: 'q-7', idrubro: 7 });
-
-    let stored = 5;
-    addLine.mockImplementation(async (params: { cantidad: number }) => {
-      stored += params.cantidad; // mirrors the controller's summed-line behaviour
-      return { res: true, id: 1 };
-    });
-
-    await migrarRubro(7, 'integrar');
-
-    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 700, cantidad: 2 }));
-    expect(stored).toBe(7);
-  });
-
-  it('reemplazar deletes the whole existing quodom and creates a new one', async () => {
+  it('keeps the cart when a line fails, and does not leave a half-filled quodom behind', async () => {
     addGuestLine(7, GASEOSA);
-    activoPorRubro.mockResolvedValue({ id: 'q-7', idrubro: 7 });
+    addGuestLine(7, { idproducto: 401, nombreProducto: 'Agua 500ml', cantidad: 3 });
+    addLine.mockResolvedValueOnce({ res: true, id: 1 }).mockRejectedValueOnce(new Error('network down'));
 
-    const id = await migrarRubro(7, 'reemplazar');
+    await expect(migrarRubro(7)).rejects.toThrow('network down');
 
-    expect(eliminar).toHaveBeenCalledWith('q-7');
-    expect(create).toHaveBeenCalledWith({ descripcion: 'Mi Quodom', idrubro: 7 });
-    expect(id).toBe('q-new');
+    // El carrito sigue entero para reintentar; el Quodom a medias se descarta
+    // para que el reintento no deje un duplicado.
+    expect(getGuestCart(7).lines).toHaveLength(2);
+    expect(eliminar).toHaveBeenCalledWith('q-new');
   });
 
-  it('leaves the cart untouched when a rubro is never migrated', async () => {
+  it('still reports the original failure when discarding the half-filled quodom fails too', async () => {
     addGuestLine(7, GASEOSA);
+    addLine.mockRejectedValue(new Error('network down'));
+    eliminar.mockRejectedValue(new Error('also down'));
+
+    await expect(migrarRubro(7)).rejects.toThrow('network down');
     expect(getGuestCart(7).lines).toHaveLength(1);
+  });
+
+  it('returns null and creates nothing for an empty cart', async () => {
+    expect(await migrarRubro(7)).toBeNull();
+    expect(create).not.toHaveBeenCalled();
   });
 });
