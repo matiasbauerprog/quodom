@@ -110,6 +110,7 @@ export function BusquedaScreen() {
         onCrear={crear}
           onCancelar={cancelar}
           ocupado={agregando}
+          error={errAgregar}
         />
       )}
     </section>

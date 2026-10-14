@@ -9,13 +9,14 @@ type Props = {
   onCrear: () => void;
   onCancelar: () => void;
   ocupado?: boolean;
+  error?: string | null;
 };
 
 /**
  * Se pregunta una sola vez por rubro: lo que el usuario elija queda como el
  * Quodom abierto de ese rubro y los próximos "+" ya no vuelven a preguntar.
  */
-export function DialogoDestino({ nombreRubro, candidatos, onElegir, onCrear, onCancelar, ocupado }: Props) {
+export function DialogoDestino({ nombreRubro, candidatos, onElegir, onCrear, onCancelar, ocupado, error }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !ocupado) onCancelar(); };
     window.addEventListener('keydown', onKey);
@@ -55,6 +56,7 @@ export function DialogoDestino({ nombreRubro, candidatos, onElegir, onCrear, onC
             </button>
           </li>
         </ul>
+        {error && <p className="dd-error" role="alert">{error}</p>}
         <div className="dd-acciones">
           <button type="button" className="btn btn-ghost" onClick={cerrar} disabled={ocupado}>Cancelar</button>
         </div>

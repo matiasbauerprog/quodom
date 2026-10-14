@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { ListaProductos } from '../ListaProductos';
 import { productos } from '../../../api/productos';
 import { useAgregarProducto } from '../../../quodom/useAgregarProducto';
@@ -190,5 +190,26 @@ describe('ListaProductos · atributos en la tarjeta', () => {
     await screen.findByText('Bolsa de residuos');
 
     expect((screen.getByRole('combobox', { name: /tipo de bolsa de residuos/i }) as HTMLSelectElement).value).toBe('');
+  });
+
+  it('el diálogo de destino conecta elegir, crear y el error del hook', () => {
+    const elegir = vi.fn(); const crear = vi.fn();
+    vi.mocked(useAgregarProducto).mockReturnValue({
+      agregar, agregando: false, error: 'Falló', cancelar: vi.fn(), elegir, crear,
+      destino: {
+        idrubro: 7, lines: [],
+        candidatos: [{ id: 'q-casa', descripcion: 'Casa', cantproductos: 2, idrubro: 7 }]
+      }
+    } as unknown as ReturnType<typeof useAgregarProducto>);
+    porCategoria.mockResolvedValue([]);
+    render(<ListaProductos idsubcategoria={70} />);
+
+    const dialogo = within(screen.getByRole('dialog'));
+    fireEvent.click(dialogo.getByRole('button', { name: /casa/i }));
+    fireEvent.click(dialogo.getByRole('button', { name: /un quodom nuevo de bebidas/i }));
+
+    expect(elegir).toHaveBeenCalledWith('q-casa');
+    expect(crear).toHaveBeenCalledTimes(1);
+    expect(dialogo.getByRole('alert')).toHaveTextContent('Falló');
   });
 });

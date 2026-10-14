@@ -48,4 +48,9 @@ describe('DialogoDestino', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(p.onCancelar).not.toHaveBeenCalled();
   });
+
+  it('muestra el mensaje de error dentro del diálogo', () => {
+    montar({ error: 'No se pudo agregar el producto.' });
+    expect(screen.getByRole('alert')).toHaveTextContent('No se pudo agregar el producto.');
+  });
 });

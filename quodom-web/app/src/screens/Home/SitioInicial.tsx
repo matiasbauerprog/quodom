@@ -309,6 +309,7 @@ export function SitioInicial() {
         onCrear={crear}
           onCancelar={cancelar}
           ocupado={agregando}
+          error={errAgregar}
         />
       )}
     </section>

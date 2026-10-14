@@ -20,3 +20,4 @@
 .dd-cant { font-size: 0.85em; opacity: 0.7; white-space: nowrap; }
 .dd-nuevo { justify-content: center; color: var(--color-exito); border-color: var(--color-exito); font-weight: 600; }
 .dd-acciones { display: flex; justify-content: flex-end; }
+.dd-error { margin: 0 0 var(--sp-3) 0; color: var(--color-acento); font-weight: 600; }

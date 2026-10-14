@@ -119,6 +119,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
         onCrear={crear}
           onCancelar={cancelar}
           ocupado={agregando}
+          error={errAgregar}
         />
       )}
     </div>
