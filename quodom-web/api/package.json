@@ -13,6 +13,7 @@
     "seed": "node src/seed/seed.js",
     "reset-quodoms": "node src/seed/reset-quodoms.js",
     "migrar-empresa": "node src/seed/migrar-empresa.js",
+    "migrar-multi-quodom": "node src/seed/migrar-multi-quodom.js",
     "guias": "node src/seed/guias.js",
     "import-images": "node src/seed/import-images.js",
     "report-missing-images": "node src/seed/report-missing-images.js",

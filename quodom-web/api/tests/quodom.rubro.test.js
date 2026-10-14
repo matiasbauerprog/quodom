@@ -241,23 +241,20 @@ describe('repetir of an already-open rubro', () => {
 // The application-level check in create() handles the normal case. This index is
 // the net underneath it: two requests that interleave between the check and the
 // insert would otherwise both create an open Quodom of the same rubro.
-describe('unique index guards the one-open-quodom-per-rubro rule', () => {
+describe('the database no longer caps open quodoms per rubro', () => {
   const userId = 'idx-user';
 
   beforeAll(async () => {
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
 
-  it('rejects a second open quodom of the same rubro at the database level', async () => {
-    await db.Quodom.create({
-      descripcion: 'Bebidas', createdBy: userId, estado: 'CREADO', idrubro: 7, nro: 'IDX-1'
-    });
+  it('la base acepta varios Quodoms abiertos del mismo rubro', async () => {
+    const uno = await db.Quodom.create({ descripcion: 'Casa', idrubro: 7, createdBy: userId, estado: 'CREADO', nro: 'QD-X1' });
+    const dos = await db.Quodom.create({ descripcion: 'Depto', idrubro: 7, createdBy: userId, estado: 'CREADO', nro: 'QD-X2' });
 
-    await expect(db.Quodom.create({
-      descripcion: 'Bebidas otra vez', createdBy: userId, estado: 'CREADO', idrubro: 7, nro: 'IDX-2'
-    })).rejects.toThrow(db.Sequelize.UniqueConstraintError);
-
-    expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7 } })).toBe(1);
+    expect(uno.id).not.toBe(dos.id);
+    const abiertos = await db.Quodom.count({ where: { createdBy: userId, idrubro: 7, estado: 'CREADO' } });
+    expect(abiertos).toBe(2);
   });
 
   it('allows another open quodom of the same rubro once the first is ENVIADO', async () => {
