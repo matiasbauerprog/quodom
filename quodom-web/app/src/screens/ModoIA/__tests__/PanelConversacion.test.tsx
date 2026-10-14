@@ -233,7 +233,7 @@ describe('PanelConversacion (confirming a proposal, same destination rule as the
     expect(llegaron).toEqual(['Q-GONE:301', 'Q-EXIST:302', 'Q-EXIST:303']);
   });
 
-  it('shows the failure as an assistant message and leaves the proposal on screen', async () => {
+  it('shows a network failure in the destination dialog, which then owns the remainder', async () => {
     abrirQuodom(5, 'Q-EXIST');
     vi.mocked(quodomLines.add).mockRejectedValue(new Error('Sin conexión.'));
 
@@ -242,7 +242,6 @@ describe('PanelConversacion (confirming a proposal, same destination rule as the
 
     await waitFor(() => expect(screen.getByText('Sin conexión.')).toBeInTheDocument());
     expect(screen.queryByText(/agregado/i)).toBeNull();
-    expect(screen.getByRole('button', { name: /agregar al quodom/i })).toBeEnabled();
   });
 
   // El atributo elegido en el chat tiene que llegar a la línea; si no, el

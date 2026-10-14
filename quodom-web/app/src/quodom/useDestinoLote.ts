@@ -36,8 +36,6 @@ export function useDestinoLote<T>({ agregarItem, descripcion }: Opts<T>) {
   // Quodom ya creado cuya carga quedó a medias: el reintento lo reutiliza en
   // vez de crear otro.
   const creado = useRef<string | null>(null);
-  // Lo que falta de un lote cuyo volcado se cortó por un error que no es de la API.
-  const resto = useRef<{ clave: string; pendientes: T[] } | null>(null);
 
   // Vuelca de a uno y va sacando del lote (mutándolo) lo que ya llegó.
   const volcar = useCallback(async (idquodom: string, pendientes: T[]) => {
@@ -55,25 +53,29 @@ export function useDestinoLote<T>({ agregarItem, descripcion }: Opts<T>) {
 
   /** Devuelve el id del Quodom que recibió el lote, o null si queda esperando destino. */
   const resolver = useCallback(async (idrubro: number, items: T[]): Promise<string | null> => {
-    // Un reintento del mismo lote (tras un error de red que cortó el volcado)
-    // retoma lo que faltaba: el backend suma cantidades, así que reenviar lo que
-    // ya llegó lo duplicaría.
-    const clave = idrubro + ':' + JSON.stringify(items);
-    const pendientes = resto.current?.clave === clave ? resto.current.pendientes : [...items];
+    // Mientras el diálogo tiene el resto de un lote, el lote vive ahí: reenviar
+    // desde la pantalla volvería a mandar lo que ya llegó (el backend suma
+    // cantidades) o, tras cancelar, se confundiría con un resto viejo.
+    if (destino) return null;
+    const pendientes = [...items];
     let abierto: string | null;
     try {
       abierto = await conAbierto(idrubro, id => volcar(id, pendientes));
     } catch (e) {
-      resto.current = { clave, pendientes };
-      throw e;
+      // Error que no es de la API (red): un reintento no sabría qué llegó. El
+      // resto pasa al diálogo, que es el dueño del lote hasta elegir o cancelar.
+      let candidatos: Quodom[] = [];
+      try { candidatos = (await quodomApi.activosPorRubro(idrubro)) ?? []; } catch { /* el diálogo igual ofrece crear */ }
+      setError(e instanceof Error ? e.message : 'No se pudo agregar al Quodom.');
+      setDestino({ idrubro, items: pendientes, candidatos });
+      return null;
     }
-    resto.current = null;
     if (abierto) return abierto;
     const candidatos = await quodomApi.activosPorRubro(idrubro);
     setError(null);
     setDestino({ idrubro, items: pendientes, candidatos });
     return null;
-  }, [volcar]);
+  }, [volcar, destino]);
 
   const correr = useCallback(async (accion: (d: Lote<T>) => Promise<string>, fallo: string): Promise<string | null> => {
     if (!destino || ocupado) return null;
