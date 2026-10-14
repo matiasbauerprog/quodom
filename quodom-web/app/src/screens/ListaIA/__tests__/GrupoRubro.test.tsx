@@ -125,6 +125,7 @@ describe('GrupoRubro', () => {
   it('un reintento tras un error parcial no vuelve a agregar la línea que ya se guardó', async () => {
     abrirQuodom(1, 'QD-9');
     mockAdd.mockReset();
+    mockActivos.mockResolvedValue([{ id: 'QD-9', descripcion: 'Limpieza casa', nro: 'QD-9' }]);
     mockAdd
       .mockResolvedValueOnce({ res: true, id: 1 })
       .mockRejectedValueOnce(new Error('Error de red'))
@@ -143,7 +144,8 @@ describe('GrupoRubro', () => {
     fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar al quodom/i }));
+    // El diálogo tiene el resto del lote: se reintenta desde ahí.
+    fireEvent.click(screen.getByRole('button', { name: /Limpieza casa/ }));
     await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
 
     const llamadasItem1 = mockAdd.mock.calls.filter(([arg]) => arg.idproducto === 8001);
