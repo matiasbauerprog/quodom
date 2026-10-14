@@ -239,3 +239,42 @@ describe('sidebar: saneo de los Quodoms abiertos', () => {
     expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });
 });
+
+// Los Quodoms son lo que el panel existe para mostrar; la lista de rubros es
+// dato de referencia que sólo sirve para esconder los retirados.
+describe('sidebar: degradar en vez de fallar', () => {
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); localStorage.clear(); login(); });
+
+  it('si fallan las categorías, los Quodoms se muestran igual, sin filtrar', async () => {
+    vi.mocked(rubrosDisponibles).mockRejectedValueOnce(new Error('categorias caídas'));
+    misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
+
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText('Bebidas oficina')).toBeInTheDocument();
+    expect(screen.getByText('Obra San Isidro')).toBeInTheDocument();
+    expect(screen.queryByText(/No tenés Quodoms/i)).toBeNull();
+  });
+
+  it('si fallan las categorías, un refresco igual actualiza la lista', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS]);
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText('Bebidas oficina');
+
+    vi.mocked(rubrosDisponibles).mockRejectedValueOnce(new Error('categorias caídas'));
+    misQuodom.mockResolvedValue([]);
+    act(() => { window.dispatchEvent(new Event('quodom:changed')); });
+
+    await waitFor(() => expect(screen.queryByText('Bebidas oficina')).toBeNull());
+  });
+
+  it('si fallan los Quodoms, queda el estado de error de siempre y nada se sanea', async () => {
+    abrirQuodom(7, 'q-7');
+    misQuodom.mockRejectedValue(new Error('network down'));
+
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText(/No tenés Quodoms/i)).toBeInTheDocument();
+    expect(leerAbiertos()).toEqual({ 7: 'q-7' });
+  });
+});

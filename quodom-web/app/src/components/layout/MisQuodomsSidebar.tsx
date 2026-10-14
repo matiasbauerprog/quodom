@@ -21,7 +21,8 @@ export function MisQuodomsSidebar() {
   const { user } = useAuth();
   const tieneDireccion = useTieneDireccion(!!user);
   const [list, setList] = useState<Quodom[] | null>(null);
-  const [disponibles, setDisponibles] = useState<number[]>([]);
+  // null = no se pudo saber qué rubros hay: se muestra todo sin filtrar.
+  const [disponibles, setDisponibles] = useState<number[] | null>(null);
   const [invitado, setInvitado] = useState<ResumenInvitado[]>(resumenCarritosInvitado);
   const [nonce, setNonce] = useState(0);
   // Clave del carrito de invitado desplegado ('g:<rubro>'). Los del servidor se
@@ -43,14 +44,20 @@ export function MisQuodomsSidebar() {
       setInvitado(resumenCarritosInvitado());
       if (!user) { setList([]); return; }
       const requestId = ++requestIdRef.current;
-      Promise.all([quodomApi.misQuodom(), rubrosDisponibles()])
-        .then(([d, rubros]) => {
+      // Dos preguntas distintas: los Quodoms son lo que el panel existe para
+      // mostrar; los rubros son dato de referencia que sólo esconde los
+      // retirados. Si fallan los rubros se muestra todo sin filtrar (el backend
+      // ya rechaza un rubro retirado con 400), antes que perder el panel.
+      Promise.allSettled([quodomApi.misQuodom(), rubrosDisponibles()])
+        .then(([quodoms, rubros]) => {
           if (!alive || requestId !== requestIdRef.current) return;
+          if (quodoms.status === 'rejected') throw quodoms.reason;
+          const d = quodoms.value;
           setList(d);
-          setDisponibles(rubros);
-          // Sólo tras una carga buena: sanear descarta todo lo que no esté en
-          // la lista, así que con una carga pendiente o fallida cerraría los
-          // Quodoms que el usuario tenía abiertos sin motivo.
+          setDisponibles(rubros.status === 'fulfilled' ? rubros.value : null);
+          // Sólo tras una carga buena de Quodoms: sanear descarta todo lo que
+          // no esté en la lista, así que con una carga pendiente o fallida
+          // cerraría los Quodoms que el usuario tenía abiertos sin motivo.
           sanearAbiertos(d.filter(q => q.estado === 'CREADO').map(q => q.id));
         })
         .catch(() => {
@@ -81,7 +88,8 @@ export function MisQuodomsSidebar() {
 
   // A la derecha va sólo lo que está en armado: los enviados son historial y
   // viven en Mis Quodoms, a un clic del pie del árbol.
-  const ramas = ramasDeQuodoms(list ?? [], disponibles);
+  const todos = list ?? [];
+  const ramas = ramasDeQuodoms(todos, disponibles ?? todos.map(q => q.idrubro));
   const hayInvitado = invitado.length > 0;
   const toggle = (clave: string) => setAbierto(a => (a === clave ? null : clave));
 
