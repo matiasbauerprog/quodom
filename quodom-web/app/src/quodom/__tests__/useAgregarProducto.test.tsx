@@ -131,4 +131,49 @@ describe('useAgregarProducto', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Falló el servidor');
     expect(screen.getByText('elegir rubro 7')).toBeInTheDocument();
   });
+
+  it('retry after a partial failure only adds what is still pending', async () => {
+    vi.spyOn(agregarModule, 'agregarProducto').mockResolvedValue({ estado: 'elegir_destino', idrubro: 7, candidatos: [CASA] });
+    let fallo = true;
+    const spy = vi.spyOn(agregarModule, 'agregarADestino').mockImplementation(async line => {
+      if (line.idproducto === 701 && fallo) { fallo = false; throw new Error('Falló el servidor'); }
+    });
+    render(<Probe />);
+
+    fireEvent.click(screen.getByText('agregar'));
+    fireEvent.click(screen.getByText('agregar otro'));
+    await waitFor(() => expect(agregarModule.agregarProducto).toHaveBeenCalledTimes(2));
+    await waitFor(() => screen.getByText('elegir rubro 7'));
+    fireEvent.click(screen.getByText('elegir rubro 7'));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByText('elegir rubro 7'));
+
+    await waitFor(() => expect(screen.queryByText(/elegir rubro/)).not.toBeInTheDocument());
+    const ids = spy.mock.calls.map(c => c[0].idproducto);
+    expect(ids.filter(id => id === 700)).toHaveLength(1);
+    expect(ids.filter(id => id === 701)).toHaveLength(2); // el que falló y su reintento
+  });
+
+  it('retrying crear after a later line fails adds to the created quodom instead of creating another', async () => {
+    vi.spyOn(agregarModule, 'agregarProducto').mockResolvedValue({ estado: 'elegir_destino', idrubro: 7, candidatos: [] });
+    const crearSpy = vi.spyOn(agregarModule, 'crearYAgregar').mockResolvedValue('q-new');
+    let fallo = true;
+    const destinoSpy = vi.spyOn(agregarModule, 'agregarADestino').mockImplementation(async () => {
+      if (fallo) { fallo = false; throw new Error('Falló el servidor'); }
+    });
+    render(<Probe />);
+
+    fireEvent.click(screen.getByText('agregar'));
+    fireEvent.click(screen.getByText('agregar otro'));
+    await waitFor(() => expect(agregarModule.agregarProducto).toHaveBeenCalledTimes(2));
+    await waitFor(() => screen.getByText('crear'));
+    fireEvent.click(screen.getByText('crear'));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByText('crear'));
+
+    await waitFor(() => expect(screen.queryByText('crear')).not.toBeInTheDocument());
+    expect(crearSpy).toHaveBeenCalledTimes(1);
+    expect(destinoSpy).toHaveBeenCalledTimes(2);
+    expect(destinoSpy).toHaveBeenLastCalledWith(expect.objectContaining({ idproducto: 701 }), 7, 'q-new');
+  });
 });

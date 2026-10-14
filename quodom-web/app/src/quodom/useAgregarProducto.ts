@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
 import type { Quodom } from '../api/types';
@@ -6,7 +6,7 @@ import type { GuestLine } from '../guest/guestQuodom';
 import { agregarProducto, agregarADestino, crearYAgregar } from './agregarProducto';
 
 type Pendiente = { line: GuestLine; idrubro: number; candidatos: Quodom[] };
-type Destino = { lines: GuestLine[]; idrubro: number; candidatos: Quodom[] };
+type Destino = { items: Pendiente[]; idrubro: number; candidatos: Quodom[] };
 
 /**
  * Shared "+" handler for the catalog screens: routes the line to the guest
@@ -24,11 +24,13 @@ export function useAgregarProducto() {
   const [agregando, setAgregando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cola, setCola] = useState<Pendiente[]>([]);
+  // Quodom ya creado por rubro cuya carga quedó a medias: el reintento lo reutiliza.
+  const creados = useRef<Record<number, string>>({});
 
   const destino: Destino | null = useMemo(() => {
     if (cola.length === 0) return null;
     const { idrubro, candidatos } = cola[0];
-    return { idrubro, candidatos, lines: cola.filter(p => p.idrubro === idrubro).map(p => p.line) };
+    return { idrubro, candidatos, items: cola.filter(p => p.idrubro === idrubro) };
   }, [cola]);
 
   const agregar = useCallback(async (line: GuestLine, idrubro: number) => {
@@ -52,7 +54,7 @@ export function useAgregarProducto() {
     setError(null);
     try {
       await accion(destino);
-      setCola(c => c.filter(p => p.idrubro !== destino.idrubro));
+      delete creados.current[destino.idrubro];
     } catch (e) {
       setError(e instanceof ApiError || e instanceof Error ? e.message : fallo);
     } finally {
@@ -60,23 +62,40 @@ export function useAgregarProducto() {
     }
   }, [destino, agregando]);
 
+  // Cada línea sale de la cola apenas se agrega: si una falla, el reintento
+  // retoma desde ahí y no repite las que ya llegaron. Se quitan esas entradas
+  // exactas, no "todo lo del rubro", para no perder las que se encolen mientras.
+  const sacar = (item: Pendiente) => setCola(c => c.filter(p => p !== item));
+
+  const agregarItems = useCallback(async (items: Pendiente[], idrubro: number, idquodom: string) => {
+    for (const item of items) {
+      await agregarADestino(item.line, idrubro, idquodom);
+      sacar(item);
+    }
+  }, []);
+
   const elegir = useCallback(
-    (idquodom: string) => resolver(async d => {
-      for (const line of d.lines) await agregarADestino(line, d.idrubro, idquodom);
-    }, 'No se pudo agregar el producto.'),
-    [resolver]
+    (idquodom: string) => resolver(d => agregarItems(d.items, d.idrubro, idquodom), 'No se pudo agregar el producto.'),
+    [resolver, agregarItems]
   );
 
   const crear = useCallback(
     () => resolver(async d => {
-      const [primera, ...resto] = d.lines;
-      const id = await crearYAgregar(primera, d.idrubro, 'Mi Quodom');
-      for (const line of resto) await agregarADestino(line, d.idrubro, id);
+      let id = creados.current[d.idrubro];
+      let resto = d.items;
+      if (!id) {
+        const [primera, ...otras] = d.items;
+        id = await crearYAgregar(primera.line, d.idrubro, 'Mi Quodom');
+        creados.current[d.idrubro] = id;
+        sacar(primera);
+        resto = otras;
+      }
+      await agregarItems(resto, d.idrubro, id);
     }, 'No se pudo crear el Quodom.'),
-    [resolver]
+    [resolver, agregarItems]
   );
 
-  const cancelar = useCallback(() => setCola([]), []);
+  const cancelar = useCallback(() => { creados.current = {}; setCola([]); }, []);
 
   return { agregar, agregando, error, destino, elegir, crear, cancelar };
 }

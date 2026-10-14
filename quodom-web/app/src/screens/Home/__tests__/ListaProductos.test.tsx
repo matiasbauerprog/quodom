@@ -197,7 +197,7 @@ describe('ListaProductos · atributos en la tarjeta', () => {
     vi.mocked(useAgregarProducto).mockReturnValue({
       agregar, agregando: false, error: 'Falló', cancelar: vi.fn(), elegir, crear,
       destino: {
-        idrubro: 7, lines: [],
+        idrubro: 7, items: [],
         candidatos: [{ id: 'q-casa', descripcion: 'Casa', cantproductos: 2, idrubro: 7 }]
       }
     } as unknown as ReturnType<typeof useAgregarProducto>);
