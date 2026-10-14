@@ -11,7 +11,7 @@ import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
 import { RubroSelector } from './RubroSelector';
-import { SubcategoriaTabs } from './SubcategoriaTabs';
+import { SubcategoriaTabs, SubcategoriaTabsEsqueleto } from './SubcategoriaTabs';
 import { ListaProductos } from './ListaProductos';
 import type { ModoIa } from './PestanasIA';
 import { PanelConversacion } from '../ModoIA/PanelConversacion';
@@ -243,7 +243,7 @@ export function SitioInicial() {
           {idrubro !== null && errSubs && (
             <ErrorState message={errSubs} onRetry={() => setNonceSubs(n => n + 1)} />
           )}
-          {idrubro !== null && !errSubs && !subs && <Loader />}
+          {idrubro !== null && !errSubs && !subs && <SubcategoriaTabsEsqueleto />}
           {idrubro !== null && subs && subs.length > 0 && (
             <SubcategoriaTabs idrubro={idrubro} subs={subs} idSeleccionada={idsub} />
           )}

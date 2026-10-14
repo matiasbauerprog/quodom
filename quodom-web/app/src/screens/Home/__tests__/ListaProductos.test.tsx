@@ -222,9 +222,9 @@ describe('ListaProductos · atributos en la tarjeta', () => {
 });
 
 // El "···" se fue de la tarjeta: era un control chiquito y críptico para una
-// acción deliberada. Ahora esa decisión vive donde el usuario ya iba a mirar el
-// producto, y la tarjeta queda con el "+" solo.
-describe('ListaProductos · mandar a otro Quodom desde el detalle', () => {
+// acción deliberada. Lo que abría —a qué Quodom del rubro va el producto— es lo
+// que ahora abre el clic en el producto, y la tarjeta queda con el "+" solo.
+describe('ListaProductos · mandar a otro Quodom', () => {
   it('la tarjeta ya no tiene el ···', async () => {
     porCategoria.mockResolvedValue([COCA, BOLSA]);
     render(<ListaProductos idsubcategoria={70} />);
@@ -233,7 +233,7 @@ describe('ListaProductos · mandar a otro Quodom desde el detalle', () => {
     expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
   });
 
-  it('el detalle pide el destino del rubro con el atributo elegido, sin agregar', async () => {
+  it('tocar el producto pide el destino del rubro con el atributo elegido, sin agregar', async () => {
     porCategoria.mockResolvedValue([BOLSA]);
     render(<ListaProductos idsubcategoria={70} />);
     await screen.findByText('Bolsa de residuos');
@@ -241,18 +241,29 @@ describe('ListaProductos · mandar a otro Quodom desde el detalle', () => {
       target: { value: 'Negra 60 x 90' }
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /^ver bolsa de residuos$/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /a otro quodom/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^elegir el quodom de bolsa de residuos$/i }));
 
     expect(pedirDestino).toHaveBeenCalledWith(
       expect.objectContaining({ idproducto: 41, cantidad: 1, atributo1: 'Negra 60 x 90' }), 7
     );
     expect(agregar).not.toHaveBeenCalled();
   });
+
+  it('no abre la ficha del producto: el clic es para elegir, no para leer', async () => {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+
+    fireEvent.click(screen.getByRole('button', { name: /^elegir el quodom de coca cola 2l$/i }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });
 
-describe('ListaProductos · el detalle y la sesión', () => {
-  it('un invitado no ve la opción de elegir Quodom: no tiene a dónde', async () => {
+// Un invitado tiene un carrito por rubro: no hay destino que elegir, así que
+// para él el clic abre lo único que queda por mostrar, la ficha del producto.
+describe('ListaProductos · el clic y la sesión', () => {
+  it('un invitado ve la ficha del producto y puede agregar desde ahí', async () => {
     auth.user = null;
     porCategoria.mockResolvedValue([COCA]);
     render(<ListaProductos idsubcategoria={70} />);
@@ -260,14 +271,16 @@ describe('ListaProductos · el detalle y la sesión', () => {
 
     expect(await screen.findByRole('button', { name: /agregar al quodom/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
+    expect(pedirDestino).not.toHaveBeenCalled();
   });
 
-  it('con sesión sí la muestra', async () => {
+  it('con sesión el clic no muestra la ficha: va a elegir el Quodom', async () => {
     porCategoria.mockResolvedValue([COCA]);
     render(<ListaProductos idsubcategoria={70} />);
-    fireEvent.click(await screen.findByRole('button', { name: /^ver coca cola 2l$/i }));
+    await screen.findByText('Coca Cola 2L');
 
-    expect(await screen.findByRole('button', { name: /a otro quodom/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^ver coca cola 2l$/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /^elegir el quodom de coca cola 2l$/i })).toBeInTheDocument();
   });
 });
 
@@ -407,23 +420,23 @@ describe('ListaProductos · el clic que sigue a un arrastre', () => {
 
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
-  it('soltar en el vacío tras arrastrar no abre el detalle', async () => {
+  it('soltar en el vacío tras arrastrar no dispara el clic de la tarjeta', async () => {
     const info = await tarjeta();
 
     arrastrarYSoltar(info);
     fireEvent.click(info);
 
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(pedirDestino).not.toHaveBeenCalled();
   });
 
-  it('un clic común sigue abriendo el detalle', async () => {
+  it('un clic común sigue abriendo el selector de destino', async () => {
     const info = await tarjeta();
 
     fireEvent.pointerDown(info, { clientX: 100, clientY: 100, button: 0 });
     window.dispatchEvent(new PointerEvent('pointerup', { clientX: 101, clientY: 100 }));
     fireEvent.click(info);
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(pedirDestino).toHaveBeenCalled();
   });
 
   it('si el clic nunca llega, el bloqueo caduca y no se traga uno posterior', async () => {
@@ -434,7 +447,7 @@ describe('ListaProductos · el clic que sigue a un arrastre', () => {
     vi.advanceTimersByTime(500);
     fireEvent.click(info);
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(pedirDestino).toHaveBeenCalled();
   });
 });
 

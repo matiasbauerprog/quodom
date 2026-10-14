@@ -31,6 +31,8 @@
   transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
 .subtab:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+/* El alto de una tab real: padding 10+10 más una línea de 14px. */
+.subtab-esqueleto { height: 37px; padding: 0; box-shadow: none; }
 .subtab-sel {
   background: var(--color-acento);
   color: #fff;

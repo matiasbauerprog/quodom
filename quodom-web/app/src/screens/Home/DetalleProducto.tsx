@@ -3,18 +3,16 @@ import { ProductImage } from '../../components/ProductImage';
 import './DetalleProducto.css';
 
 /**
- * El detalle es también donde se decide a qué Quodom va el producto. Antes esa
- * decisión colgaba de un "···" en la tarjeta: un control chiquito y críptico
- * para una acción deliberada. Acá el usuario ya vino a mirar el producto.
+ * La ficha del producto: descripción y atributos.
  *
- * `onElegirDestino` falta para un invitado, que tiene un carrito por rubro y
- * nada que elegir: ofrecerle la opción sería prometerle una decisión que no existe.
+ * Con sesión, tocar el producto va directo a elegir a qué Quodom lo sumás —lo
+ * que hacía el "···"—, así que este detalle es lo que ve un invitado, que tiene
+ * un carrito por rubro y ninguna decisión de destino que tomar.
  */
-export function DetalleProducto({ product, onClose, onAdd, onElegirDestino }: {
+export function DetalleProducto({ product, onClose, onAdd }: {
   product: Product;
   onClose: () => void;
   onAdd: () => void;
-  onElegirDestino?: () => void;
 }) {
   return (
     <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
@@ -27,9 +25,6 @@ export function DetalleProducto({ product, onClose, onAdd, onElegirDestino }: {
         )}
         <div className="modal-actions">
           <button className="btn btn-ghost" onClick={onClose}>Cerrar</button>
-          {onElegirDestino && (
-            <button className="btn btn-ghost" onClick={onElegirDestino}>Agregar a otro Quodom</button>
-          )}
           <button className="btn btn-exito" onClick={onAdd}>Agregar al Quodom</button>
         </div>
       </div>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { productos } from '../../api/productos';
 import type { Product } from '../../api/types';
 import { ApiError } from '../../api/client';
-import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { ProductImage } from '../../components/ProductImage';
 import { IconoMas } from '../../components/icons/IconoMas';
@@ -14,6 +13,26 @@ import { agregarADestino, crearYAgregar } from '../../quodom/agregarProducto';
 import { iniciarArrastre, type Blanco } from '../../quodom/arrastre';
 import { DetalleProducto } from './DetalleProducto';
 import './ListaProductos.css';
+
+/**
+ * La grilla fantasma mientras cargan los productos. Misma forma y misma
+ * cantidad que las tarjetas de verdad: el spinner que había antes colapsaba la
+ * grilla a una línea, y ese salto en cada cambio de subcategoría o de rubro se
+ * leía como que la página se recargaba entera.
+ */
+function GrillaEsqueleto() {
+  return (
+    <ul className="prod-list" aria-hidden="true">
+      {Array.from({ length: 12 }, (_, i) => (
+        <li key={i} className="prod-item prod-item-esqueleto">
+          <span className="prod-media esqueleto" />
+          <span className="prod-linea esqueleto" />
+          <span className="prod-linea prod-linea-corta esqueleto" />
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 // Lo elegido por producto, sin persistir: es un borrador de la tarjeta hasta
 // que se agrega la línea.
@@ -139,15 +158,23 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
       {errAgregar && <p className="prods-add-error" role="alert">{errAgregar}</p>}
       {errSoltar && <p className="prods-add-error" role="alert">{errSoltar}</p>}
-      {!err && !prods && <Loader />}
+      {!err && !prods && <GrillaEsqueleto />}
       {prods && prods.length === 0 && <p className="prods-empty">No hay productos en esta subcategoría.</p>}
       {prods && prods.length > 0 && (
         <ul className="prod-list">
           {prods.map(p => (
             <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()}>
-              {/* Etiqueta explícita: sin ella el nombre accesible sale repetido,
+              {/* Tocar el producto abre lo mismo que abría el "···": a qué Quodom
+                  del rubro va. Un invitado no tiene nada que elegir —un carrito
+                  por rubro—, así que para él el clic abre la ficha del producto.
+
+                  Etiqueta explícita: sin ella el nombre accesible sale repetido,
                   porque adentro están el alt de la imagen y el texto. */}
-              <button className="prod-info" aria-label={'Ver ' + p.nombreproducto} onClick={() => setSelected(p)}>
+              <button
+                className="prod-info"
+                aria-label={(user ? 'Elegir el Quodom de ' : 'Ver ') + p.nombreproducto}
+                onClick={() => (user ? agregarEnOtro(p) : setSelected(p))}
+              >
                 <span className="prod-media">
                   <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
                 </span>
@@ -173,7 +200,6 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
           product={selected}
           onClose={() => setSelected(null)}
           onAdd={() => { agregar(selected); setSelected(null); }}
-          onElegirDestino={user ? () => { agregarEnOtro(selected); setSelected(null); } : undefined}
         />
       )}
       {destino && (

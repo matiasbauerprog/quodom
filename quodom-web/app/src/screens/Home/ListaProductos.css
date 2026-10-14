@@ -32,6 +32,12 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0,0,0,0.10);
 }
+/* Las tarjetas fantasma mientras carga la grilla: misma forma y misma cantidad
+   que las de verdad, así la página no se mueve cuando llegan. */
+.prod-item-esqueleto { pointer-events: none; box-shadow: none; }
+.prod-linea { height: 12px; border-radius: 4px; }
+.prod-linea-corta { width: 60%; }
+
 .prod-info {
   display: flex;
   flex-direction: column;
@@ -188,7 +194,13 @@
   padding: var(--sp-3);
 }
 .prod-item-row:hover { transform: none; }
-.prod-item-row .prod-info {
+.prod-item-row /* Las tarjetas fantasma mientras carga la grilla: misma forma y misma cantidad
+   que las de verdad, así la página no se mueve cuando llegan. */
+.prod-item-esqueleto { pointer-events: none; box-shadow: none; }
+.prod-linea { height: 12px; border-radius: 4px; }
+.prod-linea-corta { width: 60%; }
+
+.prod-info {
   flex: 1;
   flex-direction: row;
   align-items: center;
