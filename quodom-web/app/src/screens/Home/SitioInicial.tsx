@@ -8,12 +8,12 @@ import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { ProductImage } from '../../components/ProductImage';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
-import { confirmarYAgregar } from '../../quodom/agregarProducto';
+import { crearYAgregar } from '../../quodom/agregarProducto';
 import { quodom as quodomApi } from '../../api/quodom';
 import { useAuth } from '../../auth/AuthContext';
 import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
 import type { AccionRubro } from '../../guest/migrateGuestQuodom';
-import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
 import { RubroSelector } from './RubroSelector';
 import { SubcategoriaTabs } from './SubcategoriaTabs';
@@ -47,7 +47,7 @@ export function SitioInicial() {
   const [errReemplazo, setErrReemplazo] = useState<string | null>(null);
   const { user } = useAuth();
   const {
-    agregar: agregarLinea, agregando, error: errAgregar, pendiente, confirmar, cancelar
+    agregar: agregarLinea, agregando, error: errAgregar, destino, elegir, crear, cancelar
   } = useAgregarProducto();
   const rubroParam = numParam(params.get('rubro'));
   const subParam = numParam(params.get('sub'));
@@ -178,11 +178,11 @@ export function SitioInicial() {
     }
     // Empezar uno nuevo del mismo rubro sólo puede significar reemplazar: el
     // backend admite un único Quodom abierto por rubro. Se llama derecho a
-    // confirmarYAgregar en vez de pasar por `agregar`, que al no encontrar
+    // crearYAgregar en vez de pasar por `agregar`, que al no encontrar
     // ninguno abierto abriría un segundo diálogo para pedir lo ya decidido.
     try {
       await quodomApi.eliminar(quodomExistente.id);
-      await confirmarYAgregar(lineaDe(producto), { logueado: true, idrubro: producto.categoriaPadre, descripcion: 'Mi Quodom' });
+      await crearYAgregar(lineaDe(producto), producto.categoriaPadre, 'Mi Quodom');
       setAgregado(producto.nombre);
     } catch (e) {
       setErrReemplazo(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo crear el Quodom.');
@@ -301,10 +301,12 @@ export function SitioInicial() {
         </>
       )}
 
-      {pendiente && (
-        <DialogoNuevoRubro
-          nombreRubro={nombreRubro(pendiente.idrubro)}
-          onConfirmar={confirmar}
+      {destino && (
+        <DialogoDestino
+        nombreRubro={nombreRubro(destino.idrubro)}
+        candidatos={destino.candidatos}
+        onElegir={elegir}
+        onCrear={crear}
           onCancelar={cancelar}
           ocupado={agregando}
         />

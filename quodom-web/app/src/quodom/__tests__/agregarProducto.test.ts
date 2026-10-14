@@ -1,87 +1,94 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { agregarProducto, confirmarYAgregar } from '../agregarProducto';
+import { agregarProducto, agregarADestino, crearYAgregar } from '../agregarProducto';
+import { abrirQuodom, abiertoDe } from '../quodomAbierto';
 import { quodom as quodomApi } from '../../api/quodom';
 import { quodomLines } from '../../api/quodom_lines';
+import { ApiError } from '../../api/client';
 import { getGuestCart, clearGuestQuodoms } from '../../guest/guestQuodom';
+import type { Quodom } from '../../api/types';
 
 vi.mock('../../api/quodom', () => ({
-  quodom: { activoPorRubro: vi.fn(), create: vi.fn() }
+  quodom: { activosPorRubro: vi.fn(), create: vi.fn() }
 }));
 vi.mock('../../api/quodom_lines', () => ({
   quodomLines: { add: vi.fn() }
 }));
 
-const activoPorRubro = quodomApi.activoPorRubro as unknown as ReturnType<typeof vi.fn>;
-const create = quodomApi.create as unknown as ReturnType<typeof vi.fn>;
-const addLine = quodomLines.add as unknown as ReturnType<typeof vi.fn>;
+const LINEA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 1 };
+const QUODOM_CASA = { id: 'q-casa', descripcion: 'Casa', idrubro: 5 } as unknown as Quodom;
+const QUODOM_DEPTO = { id: 'q-depto', descripcion: 'Depto', idrubro: 5 } as unknown as Quodom;
 
-const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 1 };
+describe('agregarProducto con un Quodom abierto', () => {
+  beforeEach(() => { localStorage.clear(); clearGuestQuodoms(); vi.resetAllMocks(); });
 
-describe('agregarProducto', () => {
-  beforeEach(() => {
-    clearGuestQuodoms();
-    activoPorRubro.mockReset();
-    create.mockReset();
-    addLine.mockReset();
+  it('agrega al abierto del rubro, sin preguntar', async () => {
+    abrirQuodom(5, 'q-casa');
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+
+    const res = await agregarProducto(LINEA, { logueado: true, idrubro: 5 });
+
+    expect(res.estado).toBe('agregado');
+    expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-casa' }));
+    expect(quodomApi.activosPorRubro).not.toHaveBeenCalled();
   });
 
-  it('adds to the open quodom of that rubro without asking', async () => {
-    activoPorRubro.mockResolvedValue({ id: 'q-7', idrubro: 7 });
-    addLine.mockResolvedValue({ res: true, id: 1 });
+  it('pide elegir cuando el rubro no tiene ninguno abierto', async () => {
+    vi.mocked(quodomApi.activosPorRubro).mockResolvedValue([QUODOM_CASA, QUODOM_DEPTO]);
 
-    const res = await agregarProducto(GASEOSA, { logueado: true, idrubro: 7 });
+    const res = await agregarProducto(LINEA, { logueado: true, idrubro: 5 });
 
-    expect(res).toEqual({ estado: 'agregado', idquodom: 'q-7' });
-    expect(activoPorRubro).toHaveBeenCalledWith(7);
-    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-7', idproducto: 700 }));
-    expect(create).not.toHaveBeenCalled();
+    expect(res).toEqual({ estado: 'elegir_destino', idrubro: 5, candidatos: [QUODOM_CASA, QUODOM_DEPTO] });
+    expect(quodomLines.add).not.toHaveBeenCalled();
   });
 
-  it('asks for confirmation and adds nothing when there is no quodom of that rubro', async () => {
-    activoPorRubro.mockResolvedValue(null);
+  // El abierto apunta a un Quodom que ya no existe.
+  it('pide elegir si el abierto ya no está entre los activos', async () => {
+    abrirQuodom(5, 'q-borrado');
+    vi.mocked(quodomApi.activosPorRubro).mockResolvedValue([QUODOM_CASA]);
+    vi.mocked(quodomLines.add).mockRejectedValue(new ApiError('Err. Quodom no encontrado.', 400));
 
-    const res = await agregarProducto(GASEOSA, { logueado: true, idrubro: 7 });
+    const res = await agregarProducto(LINEA, { logueado: true, idrubro: 5 });
 
-    expect(res).toEqual({ estado: 'necesita_confirmacion', idrubro: 7 });
-    expect(create).not.toHaveBeenCalled();
-    expect(addLine).not.toHaveBeenCalled();
+    expect(res.estado).toBe('elegir_destino');
+    expect(abiertoDe(5)).toBeNull();
   });
 
-  it('creates with the right idrubro and then adds, on confirmation', async () => {
-    create.mockResolvedValue({ res: true, idquodom: 'q-new' });
-    addLine.mockResolvedValue({ res: true, id: 1 });
+  it('agregar a un destino lo deja abierto', async () => {
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
 
-    const res = await confirmarYAgregar(GASEOSA, { logueado: true, idrubro: 7, descripcion: 'Bebidas' });
+    await agregarADestino(LINEA, 5, 'q-depto');
 
-    expect(create).toHaveBeenCalledWith({ descripcion: 'Bebidas', idrubro: 7 });
-    expect(addLine).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'q-new' }));
-    expect(res.idquodom).toBe('q-new');
+    expect(abiertoDe(5)).toBe('q-depto');
   });
 
-  it('adds a guest line into the cart of that rubro, untouched backend', async () => {
-    const res = await agregarProducto(GASEOSA, { logueado: false, idrubro: 7 });
+  it('crear y agregar deja abierto el nuevo', async () => {
+    vi.mocked(quodomApi.create).mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+
+    const id = await crearYAgregar(LINEA, 5, 'Mi Quodom');
+
+    expect(id).toBe('q-nuevo');
+    expect(abiertoDe(5)).toBe('q-nuevo');
+  });
+
+  // Dos `+` seguidos sin esperar al primero.
+  it('dos agregados seguidos van los dos al mismo abierto', async () => {
+    abrirQuodom(5, 'q-casa');
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+
+    await Promise.all([
+      agregarProducto(LINEA, { logueado: true, idrubro: 5 }),
+      agregarProducto(LINEA, { logueado: true, idrubro: 5 })
+    ]);
+
+    const destinos = vi.mocked(quodomLines.add).mock.calls.map(c => c[0].idquodom);
+    expect(destinos).toEqual(['q-casa', 'q-casa']);
+  });
+
+  it('el invitado sigue teniendo un carrito por rubro y no elige nada', async () => {
+    const res = await agregarProducto(LINEA, { logueado: false, idrubro: 5 });
 
     expect(res).toEqual({ estado: 'agregado', idquodom: null });
-    expect(getGuestCart(7).lines).toEqual([GASEOSA]);
-    expect(activoPorRubro).not.toHaveBeenCalled();
-  });
-
-  it('adds a second product to the guest cart of the same rubro without asking', async () => {
-    await agregarProducto(GASEOSA, { logueado: false, idrubro: 7 });
-
-    const AGUA = { idproducto: 701, nombreProducto: 'Agua 500ml', cantidad: 1 };
-    const res = await agregarProducto(AGUA, { logueado: false, idrubro: 7 });
-
-    expect(res).toEqual({ estado: 'agregado', idquodom: null });
-    expect(getGuestCart(7).lines).toEqual([GASEOSA, AGUA]);
-  });
-
-  it('asks a guest for confirmation when the rubro has no cart yet but another does', async () => {
-    await agregarProducto(GASEOSA, { logueado: false, idrubro: 7 });
-
-    const res = await agregarProducto({ idproducto: 400, nombreProducto: 'Cemento', cantidad: 1 }, { logueado: false, idrubro: 4 });
-
-    expect(res).toEqual({ estado: 'necesita_confirmacion', idrubro: 4 });
-    expect(getGuestCart(4).lines).toEqual([]);
+    expect(getGuestCart(5).lines).toEqual([LINEA]);
   });
 });

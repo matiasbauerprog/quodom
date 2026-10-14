@@ -7,7 +7,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { ProductImage } from '../../components/ProductImage';
 import { IconoMas } from '../../components/icons/IconoMas';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
-import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
 import { DetalleProducto } from './DetalleProducto';
 import './ListaProductos.css';
@@ -22,7 +22,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   const [selected, setSelected] = useState<Product | null>(null);
   const [elegido, setElegido] = useState<Record<number, Eleccion>>({});
   const [nonce, setNonce] = useState(0);
-  const { agregar: agregarLinea, agregando, error: errAgregar, pendiente, confirmar, cancelar } = useAgregarProducto();
+  const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
     let alive = true;
@@ -111,10 +111,12 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
         </ul>
       )}
       {selected && <DetalleProducto product={selected} onClose={() => setSelected(null)} onAdd={() => { agregar(selected); setSelected(null); }} />}
-      {pendiente && (
-        <DialogoNuevoRubro
-          nombreRubro={nombreRubro(pendiente.idrubro)}
-          onConfirmar={confirmar}
+      {destino && (
+        <DialogoDestino
+        nombreRubro={nombreRubro(destino.idrubro)}
+        candidatos={destino.candidatos}
+        onElegir={elegirDestino}
+        onCrear={crear}
           onCancelar={cancelar}
           ocupado={agregando}
         />

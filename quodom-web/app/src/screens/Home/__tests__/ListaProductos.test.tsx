@@ -32,8 +32,8 @@ beforeEach(() => {
   porCategoria.mockReset();
   agregar.mockReset();
   vi.mocked(useAgregarProducto).mockReturnValue({
-    agregar, agregando: false, error: null, pendiente: null,
-    confirmar: vi.fn(), cancelar: vi.fn()
+    agregar, agregando: false, error: null, destino: null,
+    elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn()
   } as unknown as ReturnType<typeof useAgregarProducto>);
 });
 

@@ -1,51 +1,61 @@
 import { quodom as quodomApi } from '../api/quodom';
 import { quodomLines } from '../api/quodom_lines';
-import { addGuestLine, guestLineCount, type GuestLine } from '../guest/guestQuodom';
+import { ApiError } from '../api/client';
+import type { Quodom } from '../api/types';
+import { addGuestLine, type GuestLine } from '../guest/guestQuodom';
+import { abiertoDe, abrirQuodom, cerrarQuodom } from './quodomAbierto';
 
 export type AgregarResult =
   | { estado: 'agregado'; idquodom: string | null }
-  | { estado: 'necesita_confirmacion'; idrubro: number };
+  | { estado: 'elegir_destino'; idrubro: number; candidatos: Quodom[] };
 
 type Opts = { logueado: boolean; idrubro: number };
 
 /**
- * Adds a product to the Quodom of its rubro. A Quodom holds a single rubro, so
- * when there is no open one for it nothing is added: the caller has to confirm
- * creating it first (confirmarYAgregar).
+ * Agrega un producto al Quodom abierto de su rubro, sin preguntar. Sólo cuando
+ * el rubro no tiene ninguno abierto no agrega nada y devuelve los candidatos
+ * para que el usuario elija (agregarADestino / crearYAgregar).
  */
 export async function agregarProducto(line: GuestLine, opts: Opts): Promise<AgregarResult> {
   if (!opts.logueado) {
-    if (guestLineCount(opts.idrubro) === 0 && guestLineCount() > 0) {
-      return { estado: 'necesita_confirmacion', idrubro: opts.idrubro };
-    }
     addGuestLine(opts.idrubro, line);
     notificarCambio();
     return { estado: 'agregado', idquodom: null };
   }
 
-  const activo = await quodomApi.activoPorRubro(opts.idrubro);
-  if (!activo) return { estado: 'necesita_confirmacion', idrubro: opts.idrubro };
-
-  await agregarAlServidor(activo.id, line);
-  notificarCambio();
-  return { estado: 'agregado', idquodom: activo.id };
-}
-
-/** Second half of the flow: the user accepted opening a Quodom for this rubro. */
-export async function confirmarYAgregar(
-  line: GuestLine,
-  opts: Opts & { descripcion: string }
-): Promise<{ idquodom: string | null }> {
-  if (!opts.logueado) {
-    addGuestLine(opts.idrubro, line);
-    notificarCambio();
-    return { idquodom: null };
+  const abierto = abiertoDe(opts.idrubro);
+  if (abierto) {
+    try {
+      await agregarAlServidor(abierto, line);
+      notificarCambio();
+      return { estado: 'agregado', idquodom: abierto };
+    } catch (e) {
+      // Un error de red o de validación no dice nada sobre el Quodom: se muestra.
+      if (!(e instanceof ApiError)) throw e;
+      // El abierto ya no existe (borrado o enviado en otra pestaña). Se cae al
+      // camino de elegir, que es el mismo que si nunca hubiera habido uno.
+      cerrarQuodom(opts.idrubro);
+    }
   }
 
-  const creado = await quodomApi.create({ descripcion: opts.descripcion, idrubro: opts.idrubro });
-  await agregarAlServidor(creado.idquodom, line);
+  const candidatos = await quodomApi.activosPorRubro(opts.idrubro);
+  return { estado: 'elegir_destino', idrubro: opts.idrubro, candidatos };
+}
+
+/** El usuario eligió un Quodom existente: la línea va ahí y queda como el abierto. */
+export async function agregarADestino(line: GuestLine, idrubro: number, idquodom: string): Promise<void> {
+  await agregarAlServidor(idquodom, line);
+  abrirQuodom(idrubro, idquodom);
   notificarCambio();
-  return { idquodom: creado.idquodom };
+}
+
+/** El usuario pidió uno nuevo: se crea, recibe la línea y queda como el abierto. */
+export async function crearYAgregar(line: GuestLine, idrubro: number, descripcion: string): Promise<string> {
+  const creado = await quodomApi.create({ descripcion, idrubro });
+  await agregarAlServidor(creado.idquodom, line);
+  abrirQuodom(idrubro, creado.idquodom);
+  notificarCambio();
+  return creado.idquodom;
 }
 
 /**

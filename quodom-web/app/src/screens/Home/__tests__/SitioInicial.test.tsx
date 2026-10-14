@@ -13,13 +13,13 @@ vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } 
 vi.mock('../../../api/busqueda', () => ({ busqueda: { buscar: vi.fn() } }));
 vi.mock('../../../api/quodom', () => ({ quodom: { activoPorRubro: vi.fn(), eliminar: vi.fn() } }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
-const confirmarYAgregarSpy = vi.hoisted(() => vi.fn());
-vi.mock('../../../quodom/agregarProducto', () => ({ confirmarYAgregar: confirmarYAgregarSpy }));
+const crearYAgregarSpy = vi.hoisted(() => vi.fn());
+vi.mock('../../../quodom/agregarProducto', () => ({ crearYAgregar: crearYAgregarSpy }));
 const agregarSpy = vi.hoisted(() => vi.fn());
 vi.mock('../../../quodom/useAgregarProducto', () => ({
   useAgregarProducto: () => ({
-    agregar: agregarSpy, agregando: false, error: null, pendiente: null,
-    confirmar: vi.fn(), cancelar: vi.fn()
+    agregar: agregarSpy, agregando: false, error: null, destino: null,
+    elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn()
   })
 }));
 vi.mock('../../ModoIA/PanelConversacion', () => ({ PanelConversacion: () => <p>panel chat</p> }));
@@ -54,7 +54,7 @@ function montar(url: string) {
 beforeEach(() => {
   raiz.mockReset(); subs.mockReset(); porCategoria.mockReset(); buscar.mockReset(); agregarSpy.mockReset();
   buscar.mockResolvedValue([]);
-  activoPorRubro.mockReset(); eliminarQuodom.mockReset(); confirmarYAgregarSpy.mockReset();
+  activoPorRubro.mockReset(); eliminarQuodom.mockReset(); crearYAgregarSpy.mockReset();
   activoPorRubro.mockResolvedValue(null);
   vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
   raiz.mockResolvedValue(RUBROS);
@@ -286,7 +286,7 @@ describe('SitioInicial (buscador con sugerencias)', () => {
 
   it('avisa cuando no hay resultados en vez de dejar el desplegable vacío', async () => {
     buscar.mockResolvedValue([]);
-  activoPorRubro.mockReset(); eliminarQuodom.mockReset(); confirmarYAgregarSpy.mockReset();
+  activoPorRubro.mockReset(); eliminarQuodom.mockReset(); crearYAgregarSpy.mockReset();
   activoPorRubro.mockResolvedValue(null);
   vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
     montar('/');
@@ -480,16 +480,15 @@ describe('SitioInicial (agregar con un Quodom abierto del rubro)', () => {
   it('empezar uno nuevo descarta el anterior y no pide confirmación de nuevo', async () => {
     activoPorRubro.mockResolvedValue(ABIERTO);
     eliminarQuodom.mockResolvedValue({ res: true });
-    confirmarYAgregarSpy.mockResolvedValue({ idquodom: 'Q-NUEVO' });
+    crearYAgregarSpy.mockResolvedValue('Q-NUEVO');
     await elegirResultado();
     await screen.findByRole('dialog');
 
     await act(async () => { screen.getByRole('button', { name: /reemplazar/i }).click(); });
 
     expect(eliminarQuodom).toHaveBeenCalledWith('Q-7');
-    expect(confirmarYAgregarSpy).toHaveBeenCalledWith(
-      { idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 },
-      expect.objectContaining({ idrubro: 7, logueado: true })
+    expect(crearYAgregarSpy).toHaveBeenCalledWith(
+      { idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 }, 7, 'Mi Quodom'
     );
     expect(await screen.findByText(/agregado/i)).toBeInTheDocument();
   });

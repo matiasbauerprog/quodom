@@ -1,0 +1,22 @@
+.dd-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(30, 30, 42, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--sp-4);
+}
+.dd { background: var(--color-tarjeta); max-width: 420px; width: 100%; padding: var(--sp-4); max-height: 90vh; overflow-y: auto; }
+.dd-titulo { font-size: var(--fs-h2); margin: 0 0 var(--sp-3) 0; color: var(--color-acento); }
+.dd-texto { margin: 0 0 var(--sp-3) 0; color: var(--color-texto); }
+.dd-lista { list-style: none; margin: 0 0 var(--sp-4) 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.dd-opcion {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3); background: var(--color-tarjeta); color: var(--color-texto);
+  border: 1px solid #d0d0d0; border-top-left-radius: 8px; border-bottom-right-radius: 8px;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.dd-opcion:hover:not(:disabled) { border-color: var(--color-acento); }
+.dd-opcion:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 2px; }
+.dd-opcion:disabled { opacity: 0.6; cursor: not-allowed; }
+.dd-cant { font-size: 0.85em; opacity: 0.7; white-space: nowrap; }
+.dd-nuevo { justify-content: center; color: var(--color-exito); border-color: var(--color-exito); font-weight: 600; }
+.dd-acciones { display: flex; justify-content: flex-end; }

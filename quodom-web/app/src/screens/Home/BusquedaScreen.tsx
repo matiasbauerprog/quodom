@@ -5,7 +5,7 @@ import { historial } from '../../api/hist_busquedas';
 import type { BusquedaResult } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
-import { DialogoNuevoRubro } from '../../quodom/DialogoNuevoRubro';
+import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
 import { useAuth } from '../../auth/AuthContext';
 import { Loader } from '../../components/Loader';
@@ -22,7 +22,7 @@ export function BusquedaScreen() {
   const [results, setResults] = useState<BusquedaResult[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [hist, setHist] = useState<string[]>([]);
-  const { agregar: agregarLinea, agregando, error: errAgregar, pendiente, confirmar, cancelar } = useAgregarProducto();
+  const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
     if (!user) return;
@@ -102,10 +102,12 @@ export function BusquedaScreen() {
         </>
       )}
 
-      {pendiente && (
-        <DialogoNuevoRubro
-          nombreRubro={nombreRubro(pendiente.idrubro)}
-          onConfirmar={confirmar}
+      {destino && (
+        <DialogoDestino
+        nombreRubro={nombreRubro(destino.idrubro)}
+        candidatos={destino.candidatos}
+        onElegir={elegir}
+        onCrear={crear}
           onCancelar={cancelar}
           ocupado={agregando}
         />
