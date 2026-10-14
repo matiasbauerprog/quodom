@@ -73,7 +73,29 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     }
   }
 
+  // Salida común: sirve tanto para soltar como para abortar. Sin quitar los oyentes
+  // de `window`, un arrastre al que nunca le llegó el `pointerup` seguiría vivo y el
+  // próximo clic en cualquier lado soltaría el producto.
+  function limpiar() {
+    window.removeEventListener('pointermove', mover);
+    window.removeEventListener('pointerup', terminar);
+    window.removeEventListener('pointercancel', abortar);
+    window.removeEventListener('blur', abortar);
+    window.removeEventListener('keydown', alTeclear);
+    window.removeEventListener('arrastre:abortar', abortar);
+    document.body.classList.remove('arrastrando');
+    fantasma?.remove();
+    limpiarResaltados();
+    vivo = false;
+  }
+
+  function abortar() { limpiar(); }
+
+  function alTeclear(e: KeyboardEvent) { if (e.key === 'Escape') abortar(); }
+
   function mover(e: PointerEvent) {
+    // Ya no hay botón apretado: el pointerup se perdió (otra ventana, un menú).
+    if (e.buttons === 0) { abortar(); return; }
     if (!vivo) {
       if (Math.abs(e.clientX - x0) < UMBRAL && Math.abs(e.clientY - y0) < UMBRAL) return;
       levantar();
@@ -110,16 +132,9 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   }
 
   function terminar(e: PointerEvent) {
-    window.removeEventListener('pointermove', mover);
-    window.removeEventListener('pointerup', terminar);
-    window.removeEventListener('pointercancel', terminar);
-    if (!vivo) return;
-    document.body.classList.remove('arrastrando');
-    fantasma?.remove();
-    limpiarResaltados();
-    // Cancelar (el sistema interrumpe el gesto) no es soltar: sin esto se agregaría
-    // el producto donde el puntero haya quedado.
-    if (e.type === 'pointercancel') return;
+    const habiaLevantado = vivo;
+    limpiar();
+    if (!habiaLevantado) return;
     tragarClic();
     const blanco = blancoBajo(e.clientX, e.clientY);
     // Soltar en el vacío, o sobre un Quodom de otro rubro, no hace nada y no es
@@ -129,5 +144,10 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
 
   window.addEventListener('pointermove', mover);
   window.addEventListener('pointerup', terminar);
-  window.addEventListener('pointercancel', terminar);
+  // Cancelar (el sistema interrumpe el gesto) no es soltar: se aborta sin agregar.
+  window.addEventListener('pointercancel', abortar);
+  window.addEventListener('blur', abortar);
+  window.addEventListener('keydown', alTeclear);
+  // Quien armó el arrastre puede desaparecer a mitad (se desmonta la pantalla).
+  window.addEventListener('arrastre:abortar', abortar);
 }

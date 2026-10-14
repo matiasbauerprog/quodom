@@ -40,6 +40,10 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     return () => { alive = false; };
   }, [idsubcategoria, nonce]);
 
+  // Si la lista desaparece con el arrastre a medias, el fantasma y los oyentes
+  // no tienen dueño: se le avisa al arrastre que termine sin soltar.
+  useEffect(() => () => { window.dispatchEvent(new Event('arrastre:abortar')); }, []);
+
   function elegir(idproducto: number, slot: 1 | 2, valor: string) {
     setElegido(prev => {
       const actual = { ...(prev[idproducto] ?? {}) };

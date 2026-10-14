@@ -277,7 +277,7 @@ describe('ListaProductos · arrastrar al árbol', () => {
 
   function arrastrarTarjeta(origen: Element) {
     fireEvent.pointerDown(origen, { clientX: 100, clientY: 100, button: 0 });
-    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 160, clientY: 160 }));
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 160, clientY: 160 }));
     window.dispatchEvent(new PointerEvent('pointerup', { clientX: 160, clientY: 160 }));
   }
 
@@ -396,7 +396,7 @@ describe('ListaProductos · el clic que sigue a un arrastre', () => {
   function arrastrarYSoltar(origen: Element) {
     vi.spyOn(document, 'elementFromPoint').mockReturnValue(null);
     fireEvent.pointerDown(origen, { clientX: 100, clientY: 100, button: 0 });
-    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 300, clientY: 100 }));
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 300, clientY: 100 }));
     window.dispatchEvent(new PointerEvent('pointerup', { clientX: 300, clientY: 100 }));
   }
 
@@ -430,5 +430,28 @@ describe('ListaProductos · el clic que sigue a un arrastre', () => {
     fireEvent.click(info);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+});
+
+describe('ListaProductos · desmontar en pleno arrastre', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('soltar después de desmontar no deja fantasma y no agrega nada', async () => {
+    porCategoria.mockResolvedValue([COCA]);
+    const { unmount } = render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+    document.body.insertAdjacentHTML('beforeend', '<button id="d" data-destino="q-7" data-rubro="7"></button>');
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(document.getElementById('d'));
+    fireEvent.pointerDown(document.querySelector('.prod-name')!, { clientX: 100, clientY: 100, button: 0 });
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 160, clientY: 160 }));
+    expect(document.querySelector('.arrastre-fantasma')).not.toBeNull();
+
+    unmount();
+
+    expect(document.querySelector('.arrastre-fantasma')).toBeNull();
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 160, clientY: 160 }));
+    expect(agregarADestino).not.toHaveBeenCalled();
+    document.getElementById('d')?.remove();
   });
 });

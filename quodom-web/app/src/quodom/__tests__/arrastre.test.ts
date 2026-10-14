@@ -12,7 +12,7 @@ function bajoElPuntero(el: Element | null) {
 function arrastrar(opts: { idrubro?: number; onSoltar?: ReturnType<typeof vi.fn> } = {}) {
   const onSoltar = opts.onSoltar ?? vi.fn();
   iniciarArrastre(evento(100, 100), { idrubro: opts.idrubro ?? 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar });
-  window.dispatchEvent(new PointerEvent('pointermove', { clientX: 140, clientY: 160 }));
+  window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 140, clientY: 160 }));
   return onSoltar;
 }
 
@@ -57,7 +57,7 @@ describe('iniciarArrastre', () => {
     const onSoltar = vi.fn();
     iniciarArrastre(evento(100, 100), { idrubro: 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar });
 
-    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 102, clientY: 101 }));
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 102, clientY: 101 }));
     window.dispatchEvent(new PointerEvent('pointerup', { clientX: 102, clientY: 101 }));
 
     expect(onSoltar).not.toHaveBeenCalled();
@@ -153,13 +153,93 @@ describe('iniciarArrastre', () => {
     expect((oyente.mock.calls[0][0] as CustomEvent).detail).toEqual({ idrubro: 5 });
   });
 
-  it('después de soltar ya no reacciona a movimientos', () => {
-    bajoElPuntero(null);
-    arrastrar();
+  // Un oyente que quedó instalado sigue marcando destinos y, peor, vuelve a soltar.
+  it('después de soltar los oyentes se fueron: ni marcan destinos ni sueltan de nuevo', () => {
+    document.body.innerHTML = '<button data-destino="q-1" data-rubro="5"></button>';
+    const boton = document.querySelector('button')!;
+    bajoElPuntero(boton);
+    const onSoltar = arrastrar({ idrubro: 5 });
+    soltar();
+    expect(onSoltar).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 300, clientY: 300 }));
     soltar();
 
-    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 300, clientY: 300 }));
+    expect(boton.classList.contains('arrastre-encima')).toBe(false);
+    expect(onSoltar).toHaveBeenCalledTimes(1);
+  });
 
+  it('pointercancel aborta: saca el fantasma y no suelta aunque haya un destino debajo', () => {
+    document.body.innerHTML = '<button data-destino="q-1" data-rubro="5"></button>';
+    bajoElPuntero(document.querySelector('button'));
+    const onSoltar = arrastrar({ idrubro: 5 });
+
+    window.dispatchEvent(new PointerEvent('pointercancel', { clientX: 140, clientY: 160 }));
+
+    expect(onSoltar).not.toHaveBeenCalled();
     expect(document.querySelector('.arrastre-fantasma')).toBeNull();
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+  });
+
+  describe('un pointerup que nunca llega', () => {
+    function destinoValido() {
+      document.body.innerHTML = '<button data-destino="q-1" data-rubro="5"></button>';
+      bajoElPuntero(document.querySelector('button'));
+    }
+
+    function estaLimpio() {
+      return document.querySelector('.arrastre-fantasma') === null
+        && !document.body.classList.contains('arrastrando')
+        && document.querySelector('.arrastre-encima') === null;
+    }
+
+    it('un movimiento sin botón apretado aborta el arrastre', () => {
+      destinoValido();
+      const onSoltar = arrastrar({ idrubro: 5 });
+
+      window.dispatchEvent(new PointerEvent('pointermove', { buttons: 0, clientX: 150, clientY: 170 }));
+
+      expect(estaLimpio()).toBe(true);
+      // El clic siguiente, en cualquier lado, ya no puede soltar nada.
+      soltar();
+      expect(onSoltar).not.toHaveBeenCalled();
+    });
+
+    it('perder el foco de la ventana aborta el arrastre', () => {
+      destinoValido();
+      const onSoltar = arrastrar({ idrubro: 5 });
+
+      window.dispatchEvent(new Event('blur'));
+
+      expect(estaLimpio()).toBe(true);
+      soltar();
+      expect(onSoltar).not.toHaveBeenCalled();
+    });
+
+    it('Escape aborta el arrastre', () => {
+      destinoValido();
+      const onSoltar = arrastrar({ idrubro: 5 });
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+      expect(estaLimpio()).toBe(true);
+      soltar();
+      expect(onSoltar).not.toHaveBeenCalled();
+    });
+
+    it('abortar no deja un bloqueo de clic que se coma el siguiente', async () => {
+      // Deja caducar los bloqueos de los soltados de tests anteriores.
+      await new Promise(r => setTimeout(r, 150));
+      destinoValido();
+      arrastrar({ idrubro: 5 });
+      window.dispatchEvent(new Event('blur'));
+      const alClic = vi.fn();
+      document.body.addEventListener('click', alClic);
+
+      document.body.click();
+
+      expect(alClic).toHaveBeenCalledTimes(1);
+      document.body.removeEventListener('click', alClic);
+    });
   });
 });
