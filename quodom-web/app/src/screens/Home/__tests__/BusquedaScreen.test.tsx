@@ -32,17 +32,21 @@ function montar() {
   return render(<MemoryRouter initialEntries={['/busqueda?q=coca']}><BusquedaScreen /></MemoryRouter>);
 }
 
+// Acá no hay detalle del producto que abrir, así que el clic en el resultado
+// lleva directo a elegir el Quodom. Mismo gesto que en el catálogo —tocar el
+// producto decide a dónde va— con un paso menos, porque no hay nada que leer.
 describe('BusquedaScreen · mandar a otro Quodom', () => {
-  it('cada resultado ofrece mandarlo a otro Quodom, con nombre accesible', async () => {
+  it('el resultado ya no tiene el ···', async () => {
     montar();
+    await screen.findByRole('button', { name: /^agregar coca cola 2l$/i });
 
-    expect(await screen.findByRole('button', { name: 'Agregar Coca Cola 2L a otro Quodom' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
   });
 
-  it('el ··· pide el destino del rubro sin agregar', async () => {
+  it('tocar el resultado pide el destino del rubro, sin agregar', async () => {
     montar();
 
-    fireEvent.click(await screen.findByRole('button', { name: /a otro quodom/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /elegir el quodom de coca cola 2l/i }));
 
     expect(pedirDestino).toHaveBeenCalledWith(
       expect.objectContaining({ idproducto: 700, cantidad: 1 }), 7
@@ -51,12 +55,12 @@ describe('BusquedaScreen · mandar a otro Quodom', () => {
   });
 });
 
-describe('BusquedaScreen · ··· y la sesión', () => {
-  it('un invitado no ve el ···: no tiene a dónde elegir', async () => {
+describe('BusquedaScreen · el resultado y la sesión', () => {
+  it('un invitado no puede elegir Quodom: no tiene a dónde', async () => {
     auth.user = null;
     montar();
     await screen.findByRole('button', { name: /^agregar coca cola 2l$/i });
 
-    expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /elegir el quodom/i })).not.toBeInTheDocument();
   });
 });

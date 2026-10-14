@@ -221,16 +221,19 @@ describe('ListaProductos · atributos en la tarjeta', () => {
   });
 });
 
-describe('ListaProductos · mandar a otro Quodom', () => {
-  it('cada producto ofrece mandarlo a otro Quodom, con nombre accesible', async () => {
+// El "···" se fue de la tarjeta: era un control chiquito y críptico para una
+// acción deliberada. Ahora esa decisión vive donde el usuario ya iba a mirar el
+// producto, y la tarjeta queda con el "+" solo.
+describe('ListaProductos · mandar a otro Quodom desde el detalle', () => {
+  it('la tarjeta ya no tiene el ···', async () => {
     porCategoria.mockResolvedValue([COCA, BOLSA]);
     render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
 
-    expect(await screen.findAllByRole('button', { name: /a otro quodom/i })).toHaveLength(2);
-    expect(screen.getByRole('button', { name: 'Agregar Coca Cola 2L a otro Quodom' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
   });
 
-  it('el ··· pide el destino del rubro con el atributo elegido, sin agregar', async () => {
+  it('el detalle pide el destino del rubro con el atributo elegido, sin agregar', async () => {
     porCategoria.mockResolvedValue([BOLSA]);
     render(<ListaProductos idsubcategoria={70} />);
     await screen.findByText('Bolsa de residuos');
@@ -238,7 +241,8 @@ describe('ListaProductos · mandar a otro Quodom', () => {
       target: { value: 'Negra 60 x 90' }
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /bolsa de residuos a otro quodom/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^ver bolsa de residuos$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /a otro quodom/i }));
 
     expect(pedirDestino).toHaveBeenCalledWith(
       expect.objectContaining({ idproducto: 41, cantidad: 1, atributo1: 'Negra 60 x 90' }), 7
@@ -247,20 +251,21 @@ describe('ListaProductos · mandar a otro Quodom', () => {
   });
 });
 
-describe('ListaProductos · ··· y la sesión', () => {
-  it('un invitado no ve el ···: no tiene a dónde elegir', async () => {
+describe('ListaProductos · el detalle y la sesión', () => {
+  it('un invitado no ve la opción de elegir Quodom: no tiene a dónde', async () => {
     auth.user = null;
     porCategoria.mockResolvedValue([COCA]);
     render(<ListaProductos idsubcategoria={70} />);
-    await screen.findByText('Coca Cola 2L');
+    fireEvent.click(await screen.findByRole('button', { name: /^ver coca cola 2l$/i }));
 
+    expect(await screen.findByRole('button', { name: /agregar al quodom/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^agregar coca cola 2l$/i })).toBeInTheDocument();
   });
 
-  it('con sesión sí lo muestra', async () => {
+  it('con sesión sí la muestra', async () => {
     porCategoria.mockResolvedValue([COCA]);
     render(<ListaProductos idsubcategoria={70} />);
+    fireEvent.click(await screen.findByRole('button', { name: /^ver coca cola 2l$/i }));
 
     expect(await screen.findByRole('button', { name: /a otro quodom/i })).toBeInTheDocument();
   });

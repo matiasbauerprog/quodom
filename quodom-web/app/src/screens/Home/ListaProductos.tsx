@@ -102,7 +102,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
 
   function agarrar(ev: React.PointerEvent, p: Product) {
     // Sin sesión no hay Quodoms en el árbol a dónde soltar. Y un clic que nace en
-    // un botón es del botón (+, ···, selectores): si no, dejarían de funcionar.
+    // un botón es del botón (+, los selectores): si no, dejarían de funcionar.
     if (!user) return;
     // La excepción es `.prod-info`: es un botón (abre el detalle) pero también casi
     // toda la tarjeta, y el umbral del arrastre deja pasar el clic.
@@ -145,7 +145,9 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
         <ul className="prod-list">
           {prods.map(p => (
             <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()}>
-              <button className="prod-info" onClick={() => setSelected(p)}>
+              {/* Etiqueta explícita: sin ella el nombre accesible sale repetido,
+                  porque adentro están el alt de la imagen y el texto. */}
+              <button className="prod-info" aria-label={'Ver ' + p.nombreproducto} onClick={() => setSelected(p)}>
                 <span className="prod-media">
                   <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
                 </span>
@@ -157,11 +159,6 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
                   {selector(p, 2)}
                 </div>
                 <div className="prod-botones">
-                  {user && (
-                  <button className="prod-otro" aria-label={'Agregar ' + p.nombreproducto + ' a otro Quodom'} disabled={agregando} onClick={() => agregarEnOtro(p)}>
-                    ···
-                  </button>
-                  )}
                   <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} disabled={agregando} onClick={() => agregar(p)}>
                     <IconoMas />
                   </button>
@@ -171,7 +168,14 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
           ))}
         </ul>
       )}
-      {selected && <DetalleProducto product={selected} onClose={() => setSelected(null)} onAdd={() => { agregar(selected); setSelected(null); }} />}
+      {selected && (
+        <DetalleProducto
+          product={selected}
+          onClose={() => setSelected(null)}
+          onAdd={() => { agregar(selected); setSelected(null); }}
+          onElegirDestino={user ? () => { agregarEnOtro(selected); setSelected(null); } : undefined}
+        />
+      )}
       {destino && (
         <DialogoDestino
         nombreRubro={nombreRubro(destino.idrubro)}

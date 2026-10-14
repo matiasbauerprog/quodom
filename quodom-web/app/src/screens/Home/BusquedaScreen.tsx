@@ -82,16 +82,27 @@ export function BusquedaScreen() {
             <ul className="busqueda-list">
               {results.map(r => (
                 <li key={r.id} className="prod-item prod-item-row">
-                  <span className="prod-info">
-                    <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
-                    <span className="prod-name">{r.nombre}</span>
-                  </span>
-                  <div className="prod-botones">
-                    {user && (
-                    <button className="prod-otro" aria-label={'Agregar ' + r.nombre + ' a otro Quodom'} disabled={agregando} onClick={() => agregarEnOtro(r)}>
-                      ···
+                  {/* Acá no hay detalle que abrir, así que tocar el resultado
+                      lleva directo a elegir el Quodom: el mismo gesto que en el
+                      catálogo, con un paso menos porque no hay nada que leer.
+                      Sin sesión no es un botón: un invitado no tiene a dónde elegir. */}
+                  {user ? (
+                    <button
+                      className="prod-info"
+                      aria-label={'Elegir el Quodom de ' + r.nombre}
+                      disabled={agregando}
+                      onClick={() => agregarEnOtro(r)}
+                    >
+                      <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
+                      <span className="prod-name">{r.nombre}</span>
                     </button>
-                    )}
+                  ) : (
+                    <span className="prod-info">
+                      <ProductImage idproducto={r.id} alt={r.nombre} size="sm" />
+                      <span className="prod-name">{r.nombre}</span>
+                    </span>
+                  )}
+                  <div className="prod-botones">
                     <button className="prod-add" aria-label={'Agregar ' + r.nombre} disabled={agregando} onClick={() => agregar(r)}>
                       <IconoMas />
                     </button>
