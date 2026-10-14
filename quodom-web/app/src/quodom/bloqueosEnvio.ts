@@ -10,6 +10,9 @@ export type BloqueoEnvio = {
   accion: string;
 };
 
+/** La línea que frena el envío: qué producto y qué grupo de atributo le falta. */
+export type FaltaAtributo = { producto: string; atributo: string };
+
 type Resumen = Pick<Quodom, 'cantproductos'> & { porccompletado?: number };
 
 type LineaAtributos = {
@@ -68,4 +71,21 @@ export function bloqueoDeEnvio(quodom: Resumen, tieneDireccion: boolean): Bloque
 /** Lo mismo, mirando las líneas una por una: lo que tiene el detalle. */
 export function bloqueoDeEnvioPorLineas(lines: LineaAtributos[], tieneDireccion: boolean): BloqueoEnvio | null {
   return bloqueo(lines.some(lineaIncompleta), tieneDireccion);
+}
+
+/**
+ * El mismo bloqueo, nombrando la línea que lo causa cuando se la conoce.
+ *
+ * "Falta la medida de algún producto" obligaba a abrir el Quodom y revisar
+ * línea por línea cuál era. Quien tiene las líneas cargadas puede decirlo, y
+ * el bloqueo sigue siendo el de `bloqueoDeEnvio`: esto cambia el texto, no la
+ * decisión. Si no hay línea identificada, el aviso genérico queda como estaba.
+ */
+export function conFaltaConcreta(b: BloqueoEnvio | null, falta: FaltaAtributo | null): BloqueoEnvio | null {
+  if (!b || b.motivo !== 'atributo' || !falta) return b;
+  return {
+    motivo: 'atributo',
+    texto: `Para cotizar, elegí ${falta.atributo.toLowerCase()} en ${falta.producto}.`,
+    accion: 'Está marcado en la línea del producto.'
+  };
 }

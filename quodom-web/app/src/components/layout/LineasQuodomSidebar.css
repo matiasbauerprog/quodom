@@ -1,7 +1,9 @@
+/* Las líneas viven dentro de la tarjeta blanca del destino, así que van en
+   texto oscuro. Antes eran claras sobre el panel: la tarjeta se las llevó. */
 .lqs-lista {
   list-style: none;
   margin: 0;
-  padding: 0 var(--sp-3) var(--sp-2);
+  padding: 0 var(--sp-4);
   display: flex;
   flex-direction: column;
 }
@@ -10,64 +12,98 @@
 .lqs-linea {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  justify-content: space-between;
-  padding: var(--sp-2) 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #EEEEEE;
 }
 .lqs-nombre {
+  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
   font-family: var(--font-work);
   font-size: var(--fs-small);
+  font-weight: 500;
   line-height: 1.3;
-  overflow-wrap: anywhere;
 }
-/* Antes era un cartel; ahora es el botón que resuelve lo que avisa, así que
-   tiene que parecer tocable sin gritar más que el nombre del producto. */
+/* El nombre en un solo renglón con puntos suspensivos: partido en dos o tres
+   líneas, un nombre largo estiraba la fila y la columna entera se leía ancha.
+   El `title` deja leer el completo sin tener que abrir el Quodom. */
+.lqs-nombre-txt {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Lo que falta para poder enviar es lo más importante de la línea, y estaba en
+   10px: ahora es un chip ámbar de 28px, tocable y del tamaño de lo que pesa.
+   Ámbar y no rojo porque es algo por hacer, no algo que esté mal. */
 .lqs-falta {
-  display: block;
-  margin-top: 2px;
-  padding: 2px 6px;
-  background: none;
-  border: 1px dashed rgba(255, 180, 180, 0.6);
-  border-radius: 4px;
-  color: #FFB4B4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  background: #FFF4E0;
+  border: 1px solid #E9B562;
+  border-radius: 999px;
+  color: #8A5A00;
   font-family: inherit;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--fs-tiny);
+  font-weight: 600;
   cursor: pointer;
 }
 .lqs-falta:hover:not(:disabled),
-.lqs-falta:focus-visible { background: rgba(255, 180, 180, 0.12); }
+.lqs-falta:focus-visible { background: #FFE9C2; }
 .lqs-falta:disabled { opacity: 0.6; cursor: default; }
-.lqs-controles {
+
+/* Un solo control de cantidad en vez de tres botones sueltos: la píldora los
+   agrupa como lo que son, y cada uno pasó de 26 a 32px. */
+.lqs-stepper {
   display: flex;
   align-items: center;
-  gap: 2px;
   flex-shrink: 0;
+  border: 1px solid #DCDCDC;
+  border-radius: 999px;
 }
 .lqs-btn {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  font-size: 15px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-texto);
+  font-size: 17px;
   line-height: 1;
 }
-.lqs-btn:hover:not(:disabled) { background: rgba(255,255,255,0.14); }
+.lqs-btn:hover:not(:disabled) { background: var(--color-fondo); }
 .lqs-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.lqs-quitar { border-color: transparent; opacity: 0.7; }
 .lqs-cant { min-width: 22px; text-align: center; font-size: var(--fs-small); font-weight: 600; }
+
+/* Quitar sale de la píldora: no es un paso más de la cantidad. */
+.lqs-quitar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: none;
+  color: var(--color-texto-muted);
+  font-size: 18px;
+  line-height: 1;
+}
+.lqs-quitar:hover:not(:disabled) { background: #FDECEE; color: var(--color-acento); }
+.lqs-quitar:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .lqs-cargando, .lqs-vacio, .lqs-err {
   margin: 0;
-  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  padding: var(--sp-2) var(--sp-4) var(--sp-3);
   font-size: var(--fs-small);
-  opacity: 0.8;
+  color: #5C5C5C;
 }
-.lqs-err { color: #FFB4B4; opacity: 1; }
+.lqs-err { color: #B42532; }

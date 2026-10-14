@@ -8,10 +8,11 @@ import { openWhatsappLink } from '../../../utils/whatsapp';
 import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
 import { users as usersApi } from '../../../api/users';
 import { abrirQuodom } from '../../../quodom/quodomAbierto';
+import { quodomLines } from '../../../api/quodom_lines';
 
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(), whatsapp: vi.fn() } }));
 vi.mock('../../../api/quodom_lines', () => ({
-  quodomLines: { porQuodom: vi.fn().mockResolvedValue([]), update: vi.fn(), eliminar: vi.fn() }
+  quodomLines: { porQuodom: vi.fn().mockResolvedValue([]), update: vi.fn(), eliminar: vi.fn(), atributos: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../../quodom/rubrosDisponibles', () => ({
@@ -25,6 +26,7 @@ vi.mock('../../../api/users', () => ({ users: { getDirecciones: vi.fn() } }));
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const whatsapp = quodomApi.whatsapp as unknown as ReturnType<typeof vi.fn>;
 const getDirecciones = usersApi.getDirecciones as unknown as ReturnType<typeof vi.fn>;
+const porQuodom = quodomLines.porQuodom as unknown as ReturnType<typeof vi.fn>;
 
 const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, porccompletado: 100, createdBy: 'u-1', iddireccion: null };
 // La fecha va relativa a ahora, no fija: QuodomCard marca VENCIDO a las 72hs de
@@ -46,6 +48,7 @@ beforeEach(() => {
   misQuodom.mockReset(); whatsapp.mockReset(); getDirecciones.mockReset();
   vi.mocked(openWhatsappLink).mockReset();
   clearGuestQuodoms(); localStorage.clear();
+  vi.mocked(porQuodom).mockReset().mockResolvedValue([]);
   // El envío vive bajo el Quodom abierto del árbol.
   abrirQuodom(7, 'q-7');
   vi.mocked(useAuth).mockReturnValue({ user: { id: 'u-1' } } as unknown as ReturnType<typeof useAuth>);
@@ -57,14 +60,14 @@ beforeEach(() => {
 });
 
 describe('sidebar: enviar por WhatsApp', () => {
-  it('el Quodom abierto ofrece enviar', async () => {
+  it('el Quodom abierto ofrece cotizar', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
 
-    expect(await within(tarjetaBebidas()).findByRole('button', { name: /enviar/i })).toBeInTheDocument();
+    expect(await within(tarjetaBebidas()).findByRole('button', { name: /cotizar/i })).toBeInTheDocument();
   });
 
-  it('un carrito de invitado no ofrece enviar: eso exige login y migración', async () => {
+  it('un carrito de invitado no ofrece cotizar: eso exige login y migración', async () => {
     vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
     addGuestLine(7, { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 1 });
 
@@ -72,8 +75,11 @@ describe('sidebar: enviar por WhatsApp', () => {
     await screen.findByText('Bebidas');
 
     const tarjeta = screen.getByText('Carrito').closest('article') as HTMLElement;
-    expect(within(tarjeta).getByRole('button', { name: /continuar/i })).toBeInTheDocument();
-    expect(within(tarjeta).queryByRole('button', { name: /enviar/i })).toBeNull();
+    expect(within(tarjeta).queryByRole('button', { name: /cotizar/i })).toBeNull();
+    // Lo que sí ofrece: entrar al Quodom completo, y el chip que lo distingue
+    // de un Quodom del servidor.
+    expect(within(tarjeta).getByText('Sin guardar')).toBeInTheDocument();
+    expect(within(tarjeta).getByRole('button', { name: /Carrito/ })).toBeInTheDocument();
   });
 
   it('enviar pide el link, lo abre y avisa al resto de la app', async () => {
@@ -84,7 +90,7 @@ describe('sidebar: enviar por WhatsApp', () => {
     await screen.findByText('Bebidas oficina');
 
     misQuodom.mockResolvedValue([ENVIADA]);
-    fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /enviar/i }));
+    fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /cotizar/i }));
 
     await waitFor(() => expect(whatsapp).toHaveBeenCalledWith('q-7'));
     expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola');
@@ -99,7 +105,7 @@ describe('sidebar: enviar por WhatsApp', () => {
     await screen.findByText('Bebidas oficina');
 
     misQuodom.mockResolvedValue([ENVIADA]);
-    fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /enviar/i }));
+    fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /cotizar/i }));
 
     await waitFor(() => expect(screen.queryByText('Bebidas oficina')).toBeNull());
   });
@@ -115,7 +121,7 @@ describe('sidebar: el envío bloqueado', () => {
     await screen.findByText('Bebidas oficina');
 
     const tarjeta = tarjetaBebidas();
-    await waitFor(() => expect(within(tarjeta).getByRole('button', { name: /enviar/i })).toBeDisabled());
+    await waitFor(() => expect(within(tarjeta).getByRole('button', { name: /cotizar/i })).toBeDisabled());
     expect(within(tarjeta).getByText(/falta tu dirección/i)).toBeInTheDocument();
     expect(within(tarjeta).getByRole('link', { name: /cargar dirección/i })).toHaveAttribute('href', '/direcciones/nuevo');
   });
@@ -127,8 +133,36 @@ describe('sidebar: el envío bloqueado', () => {
     await screen.findByText('Bebidas oficina');
 
     const tarjeta = tarjetaBebidas();
-    expect(within(tarjeta).getByRole('button', { name: /enviar/i })).toBeDisabled();
+    expect(within(tarjeta).getByRole('button', { name: /cotizar/i })).toBeDisabled();
     expect(within(tarjeta).getByText(/falta elegir la medida/i)).toBeInTheDocument();
+  });
+
+  // "Falta la medida de algún producto" obligaba a abrir el Quodom y revisar
+  // línea por línea cuál era. Con las líneas cargadas, el motivo la nombra.
+  it('nombra el producto y el atributo que frenan el envío', async () => {
+    misQuodom.mockResolvedValue([{ ...BEBIDAS, porccompletado: 50 }]);
+    vi.mocked(porQuodom).mockResolvedValue([
+      {
+        id: 11, idquodom: 'q-7', idproducto: 302, cantidad: 2,
+        nombreProducto: 'Latex Interior Blanco Mate',
+        nombreAtributo1: 'LITROS', atributo1: null
+      }
+    ]);
+
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText('Bebidas oficina');
+
+    expect(await within(tarjetaBebidas())
+      .findByText(/elegí litros en Latex Interior Blanco Mate/i)).toBeInTheDocument();
+  });
+
+  it('sin nada que frenarlo, lo dice y el botón queda habilitado', async () => {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText('Bebidas oficina');
+
+    const tarjeta = tarjetaBebidas();
+    await waitFor(() => expect(within(tarjeta).getByRole('button', { name: /cotizar/i })).toBeEnabled());
+    expect(within(tarjeta).getByText(/listo para pedir presupuesto/i)).toBeInTheDocument();
   });
 
   it('no llama al API con el envío bloqueado', async () => {
@@ -137,7 +171,7 @@ describe('sidebar: el envío bloqueado', () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
 
-    fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /enviar/i }));
+    fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /cotizar/i }));
 
     expect(whatsapp).not.toHaveBeenCalled();
   });
@@ -146,11 +180,11 @@ describe('sidebar: el envío bloqueado', () => {
     getDirecciones.mockResolvedValue([]);
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas oficina');
-    await waitFor(() => expect(within(tarjetaBebidas()).getByRole('button', { name: /enviar/i })).toBeDisabled());
+    await waitFor(() => expect(within(tarjetaBebidas()).getByRole('button', { name: /cotizar/i })).toBeDisabled());
 
     getDirecciones.mockResolvedValue([{ id: 1 }]);
     fireEvent(window, new Event('direcciones:changed'));
 
-    await waitFor(() => expect(within(tarjetaBebidas()).getByRole('button', { name: /enviar/i })).toBeEnabled());
+    await waitFor(() => expect(within(tarjetaBebidas()).getByRole('button', { name: /cotizar/i })).toBeEnabled());
   });
 });

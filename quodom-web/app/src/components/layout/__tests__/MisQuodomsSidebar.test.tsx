@@ -77,7 +77,7 @@ describe('MisQuodomsSidebar', () => {
     // refresh failure must not blank a sidebar that was showing correct data.
     expect(screen.getByText('Bebidas oficina')).toBeInTheDocument();
     expect(screen.getByText('Obra San Isidro')).toBeInTheDocument();
-    expect(screen.queryByText(/No tenés Quodoms/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Armá tu primer Quodom/i)).not.toBeInTheDocument();
   });
 });
 
@@ -89,8 +89,10 @@ describe('MisQuodomsSidebar sin sesión', () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
     expect(await screen.findByText('Bebidas')).toBeInTheDocument();
-    expect(screen.getByText('sin guardar')).toBeInTheDocument();
-    expect(screen.getByText(/Quodoms activos/i)).toBeInTheDocument();
+    expect(screen.getByText('Sin guardar')).toBeInTheDocument();
+    // El carrito se dibuja como el Quodom que todavía no es: rótulo del rubro
+    // más la tarjeta, igual que una rama del árbol.
+    expect(screen.getByText('Carrito')).toBeInTheDocument();
     // Sin sesión no se le pide nada al servidor.
     expect(misQuodom).not.toHaveBeenCalled();
   });
@@ -99,7 +101,7 @@ describe('MisQuodomsSidebar sin sesión', () => {
     addGuestLine(7, GASEOSA);
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    expect(await screen.findByText('sin guardar')).toBeInTheDocument();
+    expect(await screen.findByText('Sin guardar')).toBeInTheDocument();
     expect(screen.getByText(/sólo en este navegador/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ingresar para guardarlos/i })).toBeInTheDocument();
   });
@@ -107,17 +109,17 @@ describe('MisQuodomsSidebar sin sesión', () => {
   it('sin carritos muestra el mismo vacío que con sesión, más el link de ingresar', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    expect(await screen.findByText(/No tenés Quodoms/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Armá tu primer Quodom/i)).toBeInTheDocument();
     // Sin sesión ya se ven los carritos de invitado: "ingresá para ver tus
     // Quodoms" dejó de describir lo que hace el sidebar.
     expect(screen.queryByText(/Ingresá para ver tus Quodoms/i)).toBeNull();
     expect(screen.getByRole('link', { name: /ingresar/i })).toBeInTheDocument();
-    expect(screen.queryByText('sin guardar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sin guardar')).not.toBeInTheDocument();
   });
 
   it('se actualiza cuando cambia un carrito', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-    await screen.findByText(/No tenés Quodoms/i);
+    await screen.findByText(/Armá tu primer Quodom/i);
 
     act(() => {
       addGuestLine(1, { idproducto: 400, nombreProducto: 'Lavandina 1L', cantidad: 1 });
@@ -138,7 +140,7 @@ describe('MisQuodomsSidebar con sesión y carritos huérfanos', () => {
 
     expect(await screen.findByText('Bebidas oficina')).toBeInTheDocument();
     expect(screen.getAllByText('Limpieza').length).toBeGreaterThan(0);
-    expect(screen.getByText('sin guardar')).toBeInTheDocument();
+    expect(screen.getByText('Sin guardar')).toBeInTheDocument();
     // Ya está logueado: el aviso de "sólo en este navegador" no aplica.
     expect(screen.queryByText(/sólo en este navegador/i)).not.toBeInTheDocument();
   });
@@ -173,12 +175,24 @@ describe('sidebar: el árbol', () => {
     expect(screen.queryByText(/Frente/)).toBeNull();
   });
 
-  it('ofrece el botón Mis Quodoms', async () => {
+  // Arriba y no al pie: al pie repetía el título del panel y se iba de pantalla
+  // en cuanto la lista crecía, que es justo cuando hace falta.
+  it('ofrece Ver todos en la cabecera, y ya no un botón al pie', async () => {
     misQuodom.mockResolvedValue([]);
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    expect(await screen.findByRole('link', { name: /mis quodoms/i })).toHaveAttribute('href', '/mis-quodoms');
+    const ver = await screen.findByRole('link', { name: /ver todos/i });
+    expect(ver).toHaveAttribute('href', '/mis-quodoms');
+    expect(screen.queryByRole('link', { name: /^mis quodoms$/i })).toBeNull();
+  });
+
+  it('cuenta lo que hay en armado en la cabecera', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
+
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    expect(await screen.findByText('2 en armado · 2 rubros')).toBeInTheDocument();
   });
 
   it('ya no muestra Repetí un pedido', async () => {
@@ -187,7 +201,7 @@ describe('sidebar: el árbol', () => {
     ]);
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-    await screen.findByRole('link', { name: /mis quodoms/i });
+    await screen.findByRole('link', { name: /ver todos/i });
 
     expect(screen.queryByText(/repetí un pedido/i)).toBeNull();
   });
@@ -224,7 +238,7 @@ describe('sidebar: saneo de los Quodoms abiertos', () => {
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await waitFor(() => expect(misQuodom).toHaveBeenCalled());
-    await screen.findByRole('link', { name: /mis quodoms/i });
+    await screen.findByRole('link', { name: /ver todos/i });
 
     expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });
@@ -236,7 +250,7 @@ describe('sidebar: saneo de los Quodoms abiertos', () => {
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await waitFor(() => expect(misQuodom).toHaveBeenCalled());
-    await screen.findByRole('link', { name: /mis quodoms/i });
+    await screen.findByRole('link', { name: /ver todos/i });
 
     expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });
@@ -255,7 +269,7 @@ describe('sidebar: degradar en vez de fallar', () => {
 
     expect(await screen.findByText('Bebidas oficina')).toBeInTheDocument();
     expect(screen.getByText('Obra San Isidro')).toBeInTheDocument();
-    expect(screen.queryByText(/No tenés Quodoms/i)).toBeNull();
+    expect(screen.queryByText(/Armá tu primer Quodom/i)).toBeNull();
   });
 
   it('si fallan las categorías, un refresco igual actualiza la lista', async () => {
@@ -276,7 +290,7 @@ describe('sidebar: degradar en vez de fallar', () => {
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    expect(await screen.findByText(/No tenés Quodoms/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Armá tu primer Quodom/i)).toBeInTheDocument();
     expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });
 });
@@ -284,12 +298,42 @@ describe('sidebar: degradar en vez de fallar', () => {
 describe('sidebar: rubros sin Quodoms', () => {
   beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); localStorage.clear(); login(); });
 
-  it('un usuario sin Quodoms igual ve cada rubro como destino para soltar', async () => {
+  it('un usuario sin Quodoms igual puede soltar en el rubro del producto', async () => {
     misQuodom.mockResolvedValue([]);
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText(/Armá tu primer Quodom/i);
+    // Los ocho rubros están como ramas vacías; la zona para soltar aparece sólo
+    // en el del producto que se arrastra.
+    await waitFor(() => expect(document.querySelectorAll('[data-rubro-cab]')).toHaveLength(8));
 
-    await screen.findByText(/No tenés Quodoms/i);
-    await waitFor(() => expect(document.querySelectorAll('[data-nuevo]')).toHaveLength(8));
+    act(() => {
+      window.dispatchEvent(new CustomEvent('arrastre:inicio', {
+        detail: { idrubro: 5, nombre: 'Rodillo', nombreRubro: 'Pinturería' }
+      }));
+    });
+
+    expect(document.querySelectorAll('[data-nuevo]')).toHaveLength(1);
     expect(document.querySelector('[data-nuevo="5"]')).toHaveAttribute('data-rubro', '5');
+  });
+
+  // El borde verde solo no explica la regla: el panel dice qué se arrastra y
+  // a dónde puede ir.
+  it('mientras se arrastra, el panel nombra el producto y su rubro', async () => {
+    misQuodom.mockResolvedValue([]);
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findByText(/Armá tu primer Quodom/i);
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('arrastre:inicio', {
+        detail: { idrubro: 5, nombre: 'Rodillo lana 22 cm', nombreRubro: 'Pinturería' }
+      }));
+    });
+
+    const aviso = screen.getByRole('status');
+    expect(aviso).toHaveTextContent('Rodillo lana 22 cm');
+    expect(aviso).toHaveTextContent(/Pinturería/);
+
+    act(() => { window.dispatchEvent(new Event('arrastre:fin')); });
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

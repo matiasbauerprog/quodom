@@ -198,7 +198,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
                   className="qc-action qc-action-enviar"
                   disabled={enviando || !!bloqueo}
                   onClick={e => { e.stopPropagation(); if (!bloqueo) onEnviar(); }}
-                >{enviando ? 'Enviando…' : 'Enviar por WhatsApp'}</button>
+                >{enviando ? 'Cotizando…' : 'Cotizar por WhatsApp'}</button>
               )}
             </div>
             {onEnviar && bloqueo && (

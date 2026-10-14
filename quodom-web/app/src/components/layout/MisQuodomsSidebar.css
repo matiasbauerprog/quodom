@@ -6,8 +6,8 @@
   .mq-sidebar {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-3);
-    padding: var(--sp-5) var(--sp-4);
+    gap: var(--sp-4);
+    padding: var(--sp-5) var(--sp-5) var(--sp-5) var(--sp-4);
     background: var(--color-panel-oscuro);
     color: #fff;
     /* Queda fijo mientras la página scrollea: con pocos Quodoms el sidebar era
@@ -26,67 +26,151 @@
     height: 100vh;
     overflow-y: auto;
   }
-  .mq-sidebar-title {
-    text-align: center;
-    font-family: var(--font-prompt);
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: #fff;
-    margin: 0 0 var(--sp-3) 0;
-  }
-  .mq-sidebar-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-  }
-  .mq-sidebar-section-title {
-    font-family: var(--font-work);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.75);
-    margin: 0 0 var(--sp-1) 0;
-    padding-bottom: 4px;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-  }
-  .mq-sidebar-empty {
-    text-align: center;
-    padding: var(--sp-4) var(--sp-3);
-    border: 2px dashed rgba(255,255,255,0.35);
-    border-radius: var(--radius-input);
-    color: rgba(255,255,255,0.9);
-  }
-  .mq-sidebar-empty p { margin: 0 0 var(--sp-2) 0; font-size: var(--fs-small); }
-  .mq-sidebar-empty .btn { margin-top: var(--sp-3); background: #fff; color: var(--color-acento); }
-  .mq-sidebar-list { display: flex; flex-direction: column; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; }
 
-  /* La tarjeta desplegada y sus productos se leen como una sola pieza. */
-  .mq-sidebar-item-abierta {
-    background: rgba(255, 255, 255, 0.08);
+  /* La cabecera alinea a la izquierda y lleva "Ver todos" al otro extremo. El
+     título centrado en mayúsculas competía con el wordmark de la barra. */
+  .mq-sidebar-cab {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-3);
+  }
+  .mq-sidebar-marca { display: flex; flex-direction: column; gap: 6px; }
+  .mq-sidebar-title {
+    margin: 0;
+    font-family: var(--font-prompt);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #fff;
+  }
+  .mq-sidebar-regla { width: 40px; height: 3px; background: var(--color-acento); }
+  .mq-sidebar-resumen { font-size: var(--fs-small); color: rgba(255, 255, 255, 0.72); }
+
+  .mq-sidebar-vertodos {
+    flex-shrink: 0;
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    font-size: var(--fs-small);
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
     border-top-left-radius: var(--radius-hoja-tl);
     border-bottom-right-radius: var(--radius-hoja-br);
   }
-  .mq-sidebar-item-abierta .qc-expandida { background: transparent; }
-  .mq-sidebar-item { width: 100%; }
+  .mq-sidebar-vertodos:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  .mq-sidebar-vertodos:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-  .mq-sidebar-vermas {
-    margin-top: var(--sp-3);
-    background: transparent;
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.5);
-    text-align: center;
-    font-family: var(--font-prompt);
-    font-weight: 500;
+  /* Mientras se arrastra: verde, porque anuncia algo que se puede hacer. */
+  .mq-sidebar-arrastre {
+    margin: 0;
+    padding: var(--sp-3) 14px;
+    background: rgba(45, 171, 102, 0.16);
+    border: 1px solid rgba(45, 171, 102, 0.6);
+    font-size: var(--fs-small);
+    line-height: 1.4;
+    border-top-left-radius: var(--radius-hoja-tl);
+    border-bottom-right-radius: var(--radius-hoja-br);
   }
-  .mq-sidebar-vermas:hover { background: rgba(255,255,255,0.1); }
-  .mq-sidebar-err { margin: 0; color: #FFB4B4; font-size: var(--fs-tiny); }
-  .mq-sidebar-agregado { margin: 0; color: #B9F0CE; font-size: var(--fs-small); text-align: center; }
-  .mq-sidebar-agregado a { color: #fff; }
 
-  .mq-sidebar-enviar { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-2) 0 var(--sp-3); }
-  .mq-sidebar-bloqueo { margin: 0; color: rgba(255,255,255,0.8); font-size: var(--fs-tiny); }
-  .mq-sidebar-bloqueo a { color: #fff; }
-  .mq-sidebar-vermas:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  /* El vacío explica los tres pasos en vez de avisar que no hay nada: no tener
+     Quodoms es el estado del que recién llega, no un problema que reportarle. */
+  .mq-sidebar-empty {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    padding: var(--sp-5) var(--sp-4);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-top-left-radius: var(--radius-hoja-tl);
+    border-bottom-right-radius: var(--radius-hoja-br);
+  }
+  .mq-sidebar-empty-titulo {
+    margin: 0;
+    font-family: var(--font-prompt);
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .mq-sidebar-pasos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: none;
+  }
+  .mq-sidebar-pasos li {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: var(--sp-3);
+    align-items: start;
+    font-size: var(--fs-small);
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .mq-sidebar-paso-n {
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    font-family: var(--font-prompt);
+    font-size: var(--fs-small);
+    font-weight: 600;
+  }
+  .mq-sidebar-empty .btn { background: #fff; color: var(--color-acento); }
+
+  /* Un carrito de invitado: rótulo del rubro + la tarjeta, como una rama del árbol. */
+  .mq-sidebar-rama { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+  /* El pie de la tarjeta del destino: motivo arriba, botón abajo. En ese orden
+     porque el motivo es lo que explica por qué el botón está apagado. */
+  .mq-sidebar-enviar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+    background: #F7F7F7;
+    border-top: 1px solid #EEEEEE;
+  }
+  /* Bloqueado se lee gris y no verde apagado: el verde de WhatsApp con opacidad
+     sigue pareciendo el botón, y el usuario lo toca igual. */
+  .mq-sidebar-enviar .btn:disabled {
+    background: #E2E2E2;
+    color: #6E6E6E;
+    opacity: 1;
+  }
+  .mq-sidebar-enviar .btn { min-height: 48px; font-size: var(--fs-body); }
+
+  .mq-sidebar-motivo {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #8A5A00;
+  }
+  .mq-sidebar-motivo a { color: #8A5A00; }
+  .mq-sidebar-motivo-listo { color: #1B6E42; align-items: center; }
+  .mq-sidebar-icono {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #E9B562;
+    border-radius: 50%;
+    color: #fff;
+    font-size: var(--fs-tiny);
+    font-weight: 700;
+  }
+  .mq-sidebar-icono-ok { background: var(--color-exito); }
+
+  .mq-sidebar-err { margin: 0; color: #FFB4B4; font-size: var(--fs-tiny); }
 }

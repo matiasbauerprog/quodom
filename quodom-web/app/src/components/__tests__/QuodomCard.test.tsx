@@ -57,10 +57,10 @@ describe('QuodomCard', () => {
     expect(await screen.findByTestId('url')).toHaveTextContent('/?rubro=7');
   });
 
-  it('el botón de enviar dice enviar por WhatsApp', () => {
+  it('el botón de enviar dice cotizar por WhatsApp', () => {
     montar({ onEnviar: vi.fn() });
 
-    expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeInTheDocument();
   });
 
   it('el menú ya no ofrece Cancelar', () => {
@@ -127,7 +127,7 @@ describe('QuodomCard con el envío bloqueado', () => {
       bloqueo: { motivo: 'atributo', texto: 'Falta elegir la medida de algún producto.', accion: 'Abrí el Quodom y completá lo que falta.' }
     });
 
-    expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeDisabled();
     expect(screen.getByText(/falta elegir la medida/i)).toBeInTheDocument();
   });
 
@@ -138,7 +138,7 @@ describe('QuodomCard con el envío bloqueado', () => {
       bloqueo: { motivo: 'direccion', texto: 'Falta tu dirección.', accion: 'Cargar dirección' }
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
     expect(onEnviar).not.toHaveBeenCalled();
   });
@@ -156,7 +156,7 @@ describe('QuodomCard con el envío bloqueado', () => {
     const onEnviar = vi.fn();
     montar({ onEnviar, bloqueo: null });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
     expect(onEnviar).toHaveBeenCalled();
   });

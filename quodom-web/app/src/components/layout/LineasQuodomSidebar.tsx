@@ -3,6 +3,7 @@ import { quodomLines } from '../../api/quodom_lines';
 import { ApiError } from '../../api/client';
 import { getGuestCart, removeGuestLine, updateGuestLineAtributos, updateGuestLineCantidad } from '../../guest/guestQuodom';
 import { SelectorAtributo } from '../../screens/Quodom/SelectorAtributo';
+import type { FaltaAtributo } from '../../quodom/bloqueosEnvio';
 import './LineasQuodomSidebar.css';
 
 // Una línea, sin importar si vive en el servidor o en localStorage. El editor
@@ -25,12 +26,18 @@ function faltante(l: { nombreAtributo1?: string | null; atributo1?: string | nul
   return null;
 }
 
-type Props =
-  | { modo: 'servidor'; idquodom: string; onChange?: () => void }
-  | { modo: 'invitado'; idrubro: number; onChange?: () => void };
+// `onFalta` sube la primera línea incompleta para que el bloqueo del envío
+// pueda nombrarla. El aviso genérico ("falta la medida de algún producto")
+// obligaba a abrir el Quodom y buscar cuál a mano.
+type Comun = { onChange?: () => void; onFalta?: (falta: FaltaAtributo | null) => void };
+
+type Props = Comun & (
+  | { modo: 'servidor'; idquodom: string }
+  | { modo: 'invitado'; idrubro: number }
+);
 
 export function LineasQuodomSidebar(props: Props) {
-  const { onChange } = props;
+  const { onChange, onFalta } = props;
   const [lineas, setLineas] = useState<Linea[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -92,6 +99,14 @@ export function LineasQuodomSidebar(props: Props) {
     };
   }, []);
 
+  // Lo que falta se reporta hacia arriba, no hacia el costado: el botón de
+  // envío vive en el padre y es el que tiene que decir qué producto lo frena.
+  useEffect(() => {
+    if (!onFalta) return;
+    const l = lineas?.find(x => x.faltaAtributo);
+    onFalta(l ? { producto: l.nombre, atributo: l.faltaAtributo! } : null);
+  }, [lineas, onFalta]);
+
   // Avisar alcanza para recargar: el efecto de arriba escucha el mismo evento,
   // así que no hace falta subir el nonce por separado.
   const recargar = useCallback(() => {
@@ -149,7 +164,7 @@ export function LineasQuodomSidebar(props: Props) {
         {lineas.map((l, i) => (
           <li key={l.key} className="lqs-linea">
             <span className="lqs-nombre">
-              {l.nombre}
+              <span className="lqs-nombre-txt" title={l.nombre}>{l.nombre}</span>
               {l.faltaAtributo && l.slotFaltante && (
                 <button
                   type="button"
@@ -157,11 +172,11 @@ export function LineasQuodomSidebar(props: Props) {
                   disabled={busy}
                   onClick={() => setEligiendo({ linea: l, index: i, nombre: l.faltaAtributo!, slot: l.slotFaltante! })}
                 >
-                  Elegir {l.faltaAtributo}
+                  Elegir {l.faltaAtributo.toLowerCase()} <span aria-hidden="true">▾</span>
                 </button>
               )}
             </span>
-            <span className="lqs-controles">
+            <span className="lqs-stepper">
               <button
                 type="button"
                 className="lqs-btn"
@@ -177,14 +192,14 @@ export function LineasQuodomSidebar(props: Props) {
                 disabled={busy}
                 onClick={() => cambiarCantidad(l, i, l.cantidad + 1)}
               >+</button>
-              <button
-                type="button"
-                className="lqs-btn lqs-quitar"
-                aria-label={'Quitar ' + l.nombre}
-                disabled={busy}
-                onClick={() => quitar(l, i)}
-              >×</button>
             </span>
+            <button
+              type="button"
+              className="lqs-quitar"
+              aria-label={'Quitar ' + l.nombre}
+              disabled={busy}
+              onClick={() => quitar(l, i)}
+            >×</button>
           </li>
         ))}
       </ul>

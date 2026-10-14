@@ -96,12 +96,13 @@
 .qc-acciones { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .qc-action:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
 /* Enviar es la acción que cierra el flujo: va en verde lleno, no delineada. */
+/* El verde de WhatsApp, no el de "éxito": el botón lleva la marca de a dónde va. */
 .qc-action-enviar {
-  background: var(--color-exito);
-  border-color: var(--color-exito);
+  background: var(--color-whatsapp);
+  border-color: var(--color-whatsapp);
   color: #fff;
 }
-.qc-action-enviar:hover:not(:disabled) { background: var(--color-exito); filter: brightness(1.08); }
+.qc-action-enviar:hover:not(:disabled) { background: var(--color-whatsapp); filter: brightness(1.08); }
 .qc-page .qc-action-enviar { color: #fff; }
 
 .qc-rename { margin: 0; }

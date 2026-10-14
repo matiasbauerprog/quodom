@@ -3,7 +3,9 @@
 .arbol {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  /* Entre rubros entra aire de verdad: es lo que los separa ahora que la
+     cabecera no es un bloque con fondo propio. */
+  gap: var(--sp-5);
   background: var(--color-panel-oscuro);
   color: #fff;
 }
@@ -11,17 +13,44 @@
 .arbol-rama {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
+  gap: var(--sp-2);
 }
 
-.arbol-rubro,
+.arbol-vacio,
+.arbol-sin-destino {
+  margin: 0;
+  font-family: var(--font-work);
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.65);
+}
+.arbol-vacio {
+  padding: var(--sp-2) var(--sp-3);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-input);
+  text-align: center;
+}
+.arbol-sin-destino { padding-left: var(--sp-1); }
+
+.arbol-hijos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Los Quodoms que no son el destino: oscuros y compactos, para que el blanco de
+   la tarjeta del destino sea la única cosa que salta en la columna. */
 .arbol-quodom {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 10px;
   width: 100%;
-  min-height: 44px;
-  padding: var(--sp-2) var(--sp-3);
+  min-height: 52px;
+  padding: var(--sp-2) var(--sp-4);
+  background: rgba(255, 255, 255, 0.07);
   border: 0;
   color: #fff;
   text-align: left;
@@ -29,95 +58,44 @@
   border-top-left-radius: var(--radius-hoja-tl);
   border-bottom-right-radius: var(--radius-hoja-br);
 }
+.arbol-quodom:hover { background: rgba(255, 255, 255, 0.13); }
 
-.arbol-rubro {
-  background: rgba(255, 255, 255, 0.08);
-  font-family: var(--font-prompt);
-  font-size: var(--fs-small);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.arbol-flecha {
-  font-size: 10px;
-  transition: transform 0.15s;
-}
-.arbol-rama-abierta .arbol-flecha { transform: rotate(90deg); }
-
-.arbol-cuenta {
-  margin-left: auto;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--sp-1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-acento);
+.arbol-radio {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
-  font-size: var(--fs-tiny);
-  font-weight: 700;
 }
 
-.arbol-vacio {
-  margin: 0;
-  padding: var(--sp-2) var(--sp-3);
-  border: 2px dashed rgba(255, 255, 255, 0.35);
-  border-radius: var(--radius-input);
-  font-family: var(--font-work);
-  font-size: var(--fs-small);
-  color: rgba(255, 255, 255, 0.9);
-  text-align: center;
-}
-
-.arbol-hijos {
+.arbol-quodom-txt {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 var(--sp-4);
-}
-
-.arbol-quodom {
-  background: rgba(255, 255, 255, 0.04);
-  font-family: var(--font-work);
-  font-size: var(--fs-small);
-  border-left: 3px solid transparent;
-}
-
-.arbol-punto {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  gap: 2px;
 }
 
 .arbol-nombre {
-  flex: 1;
+  font-family: var(--font-prompt);
+  font-size: 15px;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .arbol-n {
-  flex-shrink: 0;
   font-size: var(--fs-tiny);
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.65);
 }
 
-/* El abierto es el destino de lo que se agrega: se marca en verde. */
-.arbol-quodom[aria-expanded="true"] {
-  background: rgba(45, 171, 102, 0.18);
-  border-left-color: var(--color-exito);
+.arbol-chevron {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.6);
 }
-.arbol-quodom[aria-expanded="true"] .arbol-punto {
-  background: var(--color-exito);
-  border-color: var(--color-exito);
-}
-
-.arbol-rubro:hover,
-.arbol-quodom:hover { background-color: rgba(255, 255, 255, 0.14); }
 
 .arbol-rubro:focus-visible,
 .arbol-quodom:focus-visible {
@@ -127,10 +105,9 @@
 
 /* Soltar un producto: la zona de "Quodom nuevo" sólo existe mientras se arrastra. */
 .arbol-nuevo {
-  display: none;
-  margin-left: var(--sp-4);
-  padding: var(--sp-2) var(--sp-3);
-  border: 2px dashed rgba(255, 255, 255, 0.45);
+  padding: var(--sp-3);
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+  box-sizing: border-box;
   color: rgba(255, 255, 255, 0.9);
   font-family: var(--font-work);
   font-size: var(--fs-small);
@@ -139,16 +116,68 @@
   border-bottom-right-radius: var(--radius-hoja-br);
 }
 body.arrastrando { user-select: none; cursor: grabbing; }
-body.arrastrando .arbol-nuevo { display: block; }
+
+/* El rubro que el usuario está mirando: sube al tope (lo ordena el componente)
+   y se resalta, para que el panel conteste "¿dónde cae lo de esta pantalla?". */
+.arbol-rama-foco {
+  padding: var(--sp-3);
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid var(--color-acento);
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+}
+
+/* El rubro ajeno se apaga: no se puede soltar ahí, y el cliente lo rechaza antes
+   de llegar al servidor. No se esconde, para no mover el árbol a mitad del gesto. */
+.arbol-rama-ajena { opacity: 0.35; }
+
+/* Los destinos válidos se marcan punteados mientras se arrastra, así se ve
+   dónde se puede soltar sin tener que pasar por encima de cada uno. */
+.arbol-rama-destino .arbol-quodom,
+.arbol-rama-destino .tq {
+  outline: 2px dashed rgba(255, 255, 255, 0.4);
+  outline-offset: -2px;
+}
 
 .arbol-quodom.arrastre-encima,
-.arbol-nuevo.arrastre-encima {
+.arbol-nuevo.arrastre-encima,
+.tq.arrastre-encima {
   background: rgba(45, 171, 102, 0.3);
   border-color: var(--color-exito);
   outline: 2px solid var(--color-exito);
+  outline-offset: -2px;
 }
+/* El cartelito "Soltar acá" lo pone la hoja de estilos y no el markup porque la
+   clase la aplica `arrastre.ts` tocando el DOM, no React: durante el gesto no
+   hay render que pueda meter un elemento. */
+.arbol-quodom.arrastre-encima::after,
+.tq.arrastre-encima::after {
+  content: 'Soltar acá';
+  align-self: center;
+  margin-left: auto;
+  padding: 4px 10px;
+  background: var(--color-exito);
+  border-radius: 999px;
+  color: #fff;
+  font-family: var(--font-work);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Sobre la tarjeta el cartelito va suelto arriba a la derecha: meterlo en el
+   flujo le cambiaría el alto a la tarjeta con el gesto empezado, y el árbol se
+   movería justo debajo del puntero. */
+.tq.arrastre-encima { position: relative; }
+.tq.arrastre-encima::after {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-4);
+  margin: 0;
+}
+
 .arbol-quodom.arrastre-rechaza,
-.arbol-nuevo.arrastre-rechaza {
+.arbol-nuevo.arrastre-rechaza,
+.tq.arrastre-rechaza {
   background: rgba(230, 57, 70, 0.22);
   border-color: var(--color-acento);
   outline: 2px solid var(--color-acento);

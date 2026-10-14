@@ -48,6 +48,12 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   function levantar() {
     vivo = true;
     document.body.classList.add('arrastrando');
+    // El panel necesita saber qué se arrastra para nombrarlo y para apagar los
+    // rubros donde no se puede soltar. Se avisa al levantar y no al apretar: un
+    // clic sin movimiento no es un arrastre y no tiene que mover nada de lugar.
+    window.dispatchEvent(new CustomEvent('arrastre:inicio', {
+      detail: { idrubro: opts.idrubro, nombre: opts.nombre, nombreRubro: opts.nombreRubro }
+    }));
     fantasma = document.createElement('div');
     fantasma.className = 'arrastre-fantasma';
     interior = document.createElement('div');
@@ -86,6 +92,9 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     document.body.classList.remove('arrastrando');
     fantasma?.remove();
     limpiarResaltados();
+    // Sólo si de verdad se había levantado: sin esto un clic que no llegó al
+    // umbral avisaría un fin que nadie empezó.
+    if (vivo) window.dispatchEvent(new Event('arrastre:fin'));
     vivo = false;
   }
 

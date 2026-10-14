@@ -17,9 +17,18 @@ const RAMAS: RamaRubro[] = ramasDeQuodoms(
   [1, 5, 7]
 ).map(r => ({ ...r, nombre: { 1: 'LIMPIEZA', 5: 'PINTURERÍA', 7: 'BEBIDAS' }[r.idrubro]! }));
 
-function montar(ramas = RAMAS, onCambio = vi.fn()) {
-  render(<MemoryRouter><ArbolQuodoms ramas={ramas} onCambio={onCambio} /></MemoryRouter>);
+function montar(ramas = RAMAS, onCambio = vi.fn(), url = '/') {
+  render(<MemoryRouter initialEntries={[url]}><ArbolQuodoms ramas={ramas} onCambio={onCambio} /></MemoryRouter>);
   return onCambio;
+}
+
+// Lo que dispara una tarjeta del catálogo al levantarse del umbral.
+function empezarArrastre(idrubro: number) {
+  act(() => {
+    window.dispatchEvent(new CustomEvent('arrastre:inicio', {
+      detail: { idrubro, nombre: 'Rodillo lana 22 cm', nombreRubro: 'Pinturería' }
+    }));
+  });
 }
 
 beforeEach(() => { localStorage.clear(); });
@@ -114,20 +123,96 @@ describe('ArbolQuodoms', () => {
   });
 });
 
-describe('ArbolQuodoms · soltar un producto', () => {
-  // Es lo que hace que un rubro sin Quodoms sea un destino válido. Está siempre en
-  // el DOM y la hoja de estilos lo muestra sólo mientras se arrastra.
-  it('cada rubro desplegado ofrece una zona para soltar en un Quodom nuevo', () => {
+// El destino se dibuja como tarjeta, y los atributos del arrastre se mudaron de
+// la cabecera a la raíz de la tarjeta: la abierta mide varias veces el alto de su
+// cabecera, así que soltar sobre las líneas no encontraba destino.
+describe('ArbolQuodoms · la tarjeta del destino', () => {
+  it('el abierto lleva los datos del arrastre en toda la tarjeta', () => {
+    abrirQuodom(5, 'p1');
     montar();
 
+    const tarjeta = document.querySelector('[data-destino="p1"]')!;
+    expect(tarjeta).toHaveAttribute('data-rubro', '5');
+    // La cabecera es un botón adentro de la tarjeta, no la tarjeta misma.
+    expect(tarjeta.tagName).toBe('ARTICLE');
+    expect(tarjeta).toHaveTextContent('Recibe lo que agregás');
+  });
+
+  it('un rubro con Quodoms pero sin destino lo avisa', () => {
+    montar();
+
+    expect(screen.getByText(/sin destino: al agregar algo de PINTURERÍA/i)).toBeInTheDocument();
+  });
+
+  it('con un destino abierto ese aviso no está', () => {
+    abrirQuodom(5, 'p1');
+    montar();
+
+    expect(screen.queryByText(/sin destino: al agregar algo de PINTURERÍA/i)).toBeNull();
+  });
+});
+
+// El panel tiene que contestar "¿dónde cae lo de esta pantalla?", y con ocho
+// rubros el del catálogo podía quedar abajo, fuera de vista.
+describe('ArbolQuodoms · el rubro que se está mirando', () => {
+  it('sube al tope de la lista', () => {
+    montar(RAMAS, vi.fn(), '/?rubro=7');
+
+    const rubros = Array.from(document.querySelectorAll('[data-rubro-cab]'))
+      .map(e => e.getAttribute('data-rubro-cab'));
+    expect(rubros).toEqual(['7', '1', '5']);
+  });
+
+  it('sin rubro en pantalla la lista queda como viene', () => {
+    montar();
+
+    const rubros = Array.from(document.querySelectorAll('[data-rubro-cab]'))
+      .map(e => e.getAttribute('data-rubro-cab'));
+    expect(rubros).toEqual(['1', '5', '7']);
+  });
+});
+
+describe('ArbolQuodoms · soltar un producto', () => {
+  it('sin arrastre no hay ninguna zona para soltar', () => {
+    montar();
+
+    expect(document.querySelectorAll('[data-nuevo]')).toHaveLength(0);
+  });
+
+  // Es lo que hace que un rubro sin Quodoms sea un destino válido. Sólo aparece
+  // en el rubro del producto que se arrastra: en cualquier otro, soltar es un
+  // 409 del servidor, así que ofrecerlo era ofrecer un error.
+  it('arrastrando, sólo el rubro del producto ofrece crear uno nuevo', () => {
+    montar();
+
+    empezarArrastre(5);
+
     const zonas = Array.from(document.querySelectorAll('[data-nuevo]'));
-    expect(zonas.map(z => z.getAttribute('data-nuevo'))).toEqual(['1', '5', '7']);
-    expect(zonas[2]).toHaveAttribute('data-rubro', '7');
-    expect(zonas[2]).toHaveTextContent('Soltar en un Quodom nuevo');
+    expect(zonas.map(z => z.getAttribute('data-nuevo'))).toEqual(['5']);
+    expect(zonas[0]).toHaveAttribute('data-rubro', '5');
+    expect(zonas[0]).toHaveTextContent('Soltar en un Quodom nuevo');
+  });
+
+  it('un rubro sin Quodoms también la ofrece: soltar ahí crea el primero', () => {
+    montar();
+
+    empezarArrastre(7);
+
+    expect(document.querySelector('[data-nuevo="7"]')).toHaveAttribute('data-rubro', '7');
+  });
+
+  it('al terminar el arrastre la zona se va', () => {
+    montar();
+    empezarArrastre(5);
+
+    act(() => { window.dispatchEvent(new Event('arrastre:fin')); });
+
+    expect(document.querySelectorAll('[data-nuevo]')).toHaveLength(0);
   });
 
   it('un rubro plegado no tiene zonas para soltar', () => {
     montar();
+    empezarArrastre(5);
 
     fireEvent.click(screen.getByRole('button', { name: /PINTURERÍA/ }));
 

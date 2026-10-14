@@ -60,7 +60,7 @@ describe('sidebar: sólo en armado', () => {
     await screen.findByText('Bebidas oficina');
     expect(screen.queryByText('Pintura living')).toBeNull();
     expect(screen.queryByRole('heading', { name: /repetí un pedido/i })).toBeNull();
-    expect(screen.getByRole('link', { name: /mis quodoms/i })).toHaveAttribute('href', '/mis-quodoms');
+    expect(screen.getByRole('link', { name: /ver todos/i })).toHaveAttribute('href', '/mis-quodoms');
   });
 });
 
@@ -165,10 +165,11 @@ describe('sidebar: carrito de invitado', () => {
     addGuestLine(7, { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 2 });
   });
 
-  it('un producto agregado al carrito aparece en la lista abierta', async () => {
+  it('un producto agregado al carrito aparece en la lista, que está a la vista', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas');
-    fireEvent.click(screen.getByText('Carrito'));
+    // Sin plegar nada: hay un carrito por rubro y es el destino de ese rubro,
+    // así que sus líneas se muestran como las del Quodom abierto del árbol.
     await screen.findByText('Gaseosa 2L');
 
     act(() => {
@@ -183,7 +184,6 @@ describe('sidebar: carrito de invitado', () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await screen.findByText('Bebidas');
 
-    fireEvent.click(screen.getByText('Carrito'));
     await screen.findByText('Gaseosa 2L');
 
     fireEvent.click(within(lineaDe('Gaseosa 2L')).getByRole('button', { name: /sumar/i }));

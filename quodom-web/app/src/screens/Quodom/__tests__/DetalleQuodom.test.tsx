@@ -129,7 +129,7 @@ describe('DetalleQuodom con un carrito de un rubro dado de baja', () => {
 
     await waitFor(() => expect(screen.getByText('Cemento 50kg')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByText(/no está disponible/i)).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Enviar por WhatsApp' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cotizar por WhatsApp' })).toBeNull();
     // Los productos siguen siendo del usuario: el carrito no se borra.
     expect(getGuestCart(4).lines).toHaveLength(1);
   });
@@ -142,7 +142,7 @@ describe('DetalleQuodom con un carrito de un rubro dado de baja', () => {
     renderEn('/quodom?rubro=4');
 
     await waitFor(() => expect(screen.getByText(/no está disponible/i)).toBeInTheDocument());
-    expect(screen.queryByRole('button', { name: 'Enviar por WhatsApp' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cotizar por WhatsApp' })).toBeNull();
     expect(quodom.create).not.toHaveBeenCalled();
   });
 
@@ -153,7 +153,7 @@ describe('DetalleQuodom con un carrito de un rubro dado de baja', () => {
     renderEn('/quodom?rubro=7');
 
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
-    expect(await screen.findByRole('button', { name: 'Enviar por WhatsApp' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Cotizar por WhatsApp' })).toBeEnabled();
     expect(screen.queryByText(/no está disponible/i)).toBeNull();
   });
 });
@@ -175,7 +175,7 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
     renderEn('/quodom?rubro=7');
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
     await waitFor(() => expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola-bebidas'));
 
@@ -196,7 +196,7 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
     renderEn('/quodom?rubro=7');
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
     await waitFor(() => expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola-nuevo'));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -214,7 +214,7 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
     renderEn('/quodom?rubro=7');
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
     await waitFor(() => expect(screen.getByText('No se pudo enviar.')).toBeInTheDocument());
 
@@ -242,9 +242,9 @@ describe('DetalleQuodom con el envío bloqueado', () => {
     renderEn('/quodom?rubro=7');
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
 
-    expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeDisabled();
     expect(screen.getByText(/falta elegir la medida/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
     expect(quodom.whatsapp).not.toHaveBeenCalled();
   });
 
@@ -258,7 +258,7 @@ describe('DetalleQuodom con el envío bloqueado', () => {
     renderEn('/quodom?rubro=7');
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
 
-    expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeEnabled();
     expect(screen.queryByText(/falta elegir la medida/i)).toBeNull();
   });
 
@@ -269,7 +269,7 @@ describe('DetalleQuodom con el envío bloqueado', () => {
     renderEn('/quodom?rubro=7');
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeDisabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeDisabled());
     expect(screen.getByText(/falta tu dirección/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /cargar dirección/i })).toHaveAttribute('href', '/direcciones/nuevo');
   });

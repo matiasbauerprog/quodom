@@ -1,0 +1,59 @@
+/* Va sobre el panel oscuro: sidebar derecho y barra inferior. */
+.rr {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 32px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: #fff;
+  font-family: var(--font-prompt);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.rr-boton { cursor: pointer; }
+
+.rr-nombre {
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rr-flecha {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: transform 0.15s;
+}
+.rr-desplegado .rr-flecha { transform: rotate(90deg); }
+
+/* La línea es lo que lo vuelve un separador: ocupa todo el sobrante. */
+.rr-regla {
+  flex: 1;
+  min-width: var(--sp-3);
+  height: 1px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* "2 Quodoms" en gris. El círculo rojo contaba lo mismo, pero se leía como una
+   notificación o un error, y el rojo es de la marca. */
+.rr-cuenta {
+  flex-shrink: 0;
+  font-family: var(--font-work);
+  font-size: var(--fs-tiny);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.rr-boton:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}

@@ -7,6 +7,9 @@
   --color-texto-muted: #898989;
   --color-tarjeta: #FFFFFF;
   --color-panel-oscuro: #1E1E2A;
+  /* El verde de WhatsApp, que no es el --color-exito de la paleta: el botón
+     que abre WhatsApp lleva la marca de a dónde lleva. */
+  --color-whatsapp: #25D366;
 
   /* Dónde empieza el contenido de una pantalla debajo del header. Está acá y no
      repetido en cada CSS para que se mueva de una sola vez: si una pantalla usa

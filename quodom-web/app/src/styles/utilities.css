@@ -41,6 +41,26 @@
 .btn:hover:not(:disabled) { filter: brightness(1.08); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .btn.btn-exito { background: var(--color-exito); }
+.btn.btn-whatsapp { background: var(--color-whatsapp); }
+
+/* Bloque gris que ocupa el lugar de lo que está cargando. Reemplaza al spinner
+   donde el contenido ya tiene una forma conocida: el spinner deja el hueco
+   vacío y lo colapsa, y cada cambio de rubro se leía como una recarga de toda
+   la página en vez de como un cambio de contenido. */
+.esqueleto {
+  background: linear-gradient(90deg, #E4E4E4 0%, #EFEFEF 50%, #E4E4E4 100%);
+  background-size: 200% 100%;
+  animation: esqueleto-brillo 1.4s ease-in-out infinite;
+  color: transparent;
+  pointer-events: none;
+}
+@keyframes esqueleto-brillo {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto { animation: none; }
+}
 .btn.btn-ghost { background: transparent; color: var(--color-acento); border: 1px solid var(--color-acento); }
 .btn.btn-block { width: 100%; }
 

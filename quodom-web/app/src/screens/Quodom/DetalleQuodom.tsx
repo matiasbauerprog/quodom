@@ -286,8 +286,8 @@ export function DetalleQuodom() {
 
         {rubroHabilitado ? (
           <>
-            <button className="btn btn-exito btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
-              {busy ? 'Enviando…' : (yaEnviado ? 'Ya enviado' : 'Enviar por WhatsApp')}
+            <button className="btn btn-whatsapp btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
+              {busy ? 'Cotizando…' : (yaEnviado ? 'Ya cotizado' : 'Cotizar por WhatsApp')}
             </button>
             {bloqueo && lines.length > 0 && (
               <p className="dq-bloqueo" role="status">
