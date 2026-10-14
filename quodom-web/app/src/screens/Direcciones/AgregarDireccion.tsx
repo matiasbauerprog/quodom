@@ -27,6 +27,9 @@ export function AgregarDireccion() {
     setErr(null); setBusy(true);
     try {
       await userDirecciones.create(f);
+      // El sidebar vive en el Layout y no se desmonta al cambiar de pantalla:
+      // sin este aviso seguiría bloqueando el envío por falta de dirección.
+      window.dispatchEvent(new Event('direcciones:changed'));
       navigate('/direcciones', { replace: true });
     } catch (e) { setErr(e instanceof ApiError ? e.message : 'No se pudo guardar.'); }
     finally { setBusy(false); }

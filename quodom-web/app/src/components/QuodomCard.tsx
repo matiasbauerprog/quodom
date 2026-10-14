@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import type { Quodom } from '../api/types';
+import type { BloqueoEnvio } from '../quodom/bloqueosEnvio';
 import { quodom as quodomApi } from '../api/quodom';
 import { ApiError } from '../api/client';
 import './QuodomCard.css';
@@ -34,7 +35,7 @@ function ZigZag() {
   );
 }
 
-export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, onEnviar, enviando }: {
+export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, onEnviar, enviando, bloqueo }: {
   quodom: Quodom;
   variant?: Variant;
   rubroLabel?: string;
@@ -47,6 +48,9 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   // necesitan login y migración antes, y eso vive en el detalle.
   onEnviar?: () => void | Promise<void>;
   enviando?: boolean;
+  // Lo que impide enviar, si algo lo impide. Lo calcula quien tiene los datos
+  // (`bloqueoDeEnvio`): la tarjeta no sabe si el usuario cargó una dirección.
+  bloqueo?: BloqueoEnvio | null;
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -192,11 +196,21 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
               {onEnviar && (
                 <button
                   className="qc-action qc-action-enviar"
-                  disabled={enviando}
-                  onClick={e => { e.stopPropagation(); onEnviar(); }}
+                  disabled={enviando || !!bloqueo}
+                  onClick={e => { e.stopPropagation(); if (!bloqueo) onEnviar(); }}
                 >{enviando ? 'Enviando…' : 'Enviar por WhatsApp'}</button>
               )}
             </div>
+            {onEnviar && bloqueo && (
+              <p className="qc-bloqueo">
+                {bloqueo.texto}{' '}
+                {bloqueo.motivo === 'direccion' ? (
+                  <Link to="/direcciones/nuevo" onClick={e => e.stopPropagation()}>{bloqueo.accion}</Link>
+                ) : (
+                  <span className="qc-bloqueo-accion">{bloqueo.accion}</span>
+                )}
+              </p>
+            )}
           </>
         )}
         {err && <div className="qc-err">{err}</div>}

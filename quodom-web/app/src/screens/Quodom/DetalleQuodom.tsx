@@ -20,6 +20,8 @@ import type { AccionRubro, ConflictoRubro } from '../../guest/migrateGuestQuodom
 import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
 import { nombreRubro } from '../../quodom/rubros';
 import { rubroDisponible } from '../../quodom/rubrosDisponibles';
+import { bloqueoDeEnvioPorLineas } from '../../quodom/bloqueosEnvio';
+import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import './DetalleQuodom.css';
 
 type Mode = 'guest' | 'server';
@@ -39,6 +41,7 @@ export function DetalleQuodom() {
   const id = sp.get('id');
   const idrubro = parseIdrubro(sp.get('rubro'));
   const { user } = useAuth();
+  const tieneDireccion = useTieneDireccion(!!user);
   const navigate = useNavigate();
   const mode: Mode = id ? 'server' : 'guest';
 
@@ -142,6 +145,10 @@ export function DetalleQuodom() {
     try {
       await linesApi.update(line.id, slot === 1 ? { atributo1: valor } : { atributo2: valor });
       setNonce(n => n + 1);
+      // El sidebar decide si puede enviar con `porccompletado`, que le llega
+      // del servidor: sin este aviso se queda diciendo "falta elegir la
+      // medida" sobre un Quodom que acaba de completarse.
+      window.dispatchEvent(new Event('quodom:changed'));
     } catch (e) { setErr(e instanceof ApiError ? e.message : 'No se pudo actualizar el atributo.'); }
   }
 
@@ -207,7 +214,7 @@ export function DetalleQuodom() {
         idproducto: l.idproducto,
         onCantidad: (c: number) => { if (idrubro !== null) updateGuestLineCantidad(idrubro, idx, c); setNonce(n => n + 1); window.dispatchEvent(new Event('quodom:changed')); },
         onRemove: () => { if (idrubro !== null) removeGuestLine(idrubro, idx); setNonce(n => n + 1); window.dispatchEvent(new Event('quodom:changed')); },
-        onAttr: (slot: 1 | 2, valor: string) => { if (idrubro !== null) updateGuestLineAtributos(idrubro, idx, slot === 1 ? { atributo1: valor } : { atributo2: valor }); setNonce(n => n + 1); }
+        onAttr: (slot: 1 | 2, valor: string) => { if (idrubro !== null) updateGuestLineAtributos(idrubro, idx, slot === 1 ? { atributo1: valor } : { atributo2: valor }); setNonce(n => n + 1); window.dispatchEvent(new Event('quodom:changed')); }
       }))
     : (server?.lines ?? []).map(l => ({
         key: 's-' + l.id, cantidad: l.cantidad, nombreProducto: l.nombreProducto,
@@ -248,7 +255,11 @@ export function DetalleQuodom() {
     );
   }
 
-  const enviarDisabled = busy || lines.length === 0 || (mode === 'server' && server?.quodom.estado === 'ENVIADO');
+  const yaEnviado = mode === 'server' && server?.quodom.estado === 'ENVIADO';
+  // Lo que falta para que el proveedor pueda cotizar. Las líneas están acá, así
+  // que se miran una por una en vez de confiar en `porccompletado`.
+  const bloqueo = yaEnviado ? null : bloqueoDeEnvioPorLineas(lines, tieneDireccion);
+  const enviarDisabled = busy || lines.length === 0 || yaEnviado || !!bloqueo;
 
   return (
     <>
@@ -291,9 +302,19 @@ export function DetalleQuodom() {
         </ul>
 
         {rubroHabilitado ? (
-          <button className="btn btn-exito btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
-            {busy ? 'Enviando…' : (mode === 'server' && server?.quodom.estado === 'ENVIADO' ? 'Ya enviado' : 'Enviar por WhatsApp')}
-          </button>
+          <>
+            <button className="btn btn-exito btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
+              {busy ? 'Enviando…' : (yaEnviado ? 'Ya enviado' : 'Enviar por WhatsApp')}
+            </button>
+            {bloqueo && lines.length > 0 && (
+              <p className="dq-bloqueo" role="status">
+                {bloqueo.texto}{' '}
+                {bloqueo.motivo === 'direccion'
+                  ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
+                  : 'Tocá la medida en el producto que la tenga en "Elegir".'}
+              </p>
+            )}
+          </>
         ) : (
           <p className="dq-aviso hoja" role="status">
             {nombreRubro(idrubro!)} no está disponible por ahora, así que este Quodom no se puede enviar.

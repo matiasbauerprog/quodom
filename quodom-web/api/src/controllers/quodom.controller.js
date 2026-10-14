@@ -137,6 +137,45 @@ async function getQuodomCreados(userId) {
     });
 }
 
+// Un atributo que el producto declara pero la línea no eligió. Vale lo mismo
+// NULL que una cadena en blanco: la vista v_Quodoms_Lines sólo mira NULL, y al
+// proveedor le llega igual de vacío.
+function atributosSinElegir(linea) {
+    const faltan = [];
+    for (const slot of [1, 2]) {
+        const nombre = linea['nombreAtributo' + slot];
+        const valor = linea['atributo' + slot];
+        if (nombre && String(nombre).trim() !== '' && (!valor || String(valor).trim() === '')) {
+            faltan.push(String(nombre).trim());
+        }
+    }
+    return faltan;
+}
+
+// La dirección define a qué proveedores les llega el WhatsApp, así que un
+// pedido sin ella no se puede cotizar. No alcanza con mirar `iddireccion`: se
+// copia al crear el Quodom, y quien no tenía ninguna entonces quedaba con null
+// para siempre, incluso después de cargarla. Se resuelve al enviar.
+async function resolverDireccion(quodom, userId) {
+    if (quodom.iddireccion) {
+        const propia = await db.user_direcciones.findOne({
+            where: { id: quodom.iddireccion, userid: userId }
+        });
+        if (propia) return quodom.iddireccion;
+    }
+
+    const direccion = await getDireccionDefault(userId)
+        || await db.user_direcciones.findOne({ where: { userid: userId } });
+    if (!direccion) {
+        throw httpError(409, 'falta_direccion',
+            'Cargá una dirección antes de enviar: define a qué proveedores les llega el pedido.');
+    }
+
+    quodom.iddireccion = direccion.id;
+    await quodom.save();
+    return direccion.id;
+}
+
 async function whatsappLink(id, userId) {
     const quodom = await getQuodom(id);
     if (quodom.createdBy !== userId) {
@@ -149,6 +188,20 @@ async function whatsappLink(id, userId) {
     if (lines.length === 0) {
         throw 'El Quodom no tiene productos.';
     }
+
+    // Las dos guardas van acá y no sólo en el botón porque este endpoint es el
+    // que pasa el Quodom a ENVIADO: validar únicamente en la app dejaría el
+    // estado mal a quien la saltee.
+    const incompletas = lines
+        .map(l => ({ nombre: l.nombreProducto, faltan: atributosSinElegir(l) }))
+        .filter(l => l.faltan.length > 0);
+    if (incompletas.length > 0) {
+        throw httpError(409, 'falta_atributo',
+            'Elegí ' + incompletas.map(l => l.faltan.join(' y ') + ' en ' + l.nombre).join('; ') + '.',
+            { faltan: incompletas });
+    }
+
+    await resolverDireccion(quodom, userId);
 
     const info = await db.v_InfoCompradors.findOne({
         where: { idquodom: id }
@@ -169,6 +222,18 @@ async function whatsappLink(id, userId) {
     msg += 'Nombre: ' + info.NombreComprador.trim() + '\n';
     msg += 'Teléfono: ' + info.telefono + '\n';
     msg += 'Email: ' + info.email + '\n';
+    // Datos de facturación: sólo si hay algo cargado. Alcanza con uno de los
+    // dos — esconder el bloque entero porque falta el CUIT le saca al proveedor
+    // el dato que sí está.
+    const empresa = (info.Empresa || '').trim();
+    const cuit = (info.Cuit || '').trim();
+    if (empresa !== '' || cuit !== '') {
+        msg += '\n*Datos de empresa:*\n';
+        if (empresa !== '') msg += 'Empresa: ' + empresa + '\n';
+        if (cuit !== '') msg += 'CUIT: ' + cuit + '\n';
+        if (info.FacturaA) msg += 'Factura A\n';
+    }
+
     if (info.Direccion && info.Direccion.trim() !== '') {
         msg += 'Dirección: ' + info.Direccion.trim();
         if (info.Localidad) msg += ', ' + info.Localidad;

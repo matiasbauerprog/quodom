@@ -8,6 +8,7 @@ import { quodom } from '../../../api/quodom';
 import { quodomLines } from '../../../api/quodom_lines';
 import { openWhatsappLink } from '../../../utils/whatsapp';
 import { categorias } from '../../../api/categorias';
+import { users } from '../../../api/users';
 import type { Quodom } from '../../../api/types';
 
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn(() => ({ user: null })) }));
@@ -22,9 +23,10 @@ vi.mock('../../../api/quodom', () => ({
     eliminar: vi.fn()
   }
 }));
-vi.mock('../../../api/quodom_lines', () => ({ quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn(), add: vi.fn() } }));
+vi.mock('../../../api/quodom_lines', () => ({ quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn(), add: vi.fn(), atributos: vi.fn() } }));
 vi.mock('../../../utils/whatsapp', () => ({ openWhatsappLink: vi.fn() }));
 vi.mock('../../../api/categorias', () => ({ categorias: { raiz: vi.fn() } }));
+vi.mock('../../../api/users', () => ({ users: { getDirecciones: vi.fn() } }));
 
 // GET /categorias sólo devuelve los rubros habilitados (RUBROS_ACTIVOS
 // [1,2,3,5,7]); 4 (Construcción) está dado de baja en este lanzamiento.
@@ -49,6 +51,13 @@ function quodomExistente(overrides: Partial<Quodom> = {}): Quodom {
 function renderEn(ruta: string) {
   return render(<MemoryRouter initialEntries={[ruta]}><DetalleQuodom /></MemoryRouter>);
 }
+
+// La pantalla pregunta si el usuario tiene dirección para saber si puede
+// enviar. Sin esta respuesta por defecto el mock devuelve undefined y el
+// efecto rompe el render, arrastrando a los tests que vienen después.
+beforeEach(() => {
+  vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+});
 
 describe('DetalleQuodom for guests', () => {
   beforeEach(() => {
@@ -225,5 +234,86 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
     // The guarantee this test exists to protect: a failed migration must
     // never drop the guest's cart.
     expect(getGuestCart(7).lines).toEqual([expect.objectContaining({ idproducto: 700, nombreProducto: 'Gaseosa 2L' })]);
+  });
+});
+
+// Sin la medida el proveedor no puede cotizar, y sin dirección no sabe a quién
+// le llega el pedido: las dos cosas frenan el envío, con el motivo a la vista.
+describe('DetalleQuodom con el envío bloqueado', () => {
+  beforeEach(() => {
+    clearGuestQuodoms();
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
+    vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+  });
+
+  it('no deja enviar una línea sin el atributo elegido', async () => {
+    addGuestLine(7, { ...GASEOSA, nombreAtributo1: 'LITROS' });
+
+    renderEn('/quodom?rubro=7');
+    await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeDisabled();
+    expect(screen.getByText(/falta elegir la medida/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+    expect(quodom.whatsapp).not.toHaveBeenCalled();
+  });
+
+  it('deja enviar cuando el atributo está elegido', async () => {
+    addGuestLine(7, { ...GASEOSA, nombreAtributo1: 'LITROS', atributo1: '2 litros' });
+    vi.mocked(quodom.activoPorRubro).mockResolvedValue(null);
+    vi.mocked(quodom.create).mockResolvedValue({ res: true, idquodom: 'Q-NEW' });
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+    vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/?text=ok' });
+
+    renderEn('/quodom?rubro=7');
+    await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeEnabled();
+    expect(screen.queryByText(/falta elegir la medida/i)).toBeNull();
+  });
+
+  it('no deja enviar sin dirección cargada y ofrece el link para cargarla', async () => {
+    vi.mocked(users.getDirecciones).mockResolvedValue([]);
+    addGuestLine(7, GASEOSA);
+
+    renderEn('/quodom?rubro=7');
+    await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeDisabled());
+    expect(screen.getByText(/falta tu dirección/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /cargar dirección/i })).toHaveAttribute('href', '/direcciones/nuevo');
+  });
+});
+
+// El sidebar decide si puede enviar con `porccompletado`, que viene del
+// servidor. Si elegir la medida acá no avisa, la tarjeta se queda mostrando
+// "falta elegir la medida" sobre un Quodom que ya está completo.
+describe('DetalleQuodom avisa al resto de la app', () => {
+  beforeEach(() => {
+    clearGuestQuodoms();
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({ user: null } as ReturnType<typeof useAuth>);
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
+    vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+    vi.mocked(quodomLines.atributos).mockResolvedValue([{ valoratributo: '2 litros' } as never]);
+  });
+
+  it('elegir un atributo dispara quodom:changed', async () => {
+    const escuchado = vi.fn();
+    window.addEventListener('quodom:changed', escuchado);
+    addGuestLine(7, { ...GASEOSA, nombreAtributo1: 'LITROS' });
+
+    renderEn('/quodom?rubro=7');
+    await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
+    escuchado.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: /LITROS/ }));
+    const opcion = await screen.findByRole('button', { name: '2 litros' });
+    fireEvent.click(opcion);
+
+    await waitFor(() => expect(escuchado).toHaveBeenCalled());
+    window.removeEventListener('quodom:changed', escuchado);
   });
 });

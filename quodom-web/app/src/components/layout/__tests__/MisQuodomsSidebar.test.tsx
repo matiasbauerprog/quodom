@@ -11,6 +11,10 @@ vi.mock('../../../api/quodom', () => ({
   quodom: { misQuodom: vi.fn(), repetir: vi.fn(), activoPorRubro: vi.fn(), eliminar: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
+// El sidebar pregunta si el usuario tiene dirección para saber si puede
+// enviar. Sin mockearlo sale un fetch real que falla en tiempos distintos
+// cada vez y vuelve intermitentes a los tests de al lado.
+vi.mock('../../../api/users', () => ({ users: { getDirecciones: vi.fn(() => Promise.resolve([{ id: 1 }])) } }));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 2 };

@@ -13,10 +13,13 @@ import { DialogoConflictoRubro } from '../../guest/DialogoConflictoRubro';
 import type { AccionRubro } from '../../guest/migrateGuestQuodom';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
 import { nombreRubro } from '../../quodom/rubros';
+import { bloqueoDeEnvio } from '../../quodom/bloqueosEnvio';
+import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import './MisQuodomsSidebar.css';
 
 export function MisQuodomsSidebar() {
   const { user } = useAuth();
+  const tieneDireccion = useTieneDireccion(!!user);
   const [list, setList] = useState<Quodom[] | null>(null);
   const [invitado, setInvitado] = useState<ResumenInvitado[]>(resumenCarritosInvitado);
   const [nonce, setNonce] = useState(0);
@@ -218,6 +221,7 @@ export function MisQuodomsSidebar() {
                         onToggle={() => toggle(it.clave)}
                         onEnviar={() => enviar(it.quodom)}
                         enviando={enviando === it.quodom.id}
+                        bloqueo={bloqueoDeEnvio(it.quodom, tieneDireccion)}
                       />
                       {abierta && <LineasQuodomSidebar modo="servidor" idquodom={it.quodom.id} onChange={refresh} />}
                     </>

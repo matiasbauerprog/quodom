@@ -12,6 +12,10 @@ vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn(), atributos: vi.fn() }
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
+// El sidebar pregunta si el usuario tiene dirección para saber si puede
+// enviar. Sin mockearlo sale un fetch real que falla en tiempos distintos
+// cada vez y vuelve intermitentes a los tests de al lado.
+vi.mock('../../../api/users', () => ({ users: { getDirecciones: vi.fn(() => Promise.resolve([{ id: 1 }])) } }));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const porQuodom = quodomLines.porQuodom as unknown as ReturnType<typeof vi.fn>;
@@ -143,7 +147,9 @@ describe('sidebar: mini editor', () => {
     fireEvent.click(within(lineaDe('Coca Cola 2L')).getByRole('button', { name: /sumar/i }));
 
     await waitFor(() => expect(update).toHaveBeenCalledWith(11, { cantidad: 3 }));
-    expect(porQuodom).toHaveBeenCalledTimes(2);
+    // La recarga ocurre DESPUÉS de que resuelve el update, así que comprobarla
+    // acá sin esperar la hacía fallar una de cada tantas corridas.
+    await waitFor(() => expect(porQuodom).toHaveBeenCalledTimes(2));
   });
 
   it('borrar una línea la elimina', async () => {

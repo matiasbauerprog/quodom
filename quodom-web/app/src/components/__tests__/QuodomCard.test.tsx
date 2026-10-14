@@ -116,3 +116,48 @@ describe('QuodomCard', () => {
     expect(update).not.toHaveBeenCalled();
   });
 });
+
+// La dirección define a qué proveedores llega el pedido y la medida es lo que
+// el proveedor necesita para cotizar: sin eso el envío se bloquea, y el motivo
+// tiene que estar a la vista y ser accionable, no un botón muerto.
+describe('QuodomCard con el envío bloqueado', () => {
+  it('deshabilita enviar y muestra el motivo', () => {
+    montar({
+      onEnviar: vi.fn(),
+      bloqueo: { motivo: 'atributo', texto: 'Falta elegir la medida de algún producto.', accion: 'Abrí el Quodom y completá lo que falta.' }
+    });
+
+    expect(screen.getByRole('button', { name: 'Enviar por WhatsApp' })).toBeDisabled();
+    expect(screen.getByText(/falta elegir la medida/i)).toBeInTheDocument();
+  });
+
+  it('no llama a enviar cuando está bloqueado', () => {
+    const onEnviar = vi.fn();
+    montar({
+      onEnviar,
+      bloqueo: { motivo: 'direccion', texto: 'Falta tu dirección.', accion: 'Cargar dirección' }
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+
+    expect(onEnviar).not.toHaveBeenCalled();
+  });
+
+  it('ofrece el link para cargar la dirección que falta', () => {
+    montar({
+      onEnviar: vi.fn(),
+      bloqueo: { motivo: 'direccion', texto: 'Falta tu dirección.', accion: 'Cargar dirección' }
+    });
+
+    expect(screen.getByRole('link', { name: /cargar dirección/i })).toHaveAttribute('href', '/direcciones/nuevo');
+  });
+
+  it('sin bloqueo el botón funciona como siempre', () => {
+    const onEnviar = vi.fn();
+    montar({ onEnviar, bloqueo: null });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar por WhatsApp' }));
+
+    expect(onEnviar).toHaveBeenCalled();
+  });
+});

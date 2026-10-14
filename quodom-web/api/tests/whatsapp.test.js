@@ -9,6 +9,7 @@ let idquodom;
 beforeAll(async () => {
   await db.ready;
   await db.series.create({ codigo: 'QUODOM', utilizado: 0, sigla: 'QD-' });
+  await db.provincia.create({ id: 1, provincia: 'Buenos Aires' });
   await db.Category.bulkCreate([
     { id: 5, nombrecategoria: 'Pintura', idcategoriapadre: 0, activa: true, orden: 1 },
     { id: 35, nombrecategoria: 'Latex', idcategoriapadre: 5, activa: true, orden: 1 }
@@ -22,8 +23,17 @@ beforeAll(async () => {
     username: 'ana', email: 'ana@test.com', nombre: 'Ana', apellido: 'Perez',
     password: 'secreto123', codArea: '11', telefono: '55554444'
   });
-  const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
+  const login = await request(app).post('/users/signin').send({ username: 'ana@test.com', password: 'secreto123' });
   token = sessionToken(login);
+
+  // Sin dirección el envío se bloquea: define a qué proveedores llega el
+  // pedido (ver envio.bloqueos.test.js).
+  await request(app).post('/user_direcciones/create')
+    .set('Authorization', 'Bearer ' + token)
+    .send({
+      alias: 'Casa', calle: 'Corrientes', numero: '1234', cp: '1043',
+      localidad: 'CABA', idprovincia: 1, default: true
+    });
 
   const q = await request(app).post('/quodom/create')
     .set('Authorization', 'Bearer ' + token)
@@ -57,6 +67,7 @@ describe('whatsapp export', () => {
     expect(msg).toContain('Color: Blanco');
     expect(msg).toContain('Ana Perez');
     expect(msg).toContain('1155554444');
+    expect(msg).toContain('Corrientes 1234, CABA, Buenos Aires (CP 1043)');
 
     const q = await db.Quodom.findByPk(idquodom);
     expect(q.estado).toBe('ENVIADO');
@@ -79,11 +90,54 @@ describe('whatsapp export', () => {
       username: 'beto', email: 'beto@test.com', nombre: 'Beto', password: 'secreto123',
       codArea: '11', telefono: '44443333'
     });
-    const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
+    const login2 = await request(app).post('/users/signin').send({ username: 'beto@test.com', password: 'secreto123' });
 
     const res = await request(app).get('/quodom/whatsapp/' + idquodom)
       .set('Authorization', 'Bearer ' + sessionToken(login2));
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('El Id Quodom no pertenece a el usuario.');
+  });
+});
+
+// Los datos de facturación los necesita el proveedor para emitir la factura, y
+// sólo él: si no están cargados el bloque no va, para no mandar renglones vacíos.
+describe('datos de empresa en el mensaje', () => {
+  async function mensaje() {
+    const res = await request(app).get('/quodom/whatsapp/' + idquodom)
+      .set('Authorization', 'Bearer ' + token);
+    return decodeURIComponent(res.body.link.replace('https://wa.me/?text=', ''));
+  }
+
+  it('no incluye el bloque cuando no hay datos cargados', async () => {
+    expect(await mensaje()).not.toMatch(/Datos de empresa/);
+  });
+
+  it('incluye empresa y CUIT cuando están cargados', async () => {
+    await request(app).put('/users/').set('Authorization', 'Bearer ' + token)
+      .send({ empresa: 'Command Soluciones', cuit: '30-71234567-8' });
+
+    const msg = await mensaje();
+    expect(msg).toContain('Datos de empresa');
+    expect(msg).toContain('Command Soluciones');
+    expect(msg).toContain('30-71234567-8');
+  });
+
+  it('avisa Factura A sólo cuando está tildada', async () => {
+    await request(app).put('/users/').set('Authorization', 'Bearer ' + token).send({ facturaA: false });
+    expect(await mensaje()).not.toMatch(/Factura A/);
+
+    await request(app).put('/users/').set('Authorization', 'Bearer ' + token).send({ facturaA: true });
+    expect(await mensaje()).toContain('Factura A');
+  });
+
+  // Media carga: el bloque igual sirve, y esconderlo entero por un campo que
+  // falta le saca al proveedor el dato que sí está.
+  it('muestra el bloque aunque falte el CUIT', async () => {
+    await request(app).put('/users/').set('Authorization', 'Bearer ' + token)
+      .send({ empresa: 'Sólo Nombre', cuit: '' });
+
+    const msg = await mensaje();
+    expect(msg).toContain('Datos de empresa');
+    expect(msg).toContain('Sólo Nombre');
   });
 });

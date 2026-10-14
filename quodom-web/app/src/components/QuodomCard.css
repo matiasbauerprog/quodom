@@ -132,3 +132,15 @@
 .qc-page .qc-action { color: var(--color-acento); }
 .qc-page .qc-action:hover:not(:disabled) { background: rgba(112,111,154,.08); }
 .qc-page .qc-err { color: var(--color-error); }
+
+/* El motivo por el que el envío está trabado. El sidebar es panel oscuro, así
+   que el aviso va en claro; en la variante de página se invierte. */
+.qc-bloqueo {
+  font-size: var(--fs-tiny);
+  line-height: 1.35;
+  margin-top: var(--sp-2);
+  color: #FFD9A0;
+}
+.qc-bloqueo a { color: inherit; text-decoration: underline; }
+.qc-bloqueo-accion { opacity: 0.85; }
+.qc-page .qc-bloqueo { color: #8A5A00; }

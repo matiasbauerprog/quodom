@@ -19,3 +19,12 @@
 /* Columna de contenido centrada: mas especifico que .container, que apunta a
    1120px para las grillas de producto. */
 .container.detalle-quodom { max-width: var(--pantalla-ancho); }
+
+/* Por qué el botón de enviar está deshabilitado, con cómo resolverlo. */
+.dq-bloqueo {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--color-texto-muted);
+}
+.dq-bloqueo a { color: var(--color-acento); }
