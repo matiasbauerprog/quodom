@@ -43,7 +43,7 @@ describe('quodom rubro column', () => {
 const request = require('supertest');
 const app = require('../src/server');
 
-describe('create enforces one open quodom per rubro', () => {
+describe('create allows several open quodoms per rubro', () => {
   let token;
 
   beforeAll(async () => {
@@ -88,14 +88,16 @@ describe('create enforces one open quodom per rubro', () => {
     expect(q.idrubro).toBe(7);
   });
 
-  it('rejects a second open quodom of the same rubro with 409', async () => {
+  it('creates a second open quodom of the same rubro', async () => {
+    const primero = await db.Quodom.findOne({ where: { descripcion: 'Bebidas', idrubro: 7 } });
     const res = await request(app).post('/quodom/create')
       .set('Authorization', 'Bearer ' + token)
       .send({ descripcion: 'Bebidas otra vez', idrubro: 7 });
-    expect(res.status).toBe(409);
-    expect(res.body.error).toBe('rubro_duplicado');
-    expect(res.body.message).toContain('Bebidas');
-    expect(res.body.idquodom).toBeDefined();
+    expect(res.status).toBe(200);
+    expect(res.body.idquodom).not.toBe(primero.id);
+    const q = await db.Quodom.findByPk(res.body.idquodom);
+    expect(q.estado).toBe('CREADO');
+    expect(q.idrubro).toBe(7);
   });
 
   it('allows a second quodom of the same rubro once the first is ENVIADO', async () => {
@@ -217,11 +219,9 @@ describe('repetir of an already-open rubro', () => {
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
 
-  it('rejects with 409 rubro_duplicado when the rubro already has an open quodom', async () => {
-    // Spec §4.4: repetir inherits idrubro from the source and delegates to
-    // create(), so the same 409 as a direct create applies. Simplest repro:
-    // repetir a quodom while it is still CREADO, so the "already open" quodom
-    // that create() finds is the source itself.
+  it('repetir no choca con un Quodom abierto del mismo rubro', async () => {
+    // repetir delegates to create(); the source is still CREADO here, so the
+    // rubro already has an open quodom and the copy must still be created.
     const creado = await request(app).post('/quodom/create')
       .set('Authorization', 'Bearer ' + token)
       .send({ descripcion: 'Bebidas', idrubro: 7 });
@@ -232,15 +232,13 @@ describe('repetir of an already-open rubro', () => {
     const res = await request(app).post('/quodom/repetir/' + creado.body.idquodom)
       .set('Authorization', 'Bearer ' + token);
 
-    expect(res.status).toBe(409);
-    expect(res.body.error).toBe('rubro_duplicado');
-    expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7 } })).toBe(1);
+    expect(res.status).toBe(200);
+    expect(res.body.idquodom).not.toBe(creado.body.idquodom);
+    expect(await db.Quodom.count({ where: { createdBy: userId, idrubro: 7, estado: 'CREADO' } })).toBe(2);
   });
 });
 
-// The application-level check in create() handles the normal case. This index is
-// the net underneath it: two requests that interleave between the check and the
-// insert would otherwise both create an open Quodom of the same rubro.
+// Nothing at the database level caps open quodoms per rubro any more.
 describe('the database no longer caps open quodoms per rubro', () => {
   const userId = 'idx-user';
 
