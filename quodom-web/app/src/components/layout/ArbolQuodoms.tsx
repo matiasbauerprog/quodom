@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Quodom } from '../../api/types';
 import { abiertoDe, abrirQuodom, cerrarQuodom } from '../../quodom/quodomAbierto';
@@ -63,6 +63,31 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
     window.addEventListener('arrastre:sobre-rubro', desplegar);
     return () => window.removeEventListener('arrastre:sobre-rubro', desplegar);
   }, []);
+
+  // Entrar a un rubro deja el panel contestando por ese rubro: el resto se
+  // pliega y queda a la vista lo que hay en el que se está mirando. Con un solo
+  // Quodom se abre ese, porque ahí "cuál es el destino" no tiene alternativa;
+  // con varios no se elige por el usuario — se muestran y él decide.
+  //
+  // Sólo en el cambio de rubro, no en cada render: si corriera siempre, cerrar
+  // el único Quodom a mano lo volvería a abrir en el acto.
+  const rubroAcomodado = useRef<number | null>(null);
+  useEffect(() => {
+    // `ramas` vacío es "todavía no cargó": acomodar ahora daría por hecho que el
+    // rubro no tiene Quodoms, y no se volvería a intentar cuando lleguen.
+    if (enPantalla === null || ramas.length === 0) return;
+    if (rubroAcomodado.current === enPantalla) return;
+    rubroAcomodado.current = enPantalla;
+
+    setPlegados(Object.fromEntries(
+      ramas.filter(r => r.idrubro !== enPantalla).map(r => [r.idrubro, true])
+    ));
+
+    const rama = ramas.find(r => r.idrubro === enPantalla);
+    if (rama && rama.quodoms.length === 1 && !abiertoDe(enPantalla)) {
+      abrirQuodom(enPantalla, rama.quodoms[0].id);
+    }
+  }, [enPantalla, ramas]);
 
   function alternarRubro(idrubro: number) {
     setPlegados(p => ({ ...p, [idrubro]: !p[idrubro] }));

@@ -97,7 +97,7 @@ export function MisQuodomsSidebar() {
         </div>
         {/* Arriba y no al pie: al pie repetía el título y se iba de pantalla en
             cuanto la lista crecía, que es cuando más hace falta. */}
-        {user && <Link to="/mis-quodoms" className="mq-sidebar-vertodos">Ver todos →</Link>}
+        {user && <Link to="/mis-quodoms" className="mq-sidebar-vertodos">Ver historial →</Link>}
       </header>
 
       {/* Mientras se arrastra, el panel dice qué se está arrastrando y a dónde

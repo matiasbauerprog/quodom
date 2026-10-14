@@ -89,6 +89,25 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     pedirDestino(lineaDe(p), p.categoriaPadre);
   }
 
+  // La ficha del producto por el que está preguntando el diálogo. Acá el clic en
+  // el producto abre ese diálogo, así que es el único lugar donde se puede ver
+  // qué es el producto antes de mandarlo a algún lado. Con varias líneas
+  // encoladas (varios "+" sin destino) no hay un producto que mostrar.
+  function fichaDelDestino() {
+    if (!destino || destino.items.length !== 1) return null;
+    const linea = destino.items[0].line;
+    const p = prods?.find(x => x.id === linea.idproducto);
+    if (!p) return null;
+    const conValor = (grupo?: string | null, valor?: string | null) =>
+      grupo ? (valor ? grupo + ': ' + valor : grupo) : null;
+    return {
+      id: p.id,
+      nombre: p.nombreproducto,
+      descripcion: p.descripcion,
+      atributos: [conValor(p.atributo1, linea.atributo1), conValor(p.atributo2, linea.atributo2)]
+    };
+  }
+
   function agregar(p: Product) {
     // categoriaPadre es el rubro del producto, y el rubro es lo que decide en
     // qué Quodom entra la línea (spec 2026-08-18). Los atributos son
@@ -206,6 +225,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
         <DialogoDestino
         nombreRubro={nombreRubro(destino.idrubro)}
         candidatos={destino.candidatos}
+        producto={fichaDelDestino()}
         onElegir={elegirDestino}
         onCrear={crear}
           onCancelar={cancelar}

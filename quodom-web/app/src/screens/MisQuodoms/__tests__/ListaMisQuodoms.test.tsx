@@ -110,7 +110,7 @@ describe('ListaMisQuodoms: Repetí un pedido', () => {
     misQuodom.mockResolvedValue([BEBIDAS_ABIERTO]);
     render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
 
-    await screen.findByRole('heading', { name: 'Mis Quodoms' });
+    await screen.findByRole('heading', { name: 'Historial de pedidos' });
     await waitFor(() => expect(misQuodom).toHaveBeenCalled());
     expect(screen.queryByText(/repetí un pedido/i)).toBeNull();
   });

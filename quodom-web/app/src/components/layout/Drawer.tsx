@@ -20,7 +20,7 @@ export function Drawer({ open, onClose }: { open: boolean; onClose: () => void }
               sus tests — el home los usa, y esta entrada vuelve descomentando
               esta línea y el test de Drawer.test.tsx. */}
           {/* <NavLink to="/busqueda" onClick={onClose}>Buscar</NavLink> */}
-          {user && <NavLink to="/mis-quodoms" onClick={onClose}>Mis Quodoms</NavLink>}
+          {user && <NavLink to="/mis-quodoms" onClick={onClose}>Historial de pedidos</NavLink>}
           {user && <NavLink to="/perfil" onClick={onClose}>Perfil</NavLink>}
           {user && <NavLink to="/direcciones" onClick={onClose}>Direcciones</NavLink>}
           {user && <NavLink to="/notificaciones" onClick={onClose}>Notificaciones</NavLink>}

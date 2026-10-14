@@ -63,6 +63,15 @@ export function BusquedaScreen() {
     pedirDestino({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 }, r.categoriaPadre);
   }
 
+  // Acá el resultado no trae descripción ni atributos: la ficha es la imagen y
+  // el nombre, que es lo que confirma que se manda lo que se tocó.
+  function fichaDelDestino() {
+    if (!destino || destino.items.length !== 1) return null;
+    const idproducto = destino.items[0].line.idproducto;
+    const r = results?.find(x => x.id === idproducto);
+    return r ? { id: r.id, nombre: r.nombre } : null;
+  }
+
   return (
     <section className="container busqueda">
       <h1>Buscar productos</h1>
@@ -128,6 +137,7 @@ export function BusquedaScreen() {
         <DialogoDestino
         nombreRubro={nombreRubro(destino.idrubro)}
         candidatos={destino.candidatos}
+        producto={fichaDelDestino()}
         onElegir={elegir}
         onCrear={crear}
           onCancelar={cancelar}

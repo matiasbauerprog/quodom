@@ -54,3 +54,38 @@ describe('DialogoDestino', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('No se pudo agregar el producto.');
   });
 });
+
+// En el catálogo este diálogo es lo que abre el clic en el producto: sin la
+// ficha, ese clic dejó de mostrar qué es el producto antes de mandarlo.
+describe('DialogoDestino · la ficha del producto', () => {
+  const LATEX = {
+    id: 137,
+    nombre: 'Latex Interior Blanco Mate',
+    descripcion: 'Para interiores, secado rápido.',
+    atributos: ['LITROS: 20 litros', null]
+  };
+
+  it('muestra nombre, descripción y el atributo con lo elegido', () => {
+    montar({ producto: LATEX });
+
+    expect(screen.getByText('Latex Interior Blanco Mate')).toBeInTheDocument();
+    expect(screen.getByText(/secado rápido/i)).toBeInTheDocument();
+    expect(screen.getByText(/LITROS: 20 litros/)).toBeInTheDocument();
+    expect(screen.getByAltText('Latex Interior Blanco Mate')).toBeInTheDocument();
+  });
+
+  it('un atributo sin valor elegido muestra sólo el grupo', () => {
+    montar({ producto: { ...LATEX, atributos: ['LITROS', null] } });
+
+    expect(screen.getByText('Atributos: LITROS')).toBeInTheDocument();
+  });
+
+  // El buscador no tiene esos datos, y un "+" que encoló varias líneas no tiene
+  // un producto que mostrar: el diálogo sigue sirviendo sin cabecera.
+  it('sin producto sigue preguntando el destino', () => {
+    montar();
+
+    expect(screen.getByRole('heading', { name: /a qué quodom de pintura/i })).toBeInTheDocument();
+    expect(screen.queryByText(/atributos:/i)).toBeNull();
+  });
+});

@@ -249,14 +249,61 @@ describe('ListaProductos · mandar a otro Quodom', () => {
     expect(agregar).not.toHaveBeenCalled();
   });
 
-  it('no abre la ficha del producto: el clic es para elegir, no para leer', async () => {
+  it('no abre la ficha aparte: la ficha va adentro del selector', async () => {
     porCategoria.mockResolvedValue([COCA]);
     render(<ListaProductos idsubcategoria={70} />);
     await screen.findByText('Coca Cola 2L');
 
     fireEvent.click(screen.getByRole('button', { name: /^elegir el quodom de coca cola 2l$/i }));
 
+    // El diálogo lo monta el hook, que acá está mockeado: lo que se comprueba es
+    // que el clic no abre un modal propio de la tarjeta.
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  // Como el clic ya no abre una ficha aparte, el selector es el único lugar
+  // donde se ve qué es el producto antes de mandarlo a algún lado.
+  it('el selector muestra la ficha del producto, con el atributo ya elegido', async () => {
+    vi.mocked(useAgregarProducto).mockReturnValue({
+      agregar, pedirDestino, agregando: false, error: null,
+      elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn(),
+      destino: {
+        idrubro: 7,
+        items: [{ line: { idproducto: 41, nombreProducto: 'Bolsa de residuos', cantidad: 1, atributo1: 'Negra 60 x 90' }, idrubro: 7, candidatos: [] }],
+        candidatos: []
+      }
+    } as unknown as ReturnType<typeof useAgregarProducto>);
+    porCategoria.mockResolvedValue([BOLSA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByRole('combobox', { name: /tipo de bolsa de residuos/i });
+
+    const dialogo = within(screen.getByRole('dialog'));
+    expect(dialogo.getByText('Bolsa de residuos')).toBeInTheDocument();
+    expect(dialogo.getByText(/TIPO: Negra 60 x 90/)).toBeInTheDocument();
+  });
+
+  // Varios "+" sin destino abierto encolan líneas: ahí no hay un producto que
+  // mostrar, y el diálogo tiene que seguir preguntando igual.
+  it('con varias líneas encoladas el selector va sin ficha', async () => {
+    vi.mocked(useAgregarProducto).mockReturnValue({
+      agregar, pedirDestino, agregando: false, error: null,
+      elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn(),
+      destino: {
+        idrubro: 7,
+        items: [
+          { line: { idproducto: 41, nombreProducto: 'Bolsa de residuos', cantidad: 1 }, idrubro: 7, candidatos: [] },
+          { line: { idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 }, idrubro: 7, candidatos: [] }
+        ],
+        candidatos: []
+      }
+    } as unknown as ReturnType<typeof useAgregarProducto>);
+    porCategoria.mockResolvedValue([BOLSA, COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Bolsa de residuos');
+
+    const dialogo = within(screen.getByRole('dialog'));
+    expect(dialogo.getByRole('heading', { name: /a qué quodom de bebidas/i })).toBeInTheDocument();
+    expect(dialogo.queryByText(/atributos:/i)).toBeNull();
   });
 });
 

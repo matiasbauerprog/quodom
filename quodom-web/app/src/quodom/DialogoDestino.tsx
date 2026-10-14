@@ -1,6 +1,15 @@
 import { useEffect } from 'react';
 import type { Quodom } from '../api/types';
+import { ProductImage } from '../components/ProductImage';
 import './DialogoDestino.css';
+
+/** La ficha del producto, para que elegir destino no sea elegir a ciegas. */
+export type ProductoDelDialogo = {
+  id: number;
+  nombre: string;
+  descripcion?: string | null;
+  atributos?: (string | null | undefined)[];
+};
 
 type Props = {
   nombreRubro: string;
@@ -10,13 +19,20 @@ type Props = {
   onCancelar: () => void;
   ocupado?: boolean;
   error?: string | null;
+  producto?: ProductoDelDialogo | null;
 };
 
 /**
  * Se pregunta una sola vez por rubro: lo que el usuario elija queda como el
  * Quodom abierto de ese rubro y los próximos "+" ya no vuelven a preguntar.
+ *
+ * `producto` trae la descripción y los atributos de lo que se está sumando.
+ * Está acá porque en el catálogo este diálogo es lo que abre el clic en el
+ * producto: sin la ficha, ese clic dejó de mostrar lo que el producto es.
+ * Falta donde quien abre el diálogo no tiene esos datos (el buscador, o un
+ * "+" que encoló varias líneas), y entonces el diálogo va sin cabecera.
  */
-export function DialogoDestino({ nombreRubro, candidatos, onElegir, onCrear, onCancelar, ocupado, error }: Props) {
+export function DialogoDestino({ nombreRubro, candidatos, onElegir, onCrear, onCancelar, ocupado, error, producto }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !ocupado) onCancelar(); };
     window.addEventListener('keydown', onKey);
@@ -37,6 +53,20 @@ export function DialogoDestino({ nombreRubro, candidatos, onElegir, onCrear, onC
         aria-labelledby="dd-titulo"
         onClick={e => e.stopPropagation()}
       >
+        {producto && (
+          <div className="dd-producto">
+            <ProductImage idproducto={producto.id} alt={producto.nombre} size="md" />
+            <div className="dd-producto-txt">
+              <span className="dd-producto-nombre">{producto.nombre}</span>
+              {producto.descripcion && <p className="dd-producto-desc">{producto.descripcion}</p>}
+              {producto.atributos && producto.atributos.filter(Boolean).length > 0 && (
+                <p className="dd-producto-attrs">
+                  Atributos: {producto.atributos.filter(Boolean).join(', ')}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         <h2 id="dd-titulo" className="dd-titulo">¿A qué Quodom de {nombreRubro} lo sumás?</h2>
         <p className="dd-texto">
           Elegí uno y queda abierto: los próximos productos de {nombreRubro} van directo ahí.

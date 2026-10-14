@@ -177,12 +177,14 @@ describe('sidebar: el árbol', () => {
 
   // Arriba y no al pie: al pie repetía el título del panel y se iba de pantalla
   // en cuanto la lista crecía, que es justo cuando hace falta.
-  it('ofrece Ver todos en la cabecera, y ya no un botón al pie', async () => {
+  it('ofrece Ver historial en la cabecera, y ya no un botón al pie', async () => {
     misQuodom.mockResolvedValue([]);
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
-    const ver = await screen.findByRole('link', { name: /ver todos/i });
+    // El panel muestra lo que está en armado; del otro lado del link está lo
+    // ya enviado, así que el link nombra a dónde va.
+    const ver = await screen.findByRole('link', { name: /ver historial/i });
     expect(ver).toHaveAttribute('href', '/mis-quodoms');
     expect(screen.queryByRole('link', { name: /^mis quodoms$/i })).toBeNull();
   });
@@ -201,7 +203,7 @@ describe('sidebar: el árbol', () => {
     ]);
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
-    await screen.findByRole('link', { name: /ver todos/i });
+    await screen.findByRole('link', { name: /ver historial/i });
 
     expect(screen.queryByText(/repetí un pedido/i)).toBeNull();
   });
@@ -238,7 +240,7 @@ describe('sidebar: saneo de los Quodoms abiertos', () => {
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await waitFor(() => expect(misQuodom).toHaveBeenCalled());
-    await screen.findByRole('link', { name: /ver todos/i });
+    await screen.findByRole('link', { name: /ver historial/i });
 
     expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });
@@ -250,7 +252,7 @@ describe('sidebar: saneo de los Quodoms abiertos', () => {
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await waitFor(() => expect(misQuodom).toHaveBeenCalled());
-    await screen.findByRole('link', { name: /ver todos/i });
+    await screen.findByRole('link', { name: /ver historial/i });
 
     expect(leerAbiertos()).toEqual({ 7: 'q-7' });
   });

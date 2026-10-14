@@ -60,7 +60,7 @@ describe('sidebar: sólo en armado', () => {
     await screen.findByText('Bebidas oficina');
     expect(screen.queryByText('Pintura living')).toBeNull();
     expect(screen.queryByRole('heading', { name: /repetí un pedido/i })).toBeNull();
-    expect(screen.getByRole('link', { name: /ver todos/i })).toHaveAttribute('href', '/mis-quodoms');
+    expect(screen.getByRole('link', { name: /ver historial/i })).toHaveAttribute('href', '/mis-quodoms');
   });
 });
 

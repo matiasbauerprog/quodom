@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useSearchParams } from 'react-router-dom';
 import { ArbolQuodoms, type RamaRubro } from '../ArbolQuodoms';
 import { abiertoDe, abrirQuodom } from '../../../quodom/quodomAbierto';
 import { ramasDeQuodoms } from '../../../quodom/ramas';
@@ -20,6 +20,19 @@ const RAMAS: RamaRubro[] = ramasDeQuodoms(
 function montar(ramas = RAMAS, onCambio = vi.fn(), url = '/') {
   render(<MemoryRouter initialEntries={[url]}><ArbolQuodoms ramas={ramas} onCambio={onCambio} /></MemoryRouter>);
   return onCambio;
+}
+
+// Cambiar de rubro sin remontar el árbol: es lo que hace el catálogo al tocar
+// otro rubro, y lo que el árbol tiene que acompañar.
+function Conmutador({ ramas = RAMAS }: { ramas?: RamaRubro[] }) {
+  const [, setParams] = useSearchParams();
+  return (
+    <>
+      <button onClick={() => setParams({ rubro: '1' })}>ir a limpieza</button>
+      <button onClick={() => setParams({ rubro: '5' })}>ir a pinturería</button>
+      <ArbolQuodoms ramas={ramas} onCambio={vi.fn()} />
+    </>
+  );
 }
 
 // Lo que dispara una tarjeta del catálogo al levantarse del umbral.
@@ -149,6 +162,78 @@ describe('ArbolQuodoms · la tarjeta del destino', () => {
     montar();
 
     expect(screen.queryByText(/sin destino: al agregar algo de PINTURERÍA/i)).toBeNull();
+  });
+});
+
+// Entrar a un rubro deja el panel contestando por ese rubro: el resto plegado,
+// y a la vista lo que hay en el que se está mirando.
+describe('ArbolQuodoms · entrar a un rubro lo acomoda', () => {
+  it('pliega los otros rubros', () => {
+    montar(RAMAS, vi.fn(), '/?rubro=1');
+
+    expect(screen.getByRole('button', { name: /Oficina/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Casa/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /PINTURERÍA/ })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // Con un solo Quodom, "cuál es el destino" no tiene alternativa: preguntarlo
+  // sería preguntar algo con una sola respuesta.
+  it('con un solo Quodom lo abre, y se ven sus productos', () => {
+    montar(RAMAS, vi.fn(), '/?rubro=1');
+
+    expect(abiertoDe(1)).toBe('l1');
+    expect(document.querySelector('[data-destino="l1"]')).toHaveTextContent('Recibe lo que agregás');
+  });
+
+  // Con varios, elegir por el usuario mandaría la compra a uno que él no eligió.
+  it('con varios Quodoms no abre ninguno: los muestra y el usuario decide', () => {
+    montar(RAMAS, vi.fn(), '/?rubro=5');
+
+    expect(abiertoDe(5)).toBeNull();
+    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Depto/ })).toBeInTheDocument();
+  });
+
+  it('con varios, respeta el que ya estaba abierto', () => {
+    abrirQuodom(5, 'p2');
+    montar(RAMAS, vi.fn(), '/?rubro=5');
+
+    expect(abiertoDe(5)).toBe('p2');
+  });
+
+  // El acomodo corre en el cambio de rubro y no en cada render: si corriera
+  // siempre, cerrar el único Quodom a mano lo volvería a abrir en el acto.
+  it('cerrar a mano el único Quodom no lo reabre', () => {
+    montar(RAMAS, vi.fn(), '/?rubro=1');
+
+    fireEvent.click(screen.getByRole('button', { name: /Oficina/ }));
+
+    expect(abiertoDe(1)).toBeNull();
+  });
+
+  it('cambiar de rubro acomoda el nuevo y pliega el anterior', () => {
+    render(<MemoryRouter initialEntries={['/?rubro=5']}><Conmutador /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /ir a limpieza/ }));
+
+    expect(abiertoDe(1)).toBe('l1');
+    expect(screen.queryByRole('button', { name: /Casa/ })).toBeNull();
+  });
+
+  // `ramas` vacío es "todavía no cargó": acomodar ahí daría por hecho que el
+  // rubro no tiene Quodoms, y no se volvería a intentar cuando lleguen.
+  it('no acomoda nada mientras la lista no cargó', () => {
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/?rubro=1']}><ArbolQuodoms ramas={[]} onCambio={vi.fn()} /></MemoryRouter>
+    );
+    expect(abiertoDe(1)).toBeNull();
+
+    rerender(
+      <MemoryRouter initialEntries={['/?rubro=1']}><ArbolQuodoms ramas={RAMAS} onCambio={vi.fn()} /></MemoryRouter>
+    );
+
+    expect(abiertoDe(1)).toBe('l1');
   });
 });
 

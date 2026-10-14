@@ -21,3 +21,32 @@
 .dd-nuevo { justify-content: center; color: var(--color-exito); border-color: var(--color-exito); font-weight: 600; }
 .dd-acciones { display: flex; justify-content: flex-end; }
 .dd-error { margin: 0 0 var(--sp-3) 0; color: var(--color-acento); font-weight: 600; }
+
+/* La ficha de lo que se está sumando, arriba de la pregunta: en el catálogo este
+   diálogo es lo que abre el clic en el producto, así que es el único lugar donde
+   se puede ver qué es el producto antes de mandarlo a algún lado. */
+.dd-producto {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  margin-bottom: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid #EEEEEE;
+}
+.dd-producto .prod-img { flex-shrink: 0; }
+.dd-producto-txt { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.dd-producto-nombre {
+  font-family: var(--font-prompt);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.dd-producto-desc,
+.dd-producto-attrs {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  color: #5C5C5C;
+}
+.dd-producto-attrs { font-size: var(--fs-tiny); }
