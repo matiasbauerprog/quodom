@@ -59,7 +59,7 @@ export function MisQuodomsSidebar() {
 
   // Sin sesión ya se ven los carritos de invitado, así que "ingresá para ver
   // tus Quodoms" dejó de ser cierto: el vacío es el mismo mensaje para los dos.
-  const vacio = !hayInvitado && (!user || (list !== null && ramas.length === 0));
+  const vacio = !hayInvitado && (!user || (list !== null && !ramas.some(r => r.quodoms.length > 0)));
 
   return (
     <aside className="mq-sidebar" aria-label="Mis Quodoms">

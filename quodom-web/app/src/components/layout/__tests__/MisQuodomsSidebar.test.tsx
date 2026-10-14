@@ -137,7 +137,7 @@ describe('MisQuodomsSidebar con sesión y carritos huérfanos', () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
 
     expect(await screen.findByText('Bebidas oficina')).toBeInTheDocument();
-    expect(screen.getByText('Limpieza')).toBeInTheDocument();
+    expect(screen.getAllByText('Limpieza').length).toBeGreaterThan(0);
     expect(screen.getByText('sin guardar')).toBeInTheDocument();
     // Ya está logueado: el aviso de "sólo en este navegador" no aplica.
     expect(screen.queryByText(/sólo en este navegador/i)).not.toBeInTheDocument();
@@ -278,5 +278,18 @@ describe('sidebar: degradar en vez de fallar', () => {
 
     expect(await screen.findByText(/No tenés Quodoms/i)).toBeInTheDocument();
     expect(leerAbiertos()).toEqual({ 7: 'q-7' });
+  });
+});
+
+describe('sidebar: rubros sin Quodoms', () => {
+  beforeEach(() => { misQuodom.mockReset(); clearGuestQuodoms(); localStorage.clear(); login(); });
+
+  it('un usuario sin Quodoms igual ve cada rubro como destino para soltar', async () => {
+    misQuodom.mockResolvedValue([]);
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    await screen.findByText(/No tenés Quodoms/i);
+    await waitFor(() => expect(document.querySelectorAll('[data-nuevo]')).toHaveLength(8));
+    expect(document.querySelector('[data-nuevo="5"]')).toHaveAttribute('data-rubro', '5');
   });
 });

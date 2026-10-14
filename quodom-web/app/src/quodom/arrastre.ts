@@ -133,10 +133,12 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
 
   function terminar(e: PointerEvent) {
     const habiaLevantado = vivo;
+    // El destino se resuelve ANTES de limpiar: sacar `arrastrando` del body
+    // esconde las zonas "Quodom nuevo" y el árbol se reacomoda bajo el puntero.
+    const blanco = habiaLevantado ? blancoBajo(e.clientX, e.clientY) : null;
     limpiar();
     if (!habiaLevantado) return;
     tragarClic();
-    const blanco = blancoBajo(e.clientX, e.clientY);
     // Soltar en el vacío, o sobre un Quodom de otro rubro, no hace nada y no es
     // un error: el usuario ya vio el borde rojo mientras arrastraba.
     if (blanco && blanco.idrubro === opts.idrubro) opts.onSoltar(blanco);

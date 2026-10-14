@@ -36,6 +36,8 @@ export function useDestinoLote<T>({ agregarItem, descripcion }: Opts<T>) {
   // Quodom ya creado cuya carga quedó a medias: el reintento lo reutiliza en
   // vez de crear otro.
   const creado = useRef<string | null>(null);
+  // Lo que falta de un lote cuyo volcado se cortó por un error que no es de la API.
+  const resto = useRef<{ clave: string; pendientes: T[] } | null>(null);
 
   // Vuelca de a uno y va sacando del lote (mutándolo) lo que ya llegó.
   const volcar = useCallback(async (idquodom: string, pendientes: T[]) => {
@@ -53,8 +55,19 @@ export function useDestinoLote<T>({ agregarItem, descripcion }: Opts<T>) {
 
   /** Devuelve el id del Quodom que recibió el lote, o null si queda esperando destino. */
   const resolver = useCallback(async (idrubro: number, items: T[]): Promise<string | null> => {
-    const pendientes = [...items];
-    const abierto = await conAbierto(idrubro, id => volcar(id, pendientes));
+    // Un reintento del mismo lote (tras un error de red que cortó el volcado)
+    // retoma lo que faltaba: el backend suma cantidades, así que reenviar lo que
+    // ya llegó lo duplicaría.
+    const clave = idrubro + ':' + JSON.stringify(items);
+    const pendientes = resto.current?.clave === clave ? resto.current.pendientes : [...items];
+    let abierto: string | null;
+    try {
+      abierto = await conAbierto(idrubro, id => volcar(id, pendientes));
+    } catch (e) {
+      resto.current = { clave, pendientes };
+      throw e;
+    }
+    resto.current = null;
     if (abierto) return abierto;
     const candidatos = await quodomApi.activosPorRubro(idrubro);
     setError(null);

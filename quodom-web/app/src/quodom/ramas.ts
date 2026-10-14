@@ -11,15 +11,16 @@ import { nombreRubro } from './rubros';
  * vez de consultarse acá) para que la función siga siendo síncrona y testeable.
  */
 export function ramasDeQuodoms(lista: Quodom[], disponibles: number[]): RamaRubro[] {
-  const porRubro = new Map<number, RamaRubro>();
+  // Todo rubro disponible tiene su rama, con o sin Quodoms: uno vacío es un
+  // destino válido ("soltar acá crea uno nuevo").
+  const porRubro = new Map<number, RamaRubro>(
+    disponibles.map(id => [id, { idrubro: id, nombre: nombreRubro(id), quodoms: [] }])
+  );
   for (const q of lista) {
     if (q.estado !== 'CREADO') continue;
-    if (!disponibles.includes(q.idrubro)) continue;
-    let rama = porRubro.get(q.idrubro);
-    if (!rama) {
-      rama = { idrubro: q.idrubro, nombre: q.nombrerubro || nombreRubro(q.idrubro), quodoms: [] };
-      porRubro.set(q.idrubro, rama);
-    }
+    const rama = porRubro.get(q.idrubro);
+    if (!rama) continue;
+    if (q.nombrerubro) rama.nombre = q.nombrerubro;
     rama.quodoms.push(q);
   }
   return [...porRubro.values()].sort((a, b) => a.idrubro - b.idrubro);

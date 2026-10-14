@@ -3,17 +3,19 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ArbolQuodoms, type RamaRubro } from '../ArbolQuodoms';
 import { abiertoDe, abrirQuodom } from '../../../quodom/quodomAbierto';
+import { ramasDeQuodoms } from '../../../quodom/ramas';
 import type { Quodom } from '../../../api/types';
 
 function q(id: string, descripcion: string, idrubro: number, estado = 'CREADO'): Quodom {
   return { id, descripcion, estado, nro: 'QD-' + id, idrubro, cantproductos: 2, porccompletado: 100 } as unknown as Quodom;
 }
 
-const RAMAS: RamaRubro[] = [
-  { idrubro: 5, nombre: 'PINTURERÍA', quodoms: [q('p1', 'Casa', 5), q('p2', 'Depto', 5)] },
-  { idrubro: 1, nombre: 'LIMPIEZA', quodoms: [q('l1', 'Oficina', 1)] },
-  { idrubro: 7, nombre: 'BEBIDAS', quodoms: [] }
-];
+// Las ramas salen de la misma función que usa la app, así el fixture es lo que
+// ella de verdad produce (incluido un rubro sin Quodoms, como Bebidas).
+const RAMAS: RamaRubro[] = ramasDeQuodoms(
+  [q('p1', 'Casa', 5), q('p2', 'Depto', 5), q('l1', 'Oficina', 1)],
+  [1, 5, 7]
+).map(r => ({ ...r, nombre: { 1: 'LIMPIEZA', 5: 'PINTURERÍA', 7: 'BEBIDAS' }[r.idrubro]! }));
 
 function montar(ramas = RAMAS, onCambio = vi.fn()) {
   render(<MemoryRouter><ArbolQuodoms ramas={ramas} onCambio={onCambio} /></MemoryRouter>);
@@ -119,7 +121,7 @@ describe('ArbolQuodoms · soltar un producto', () => {
     montar();
 
     const zonas = Array.from(document.querySelectorAll('[data-nuevo]'));
-    expect(zonas.map(z => z.getAttribute('data-nuevo'))).toEqual(['5', '1', '7']);
+    expect(zonas.map(z => z.getAttribute('data-nuevo'))).toEqual(['1', '5', '7']);
     expect(zonas[2]).toHaveAttribute('data-rubro', '7');
     expect(zonas[2]).toHaveTextContent('Soltar en un Quodom nuevo');
   });

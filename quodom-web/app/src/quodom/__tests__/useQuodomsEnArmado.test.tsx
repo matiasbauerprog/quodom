@@ -27,7 +27,8 @@ describe('useQuodomsEnArmado', () => {
     const { result } = renderHook(() => useQuodomsEnArmado('u-1'));
 
     await waitFor(() => expect(result.current.list).not.toBeNull());
-    expect(result.current.ramas.map(r => r.idrubro)).toEqual([5]);
+    expect(result.current.ramas.map(r => r.idrubro)).toEqual([4, 5]);
+    expect(result.current.ramas.flatMap(r => r.quodoms).map(q => q.id)).toEqual(['p1']);
     expect(leerAbiertos()).toEqual({ 5: 'p1' });
   });
 
@@ -44,14 +45,14 @@ describe('useQuodomsEnArmado', () => {
   it('un refresco fallido no pisa la última lista buena', async () => {
     misQuodom.mockResolvedValue([CASA]);
     const { result } = renderHook(() => useQuodomsEnArmado('u-1'));
-    await waitFor(() => expect(result.current.ramas).toHaveLength(1));
+    await waitFor(() => expect(result.current.ramas.flatMap(r => r.quodoms)).toHaveLength(1));
 
     misQuodom.mockRejectedValue(new Error('boom'));
     act(() => { window.dispatchEvent(new Event('quodom:changed')); });
     await waitFor(() => expect(misQuodom).toHaveBeenCalledTimes(2));
     await act(async () => {});
 
-    expect(result.current.ramas).toHaveLength(1);
+    expect(result.current.ramas.flatMap(r => r.quodoms)).toHaveLength(1);
   });
 
   it('si fallan los rubros igual devuelve las ramas, sin filtrar', async () => {

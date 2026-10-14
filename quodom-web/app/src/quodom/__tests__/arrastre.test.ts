@@ -243,3 +243,34 @@ describe('iniciarArrastre', () => {
     });
   });
 });
+
+describe('soltar con el DOM que cambia bajo el puntero', () => {
+  it('resuelve el destino antes de limpiar: la zona "Quodom nuevo" sólo existe mientras `arrastrando`', () => {
+    document.body.innerHTML = '<button data-nuevo="5" data-rubro="5" id="nuevo"></button>';
+    const nuevo = document.getElementById('nuevo')!;
+    // Como el CSS real: sin `arrastrando` la zona está oculta y no hay nada bajo el puntero.
+    vi.spyOn(document, 'elementFromPoint').mockImplementation(
+      () => (document.body.classList.contains('arrastrando') ? nuevo : null));
+    const onSoltar = arrastrar();
+
+    soltar();
+
+    expect(onSoltar).toHaveBeenCalledTimes(1);
+    expect(onSoltar).toHaveBeenCalledWith({ tipo: 'nuevo', idrubro: 5 });
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+  });
+
+  it('limpia igual cuando el destino es de otro rubro', () => {
+    document.body.innerHTML = '<button data-nuevo="9" data-rubro="9" id="nuevo"></button>';
+    const nuevo = document.getElementById('nuevo')!;
+    vi.spyOn(document, 'elementFromPoint').mockImplementation(
+      () => (document.body.classList.contains('arrastrando') ? nuevo : null));
+    const onSoltar = arrastrar();
+
+    soltar();
+
+    expect(onSoltar).not.toHaveBeenCalled();
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+    expect(document.querySelector('.arrastre-fantasma')).toBeNull();
+  });
+});
