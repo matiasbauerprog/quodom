@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAgregarProducto } from '../useAgregarProducto';
 import * as agregarModule from '../agregarProducto';
 import type { Quodom } from '../../api/types';
+import { quodom as quodomApi } from '../../api/quodom';
 
 vi.mock('../../auth/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'u-1' } })
@@ -175,5 +176,45 @@ describe('useAgregarProducto', () => {
     expect(crearSpy).toHaveBeenCalledTimes(1);
     expect(destinoSpy).toHaveBeenCalledTimes(2);
     expect(destinoSpy).toHaveBeenLastCalledWith(expect.objectContaining({ idproducto: 701 }), 7, 'q-new');
+  });
+});
+
+function ProbeOtro() {
+  const { pedirDestino, destino, elegir } = useAgregarProducto();
+  return (
+    <div>
+      <button onClick={() => pedirDestino({ idproducto: 700, nombreProducto: 'Gaseosa', cantidad: 1 }, 7)}>a otro</button>
+      {destino && <p>candidatos: {destino.candidatos.map(c => c.descripcion).join(',')}</p>}
+      {destino && <button onClick={() => elegir('q-casa')}>elegir casa</button>}
+    </div>
+  );
+}
+
+describe('useAgregarProducto · pedirDestino', () => {
+  beforeEach(() => { vi.restoreAllMocks(); });
+
+  it('opens the destination list without adding anything, even if the rubro has an open quodom', async () => {
+    const agregarSpy = vi.spyOn(agregarModule, 'agregarProducto');
+    const destinoSpy = vi.spyOn(agregarModule, 'agregarADestino').mockResolvedValue();
+    vi.spyOn(quodomApi, 'activosPorRubro').mockResolvedValue([CASA]);
+    render(<ProbeOtro />);
+
+    fireEvent.click(screen.getByText('a otro'));
+
+    await waitFor(() => expect(screen.getByText('candidatos: Casa')).toBeInTheDocument());
+    expect(agregarSpy).not.toHaveBeenCalled();
+    expect(destinoSpy).not.toHaveBeenCalled();
+  });
+
+  it('adds the product to the chosen destination', async () => {
+    const destinoSpy = vi.spyOn(agregarModule, 'agregarADestino').mockResolvedValue();
+    vi.spyOn(quodomApi, 'activosPorRubro').mockResolvedValue([CASA]);
+    render(<ProbeOtro />);
+
+    fireEvent.click(screen.getByText('a otro'));
+    await waitFor(() => screen.getByText('elegir casa'));
+    fireEvent.click(screen.getByText('elegir casa'));
+
+    await waitFor(() => expect(destinoSpy).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 700 }), 7, 'q-casa'));
   });
 });

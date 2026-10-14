@@ -140,6 +140,37 @@
   background: var(--color-exito);
   color: #fff;
 }
+.prod-botones { display: flex; align-items: flex-end; gap: var(--sp-1); flex-shrink: 0; }
+
+/* El ··· es la salida para mandar el producto a un Quodom que no es el abierto:
+   mismo tamaño y hoja que el +, en gris para que no compita con él. */
+.prod-otro {
+  align-self: flex-end;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  flex-shrink: 0;
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-texto-muted);
+  color: var(--color-texto-muted);
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color .15s ease, color .15s ease;
+}
+.prod-otro:hover:not(:disabled),
+.prod-otro:focus-visible {
+  background: var(--color-texto-muted);
+  color: #fff;
+}
+.prod-otro:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 2px; }
+.prod-otro:disabled { opacity: .45; cursor: not-allowed; }
+
 .prod-add:disabled { opacity: .45; cursor: not-allowed; }
 
 .prods-empty { text-align: center; color: var(--color-texto-muted); padding: var(--sp-6) 0; }

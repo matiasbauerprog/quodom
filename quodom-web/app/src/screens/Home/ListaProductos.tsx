@@ -22,7 +22,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   const [selected, setSelected] = useState<Product | null>(null);
   const [elegido, setElegido] = useState<Record<number, Eleccion>>({});
   const [nonce, setNonce] = useState(0);
-  const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, crear, cancelar } = useAgregarProducto();
+  const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, pedirDestino, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
     let alive = true;
@@ -43,6 +43,22 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       if (valor) actual[campo] = valor; else delete actual[campo];
       return { ...prev, [idproducto]: actual };
     });
+  }
+
+  function lineaDe(p: Product) {
+    const { atributo1, atributo2 } = elegido[p.id] ?? {};
+    return {
+      idproducto: p.id,
+      nombreProducto: p.nombreproducto,
+      cantidad: 1,
+      ...(atributo1 ? { atributo1 } : {}),
+      ...(atributo2 ? { atributo2 } : {})
+    };
+  }
+
+  // Mismo borrador de la tarjeta, pero sin tocar el Quodom abierto: pregunta a cuál.
+  function agregarEnOtro(p: Product) {
+    pedirDestino(lineaDe(p), p.categoriaPadre);
   }
 
   function agregar(p: Product) {
@@ -102,9 +118,14 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
                   {selector(p, 1)}
                   {selector(p, 2)}
                 </div>
-                <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} disabled={agregando} onClick={() => agregar(p)}>
-                  <IconoMas />
-                </button>
+                <div className="prod-botones">
+                  <button className="prod-otro" aria-label={'Agregar ' + p.nombreproducto + ' a otro Quodom'} disabled={agregando} onClick={() => agregarEnOtro(p)}>
+                    ···
+                  </button>
+                  <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} disabled={agregando} onClick={() => agregar(p)}>
+                    <IconoMas />
+                  </button>
+                </div>
               </div>
             </li>
           ))}

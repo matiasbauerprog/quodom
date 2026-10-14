@@ -9,6 +9,7 @@ vi.mock('../../../quodom/useAgregarProducto', () => ({ useAgregarProducto: vi.fn
 
 const porCategoria = productos.porCategoria as unknown as ReturnType<typeof vi.fn>;
 const agregar = vi.fn();
+const pedirDestino = vi.fn();
 
 const COCA = {
   id: 700, nombreproducto: 'Coca Cola 2L', descripcion: null, categoria: 70,
@@ -31,9 +32,10 @@ const LATEX = {
 beforeEach(() => {
   porCategoria.mockReset();
   agregar.mockReset();
+  pedirDestino.mockReset();
   vi.mocked(useAgregarProducto).mockReturnValue({
     agregar, agregando: false, error: null, destino: null,
-    elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn()
+    elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn(), pedirDestino
   } as unknown as ReturnType<typeof useAgregarProducto>);
 });
 
@@ -63,7 +65,7 @@ describe('ListaProductos', () => {
     render(<ListaProductos idsubcategoria={70} />);
     await screen.findByText('Coca Cola 2L');
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar coca cola 2l/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^agregar coca cola 2l$/i }));
 
     expect(agregar).toHaveBeenCalledWith(
       expect.objectContaining({ idproducto: 700, nombreProducto: 'Coca Cola 2L', cantidad: 1 }),
@@ -119,7 +121,7 @@ describe('ListaProductos · atributos en la tarjeta', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /tipo de bolsa de residuos/i }), {
       target: { value: 'Negra 60 x 90' }
     });
-    fireEvent.click(screen.getByRole('button', { name: /agregar bolsa de residuos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^agregar bolsa de residuos$/i }));
 
     expect(agregar).toHaveBeenCalledWith(
       expect.objectContaining({ idproducto: 41, atributo1: 'Negra 60 x 90' }), 7
@@ -131,7 +133,7 @@ describe('ListaProductos · atributos en la tarjeta', () => {
     render(<ListaProductos idsubcategoria={70} />);
     await screen.findByText('Bolsa de residuos');
 
-    fireEvent.click(screen.getByRole('button', { name: /agregar bolsa de residuos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^agregar bolsa de residuos$/i }));
 
     const [linea] = agregar.mock.calls[0];
     expect(linea.atributo1).toBeUndefined();
@@ -146,7 +148,7 @@ describe('ListaProductos · atributos en la tarjeta', () => {
     const select = screen.getByRole('combobox', { name: /tipo de bolsa de residuos/i });
     fireEvent.change(select, { target: { value: 'Negra 60 x 90' } });
     fireEvent.change(select, { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: /agregar bolsa de residuos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^agregar bolsa de residuos$/i }));
 
     expect(agregar.mock.calls[0][0].atributo1).toBeUndefined();
   });
@@ -158,7 +160,7 @@ describe('ListaProductos · atributos en la tarjeta', () => {
 
     fireEvent.change(screen.getByRole('combobox', { name: /litros de latex interior/i }), { target: { value: '20 L' } });
     fireEvent.change(screen.getByRole('combobox', { name: /marca de latex interior/i }), { target: { value: 'Alba' } });
-    fireEvent.click(screen.getByRole('button', { name: /agregar latex interior/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^agregar latex interior$/i }));
 
     expect(agregar).toHaveBeenCalledWith(
       expect.objectContaining({ atributo1: '20 L', atributo2: 'Alba' }), 7
@@ -173,7 +175,7 @@ describe('ListaProductos · atributos en la tarjeta', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /tipo de bolsa de residuos/i }), {
       target: { value: 'Negra 60 x 90' }
     });
-    fireEvent.click(screen.getByRole('button', { name: /agregar latex interior/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^agregar latex interior$/i }));
 
     expect(agregar.mock.calls[0][0].atributo1).toBeUndefined();
   });
@@ -211,5 +213,31 @@ describe('ListaProductos · atributos en la tarjeta', () => {
     expect(elegir).toHaveBeenCalledWith('q-casa');
     expect(crear).toHaveBeenCalledTimes(1);
     expect(dialogo.getByRole('alert')).toHaveTextContent('Falló');
+  });
+});
+
+describe('ListaProductos · mandar a otro Quodom', () => {
+  it('cada producto ofrece mandarlo a otro Quodom, con nombre accesible', async () => {
+    porCategoria.mockResolvedValue([COCA, BOLSA]);
+    render(<ListaProductos idsubcategoria={70} />);
+
+    expect(await screen.findAllByRole('button', { name: /a otro quodom/i })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Agregar Coca Cola 2L a otro Quodom' })).toBeInTheDocument();
+  });
+
+  it('el ··· pide el destino del rubro con el atributo elegido, sin agregar', async () => {
+    porCategoria.mockResolvedValue([BOLSA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Bolsa de residuos');
+    fireEvent.change(screen.getByRole('combobox', { name: /tipo de bolsa de residuos/i }), {
+      target: { value: 'Negra 60 x 90' }
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /bolsa de residuos a otro quodom/i }));
+
+    expect(pedirDestino).toHaveBeenCalledWith(
+      expect.objectContaining({ idproducto: 41, cantidad: 1, atributo1: 'Negra 60 x 90' }), 7
+    );
+    expect(agregar).not.toHaveBeenCalled();
   });
 });

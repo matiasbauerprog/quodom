@@ -4,6 +4,7 @@ import { ApiError } from '../api/client';
 import type { Quodom } from '../api/types';
 import type { GuestLine } from '../guest/guestQuodom';
 import { agregarProducto, agregarADestino, crearYAgregar } from './agregarProducto';
+import { quodom as quodomApi } from '../api/quodom';
 
 type Pendiente = { line: GuestLine; idrubro: number; candidatos: Quodom[] };
 type Destino = { items: Pendiente[]; idrubro: number; candidatos: Quodom[] };
@@ -47,6 +48,23 @@ export function useAgregarProducto() {
       setAgregando(false);
     }
   }, [user]);
+
+  // Abre el diálogo de destinos a pedido, sin agregar nada todavía: es el "···"
+  // de la tarjeta, para mandar un producto a un Quodom que no es el abierto.
+  // Un invitado tiene un solo carrito por rubro, así que no hay a dónde elegir.
+  const pedirDestino = useCallback(async (line: GuestLine, idrubro: number) => {
+    if (!user) return agregar(line, idrubro);
+    setAgregando(true);
+    setError(null);
+    try {
+      const candidatos = await quodomApi.activosPorRubro(idrubro);
+      setCola(c => [...c, { line, idrubro, candidatos }]);
+    } catch (e) {
+      setError(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudieron cargar los Quodoms.');
+    } finally {
+      setAgregando(false);
+    }
+  }, [user, agregar]);
 
   const resolver = useCallback(async (accion: (d: Destino) => Promise<unknown>, fallo: string) => {
     if (!destino || agregando) return;
@@ -97,5 +115,5 @@ export function useAgregarProducto() {
 
   const cancelar = useCallback(() => { creados.current = {}; setCola([]); }, []);
 
-  return { agregar, agregando, error, destino, elegir, crear, cancelar };
+  return { agregar, pedirDestino, agregando, error, destino, elegir, crear, cancelar };
 }
