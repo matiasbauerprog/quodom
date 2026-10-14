@@ -22,7 +22,7 @@ beforeAll(async () => {
     username: 'merge', email: 'merge@test.com', nombre: 'Merge', password: 'secreto123',
     codArea: '11', telefono: '55554444'
   });
-  const login = await request(app).post('/users/signin').send({ username: 'merge', password: 'secreto123' });
+  const login = await request(app).post('/users/signin').send({ username: 'merge@test.com', password: 'secreto123' });
   token = sessionToken(login);
 
   const created = await request(app).post('/quodom/create')

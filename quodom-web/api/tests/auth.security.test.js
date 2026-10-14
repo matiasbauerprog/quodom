@@ -34,8 +34,8 @@ beforeAll(async () => {
   await db.Category.create({ id: 5, nombrecategoria: 'Pintura', idcategoriapadre: 0, activa: true, orden: 1 });
   anaId = (await request(app).post('/users/signup').send(ANA)).body.id;
   await request(app).post('/users/signup').send(BETO);
-  anaToken = sessionToken(await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' }));
-  betoToken = sessionToken(await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' }));
+  anaToken = sessionToken(await request(app).post('/users/signin').send({ username: 'ana@test.com', password: 'secreto123' }));
+  betoToken = sessionToken(await request(app).post('/users/signin').send({ username: 'beto@test.com', password: 'secreto123' }));
 });
 
 beforeEach(() => rateLimit._reset());
@@ -75,7 +75,7 @@ describe('purpose-bound tokens', () => {
     expect(second.body.res).toBe(false);
     expect((await request(app).get('/users/validateReset/' + token)).body.res).toBe(false);
 
-    const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'nueva123' });
+    const login = await request(app).post('/users/signin').send({ username: 'ana@test.com', password: 'nueva123' });
     expect(login.status).toBe(200);
     anaToken = sessionToken(login);
   });
@@ -147,7 +147,7 @@ describe('rate limits on the sign-in and recovery endpoints', () => {
     const statuses = [];
     for (let i = 0; i < 5; i++) {
       const r = await request(app).post('/users/signin').set('X-Forwarded-For', from)
-        .send({ username: 'beto', password: 'mala' + i });
+        .send({ username: 'beto@test.com', password: 'mala' + i });
       statuses.push(r.status);
     }
     expect(statuses).toEqual([400, 400, 400, 400, 429]);

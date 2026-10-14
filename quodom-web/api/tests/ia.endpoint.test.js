@@ -21,7 +21,7 @@ beforeAll(async () => {
 
   const user = { username: 'ia', email: 'ia@test.com', nombre: 'IA', password: 'secreto123', codArea: '11', telefono: '55554444' };
   await request(app).post('/users/signup').send(user);
-  const login = await request(app).post('/users/signin').send({ username: 'ia', password: 'secreto123' });
+  const login = await request(app).post('/users/signin').send({ username: 'ia@test.com', password: 'secreto123' });
   token = sessionToken(login);
 });
 
@@ -115,7 +115,7 @@ describe('POST /api/ia/chat', () => {
     process.env.IA_MAX_DAILY_MESSAGES = '2';
     process.env.IA_RATE_LIMIT_PER_MINUTE = '999';
     rateLimit._reset();
-    const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;
+    const userId = (await db.User.findOne({ where: { email: 'ia@test.com' } })).id;
     // Use the same date formula as the controller (Argentina TZ).
     const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
     await db.ia_usage.destroy({ where: { iduser: userId, fecha: today } });
@@ -134,7 +134,7 @@ describe('POST /api/ia/chat', () => {
     rateLimit._reset();
     callGemini.mockRejectedValueOnce(new Error('gemini: HTTP 503 high demand'));
 
-    const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;
+    const userId = (await db.User.findOne({ where: { email: 'ia@test.com' } })).id;
     const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
     await db.ia_usage.destroy({ where: { iduser: userId, fecha: today } });
 
@@ -168,7 +168,7 @@ describe('POST /api/ia/chat', () => {
     rateLimit._reset();
     callGemini.mockRejectedValueOnce(new Error('gemini: could not parse JSON response: nope'));
 
-    const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;
+    const userId = (await db.User.findOne({ where: { email: 'ia@test.com' } })).id;
     const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
     await db.ia_usage.destroy({ where: { iduser: userId, fecha: today } });
 
@@ -190,7 +190,7 @@ describe('POST /api/ia/chat', () => {
       .mockResolvedValueOnce({ idrubro: 7, idsSubcategoria: [21] })
       .mockResolvedValueOnce({ type: 'question', text: '¿?' });
 
-    const userId = (await db.User.findOne({ where: { username: 'ia' } })).id;
+    const userId = (await db.User.findOne({ where: { email: 'ia@test.com' } })).id;
     const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
     await db.ia_usage.destroy({ where: { iduser: userId, fecha: today } });
 

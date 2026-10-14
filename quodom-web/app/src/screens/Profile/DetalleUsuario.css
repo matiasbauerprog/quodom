@@ -4,3 +4,11 @@
 /* Columna de contenido centrada: mas especifico que .container, que apunta a
    1120px para las grillas de producto. */
 .container.detalle-usuario { max-width: var(--pantalla-ancho); }
+
+/* Datos de facturación: un bloque aparte, porque son opcionales y no se piden
+   igual que el nombre o el mail. */
+.du-empresa { border: 1px solid var(--color-borde, #DDD); border-radius: var(--radius-input); padding: var(--sp-3); margin-bottom: var(--sp-4); }
+.du-empresa legend { font-family: var(--font-prompt); font-weight: 500; padding: 0 var(--sp-2); }
+.du-ayuda { font-size: var(--fs-tiny); color: var(--color-texto-muted); margin-bottom: var(--sp-3); }
+.du-check { display: flex; align-items: center; gap: var(--sp-2); }
+.du-check input { width: 18px; height: 18px; }

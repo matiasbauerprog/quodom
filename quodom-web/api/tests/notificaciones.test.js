@@ -14,7 +14,7 @@ beforeAll(async () => {
     codArea: '11', telefono: '55554444'
   });
   userId = signup.body.id;
-  const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
+  const login = await request(app).post('/users/signin').send({ username: 'ana@test.com', password: 'secreto123' });
   token = sessionToken(login);
 
   const n = await db.oper_notificaciones.create({
@@ -75,7 +75,7 @@ describe('notificaciones', () => {
       username: 'beto', email: 'beto@test.com', nombre: 'Beto', password: 'secreto123',
       codArea: '11', telefono: '44443333'
     });
-    const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
+    const login2 = await request(app).post('/users/signin').send({ username: 'beto@test.com', password: 'secreto123' });
     const res = await request(app).put('/oper_notificaciones/' + idnotif)
       .set('Authorization', 'Bearer ' + sessionToken(login2))
       .send({ leida: 1 });

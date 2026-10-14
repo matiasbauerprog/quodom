@@ -25,6 +25,10 @@ module.exports = {
 
 const emailEnabled = () => process.env.EMAIL_ENABLED === 'true';
 
+// Único código de área soportado por ahora. Vive acá y no en el formulario
+// porque el servidor es el que tiene que garantizarlo.
+const COD_AREA = '011';
+
 // reset and reenviar answer the same whether or not the account exists, so
 // neither can be used to find out who is registered.
 const RESET_SENT = { res: true, message: 'Si el e-mail o usuario está registrado, te enviamos un link para blanquear la contraseña. Dura 1 hora.' };
@@ -66,8 +70,16 @@ async function create(params) {
     throw 'El correo electrónico ya está en uso.';
   }
 
+  // Ya no se pide un usuario: se entra con el mail. La columna sigue existiendo
+  // y sigue siendo NOT NULL porque las cuentas viejas entran con el suyo, así
+  // que para las nuevas vale el mail y las dos formas de entrar coinciden.
+  params.username = params.email;
+  // El código de área es fijo: la app lo muestra bloqueado y el servidor no
+  // depende de que lo manden.
+  params.codArea = COD_AREA;
+
   if (await db.User.findOne({ where: { username: params.username } })) {
-    throw 'El usuario ya está en uso.';
+    throw 'El correo electrónico ya está en uso.';
   }
 
   if (params.password) {
@@ -93,11 +105,6 @@ async function create(params) {
 
 async function update(id, params) {
   const user = await getUser(id);
-
-  const usernameChanged = params.username && user.username !== params.username;
-  if (usernameChanged && await db.User.findOne({ where: { username: params.username } })) {
-    throw 'Usuario ya está en uso.';
-  }
 
   const emailChanged = params.email && user.email !== params.email;
   if (emailChanged && await db.User.findOne({ where: { email: params.email } })) {

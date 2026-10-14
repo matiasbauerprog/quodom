@@ -22,7 +22,14 @@ function model(sequelize) {
         telefono: { type: DataTypes.STRING, allowNull: false },
         foto: { type: DataTypes.STRING, allowNull: true },
         refreshFoto: { type: DataTypes.STRING, allowNull: true },
-        codArea: { type: DataTypes.STRING, allowNull: true }
+        codArea: { type: DataTypes.STRING, allowNull: true },
+        // Datos de facturación: van al WhatsApp para que el proveedor pueda
+        // emitir la factura. Opcionales — quien compra a nombre propio no los
+        // carga. `npm run migrar-empresa` los agrega a una base que ya existe,
+        // porque model.sync() nunca hace ALTER sobre una tabla creada.
+        empresa: { type: DataTypes.STRING, allowNull: true },
+        cuit: { type: DataTypes.STRING, allowNull: true },
+        facturaA: { type: DataTypes.BOOLEAN, allowNull: true }
     };
 
     // NOTE: the original excluded 'hash' (a field that doesn't exist) so the

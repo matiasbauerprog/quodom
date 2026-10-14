@@ -52,7 +52,7 @@ describe('create enforces one open quodom per rubro', () => {
       username: 'rubro', email: 'rubro@test.com', nombre: 'Rubro', password: 'secreto123',
       codArea: '11', telefono: '55554444'
     });
-    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    const login = await request(app).post('/users/signin').send({ username: 'rubro@test.com', password: 'secreto123' });
     token = sessionToken(login);
   });
 
@@ -99,7 +99,7 @@ describe('create enforces one open quodom per rubro', () => {
   });
 
   it('allows a second quodom of the same rubro once the first is ENVIADO', async () => {
-    const abierto = await db.Quodom.findOne({ where: { createdBy: (await db.User.findOne({ where: { username: 'rubro' } })).id, idrubro: 7, estado: 'CREADO' } });
+    const abierto = await db.Quodom.findOne({ where: { createdBy: (await db.User.findOne({ where: { email: 'rubro@test.com' } })).id, idrubro: 7, estado: 'CREADO' } });
     abierto.estado = 'ENVIADO';
     await abierto.save();
 
@@ -122,9 +122,9 @@ describe('add line enforces the quodom rubro', () => {
   let idquodomBebidas;
 
   beforeAll(async () => {
-    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    const login = await request(app).post('/users/signin').send({ username: 'rubro@test.com', password: 'secreto123' });
     token = sessionToken(login);
-    const userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    const userId = (await db.User.findOne({ where: { email: 'rubro@test.com' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
     const res = await request(app).post('/quodom/create')
       .set('Authorization', 'Bearer ' + token)
@@ -159,9 +159,9 @@ describe('GET /quodom/activo/:idrubro', () => {
   let userId;
 
   beforeAll(async () => {
-    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    const login = await request(app).post('/users/signin').send({ username: 'rubro@test.com', password: 'secreto123' });
     token = sessionToken(login);
-    userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    userId = (await db.User.findOne({ where: { email: 'rubro@test.com' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
 
@@ -211,9 +211,9 @@ describe('repetir of an already-open rubro', () => {
   let userId;
 
   beforeAll(async () => {
-    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    const login = await request(app).post('/users/signin').send({ username: 'rubro@test.com', password: 'secreto123' });
     token = sessionToken(login);
-    userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    userId = (await db.User.findOne({ where: { email: 'rubro@test.com' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
 
@@ -292,9 +292,9 @@ describe('a lost race answers 409, not 500', () => {
   let userId;
 
   beforeAll(async () => {
-    const login = await request(app).post('/users/signin').send({ username: 'rubro', password: 'secreto123' });
+    const login = await request(app).post('/users/signin').send({ username: 'rubro@test.com', password: 'secreto123' });
     token = sessionToken(login);
-    userId = (await db.User.findOne({ where: { username: 'rubro' } })).id;
+    userId = (await db.User.findOne({ where: { email: 'rubro@test.com' } })).id;
     await db.Quodom.destroy({ where: { createdBy: userId } });
   });
 

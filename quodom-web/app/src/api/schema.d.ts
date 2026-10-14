@@ -428,15 +428,15 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        username?: string;
                         /** Format: email */
                         email?: string;
                         nombre?: string;
                         apellido?: string;
-                        dni?: string;
-                        codArea?: string;
                         telefono?: string;
                         password?: string;
+                        empresa?: string;
+                        cuit?: string;
+                        facturaA?: boolean;
                     };
                 };
             };
@@ -896,14 +896,11 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        username: string;
                         /** Format: email */
                         email: string;
                         nombre: string;
                         apellido?: string;
                         password: string;
-                        dni?: string;
-                        codArea: string;
                         telefono: string;
                     };
                 };
@@ -1260,6 +1257,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                409: components["responses"]["EnvioBloqueado"];
             };
         };
         put?: never;
@@ -2472,10 +2470,12 @@ export interface components {
             email: string;
             nombre?: string | null;
             apellido?: string | null;
-            dni?: string | null;
             refreshFoto?: string | null;
             telefono?: string | null;
             codArea?: string | null;
+            empresa?: string | null;
+            cuit?: string | null;
+            facturaA?: boolean | null;
         };
         /** @description El token NO viaja acá; queda en la cookie httpOnly quodom_session. */
         SigninResponse: {
@@ -2539,6 +2539,15 @@ export interface components {
         };
         /** @description Choca con un Quodom abierto (rubro_duplicado / rubro_mismatch) */
         Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Al Quodom le falta algo que el proveedor necesita para cotizar, así que no se envía y queda en CREADO (falta_direccion / falta_atributo). */
+        EnvioBloqueado: {
             headers: {
                 [name: string]: unknown;
             };

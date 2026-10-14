@@ -5,23 +5,21 @@ const { sessionToken } = require('./helpers/session');
 
 beforeAll(async () => { await db.ready; });
 
+// Sin `username` ni `codArea`: el alta ya no los pide. El servidor guarda el
+// mail como username y fija el código de área (ver perfil.empresa.test.js).
 const USER = {
-  username: 'juan',
   email: 'juan@test.com',
   nombre: 'Juan',
   apellido: 'Perez',
   password: 'secreto123',
-  codArea: '11',
   telefono: '55554444'
 };
 
 const USER2 = {
-  username: 'maria',
   email: 'maria@test.com',
   nombre: 'Maria',
   apellido: 'Lopez',
   password: 'secreto123',
-  codArea: '11',
   telefono: '55558888'
 };
 
@@ -40,7 +38,7 @@ describe('users', () => {
   });
 
   it('POST /users/signup rejects duplicate email', async () => {
-    const res = await request(app).post('/users/signup').send({ ...USER, username: 'otro' });
+    const res = await request(app).post('/users/signup').send({ ...USER });
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ res: false, message: 'El correo electrónico ya está en uso.' });
   });
@@ -57,7 +55,7 @@ describe('users', () => {
 
   it('POST /users/signin rejects wrong password', async () => {
     const res = await request(app).post('/users/signin')
-      .send({ username: 'juan', password: 'incorrecta' });
+      .send({ username: 'juan@test.com', password: 'incorrecta' });
     expect(res.status).toBe(400);
     expect(res.body.res).toBe(false);
   });
@@ -90,7 +88,7 @@ describe('users', () => {
       .send({ nombre: 'Ana2', role: 'admin', emailValidado: false, activo: false });
     expect(res.status).toBe(200);
     const login = await request(app).post('/users/signin')
-      .send({ username: 'juan', password: 'secreto123' });
+      .send({ username: 'juan@test.com', password: 'secreto123' });
     expect(login.status).toBe(200);
     const record = await db.User.scope('withHash').findByPk(userId);
     expect(record.nombre).toBe('Ana2');
@@ -107,7 +105,7 @@ describe('users', () => {
 
   it('POST /users/signin returns token for second user', async () => {
     const res = await request(app).post('/users/signin')
-      .send({ username: 'maria', password: 'secreto123' });
+      .send({ username: 'maria@test.com', password: 'secreto123' });
     expect(res.status).toBe(200);
     token2 = sessionToken(res);
   });

@@ -91,10 +91,12 @@ function getCurrent(req, res, next) {
     email: req.user.email,
     nombre: req.user.nombre,
     apellido: req.user.apellido,
-    dni: req.user.dni,
     refreshFoto: req.user.refreshFoto,
     telefono: req.user.telefono,
-    codArea: req.user.codArea
+    codArea: req.user.codArea,
+    empresa: req.user.empresa,
+    cuit: req.user.cuit,
+    facturaA: !!req.user.facturaA
   });
 }
 

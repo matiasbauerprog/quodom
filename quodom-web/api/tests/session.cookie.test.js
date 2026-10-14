@@ -10,14 +10,14 @@ beforeAll(async () => {
   await request(app).post('/users/signup').send(USER);
 });
 
-const signin = client => client.post('/users/signin').send({ username: 'ana', password: 'secreto123' });
+const signin = client => client.post('/users/signin').send({ username: 'ana@test.com', password: 'secreto123' });
 
 describe('session cookie', () => {
   it('signin puts the session in a cookie scripts cannot read, and not in the body', async () => {
     const res = await signin(request(app));
     expect(res.status).toBe(200);
     expect(res.body.token).toBeUndefined();
-    expect(res.body.username).toBe('ana');
+    expect(res.body.username).toBe('ana@test.com');
 
     const cookie = res.headers['set-cookie'].find(s => s.startsWith('quodom_session='));
     expect(cookie).toMatch(/HttpOnly/i);

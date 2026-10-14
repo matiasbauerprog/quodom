@@ -45,6 +45,11 @@ components:
     Conflict:
       description: Choca con un Quodom abierto (rubro_duplicado / rubro_mismatch)
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    EnvioBloqueado:
+      description: >
+        Al Quodom le falta algo que el proveedor necesita para cotizar, así que
+        no se envía y queda en CREADO (falta_direccion / falta_atributo).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
 
   parameters:
     IntId:
@@ -251,14 +256,18 @@ components:
       required: [id, username, email]
       properties:
         id: { type: string }
+        # Sigue viajando porque las cuentas viejas entran con él, pero la app no
+        # lo muestra ni lo deja cambiar: el perfil se identifica por el mail.
         username: { type: string }
         email: { type: string }
         nombre: { type: string, nullable: true }
         apellido: { type: string, nullable: true }
-        dni: { type: string, nullable: true }
         refreshFoto: { type: string, nullable: true }
         telefono: { type: string, nullable: true }
         codArea: { type: string, nullable: true }
+        empresa: { type: string, nullable: true }
+        cuit: { type: string, nullable: true }
+        facturaA: { type: boolean, nullable: true }
     SigninResponse:
       type: object
       required: [res, id, username, email]
@@ -416,14 +425,18 @@ paths:
             schema:
               type: object
               properties:
-                username: { type: string, minLength: 1 }
                 email: { type: string, format: email }
                 nombre: { type: string, minLength: 1 }
                 apellido: { type: string }
-                dni: { type: string }
-                codArea: { type: string, minLength: 1 }
-                telefono: { type: string, minLength: 1 }
+                telefono: { type: string, pattern: '^[0-9]{8}$' }
                 password: { type: string, minLength: 6 }
+                empresa: { type: string }
+                cuit: { type: string }
+                facturaA: { type: boolean }
+              # `username`, `dni` y `codArea` no están a propósito: se entra con
+              # el mail, el DNI no se pide más y el código de área es fijo. El
+              # validador borra todo campo no declarado, así que dejarlos fuera
+              # del contrato alcanza para que el handler no los vea.
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/OkMessage' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -565,16 +578,13 @@ paths:
           application/json:
             schema:
               type: object
-              required: [username, email, nombre, password, codArea, telefono]
+              required: [email, nombre, password, telefono]
               properties:
-                username: { type: string, minLength: 1 }
                 email: { type: string, format: email }
                 nombre: { type: string, minLength: 1 }
                 apellido: { type: string }
                 password: { type: string, minLength: 6 }
-                dni: { type: string }
-                codArea: { type: string, minLength: 1 }
-                telefono: { type: string, minLength: 1 }
+                telefono: { type: string, pattern: '^[0-9]{8}$' }
       responses:
         '200':
           description: OK
@@ -723,6 +733,7 @@ paths:
                   link: { type: string }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/EnvioBloqueado' }
   /quodom/activo/{idrubro}:
     get:
       tags: [quodom]

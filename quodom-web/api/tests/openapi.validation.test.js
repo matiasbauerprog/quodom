@@ -17,9 +17,9 @@ beforeAll(async () => {
   await db.Products.create({ id: 100, nombreproducto: 'Latex 20L', categoria: 35, categoriaPadre: 5, atributo1: 'LITROS' });
   await db.provincia.create({ id: 1, provincia: 'Buenos Aires' });
   await request(app).post('/users/signup').send({
-    username: 'ana', email: 'ana@test.com', nombre: 'Ana', password: 'secreto123', codArea: '11', telefono: '5555'
+    username: 'ana', email: 'ana@test.com', nombre: 'Ana', password: 'secreto123', codArea: '11', telefono: '55554444'
   });
-  token = sessionToken(await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' }));
+  token = sessionToken(await request(app).post('/users/signin').send({ username: 'ana@test.com', password: 'secreto123' }));
   await request(app).post('/user_direcciones/create').set('Authorization', 'Bearer ' + token)
     .send({ alias: 'Casa', calle: 'Falsa', numero: '123', cp: '1000', localidad: 'CABA', idprovincia: 1, default: true });
   idquodom = (await request(app).post('/quodom/create').set('Authorization', 'Bearer ' + token)
@@ -38,7 +38,7 @@ describe('request validation against openapi.yaml', () => {
   });
 
   it('names every bad field', async () => {
-    const res = await request(app).post('/users/signup').send({ username: 'x', email: 'no-es-mail', nombre: 'X', password: '123', codArea: '11', telefono: '1' });
+    const res = await request(app).post('/users/signup').send({ username: 'x', email: 'no-es-mail', nombre: 'X', password: '123', codArea: '11', telefono: '55554444' });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/email/);
     expect(res.body.message).toMatch(/password/);
@@ -93,7 +93,7 @@ describe('request validation against openapi.yaml', () => {
     expect(perfil.status).toBe(400);
     expect(perfil.body.message).toBe('Faltan datos o hay datos inválidos: telefono');
     const alta = await request(app).post('/users/signup')
-      .send({ username: 'y', email: 'y@test.com', nombre: '', password: 'secreto123', codArea: '11', telefono: '1' });
+      .send({ username: 'y', email: 'y@test.com', nombre: '', password: 'secreto123', codArea: '11', telefono: '55554444' });
     expect(alta.status).toBe(400);
     const quodom = await request(app).put('/quodom/' + idquodom).set('Authorization', 'Bearer ' + token).send({ descripcion: '' });
     expect(quodom.status).toBe(400);
@@ -101,7 +101,7 @@ describe('request validation against openapi.yaml', () => {
 
   it('still accepts the optional fields the app sends empty', async () => {
     const alta = await request(app).post('/users/signup')
-      .send({ username: 'z', email: 'z@test.com', nombre: 'Z', apellido: '', password: 'secreto123', codArea: '11', telefono: '1' });
+      .send({ username: 'z', email: 'z@test.com', nombre: 'Z', apellido: '', password: 'secreto123', codArea: '11', telefono: '55554444' });
     expect(alta.status).toBe(200);
   });
 

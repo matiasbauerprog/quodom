@@ -13,7 +13,7 @@ beforeAll(async () => {
     username: 'ana', email: 'ana@test.com', nombre: 'Ana', password: 'secreto123',
     codArea: '11', telefono: '55554444'
   });
-  const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
+  const login = await request(app).post('/users/signin').send({ username: 'ana@test.com', password: 'secreto123' });
   token = sessionToken(login);
 });
 
@@ -59,7 +59,7 @@ describe('direcciones', () => {
       username: 'beto', email: 'beto@test.com', nombre: 'Beto', password: 'secreto123',
       codArea: '11', telefono: '55553333'
     });
-    const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
+    const login2 = await request(app).post('/users/signin').send({ username: 'beto@test.com', password: 'secreto123' });
     const res = await request(app).get('/user_direcciones/' + iddireccion)
       .set('Authorization', 'Bearer ' + sessionToken(login2));
     expect(res.status).toBe(400);

@@ -26,11 +26,11 @@ beforeAll(async () => {
     codArea: '11', telefono: '55554444'
   };
   await request(app).post('/users/signup').send(user);
-  const login = await request(app).post('/users/signin').send({ username: 'ana', password: 'secreto123' });
+  const login = await request(app).post('/users/signin').send({ username: 'ana@test.com', password: 'secreto123' });
   token = sessionToken(login);
 
   await request(app).post('/users/signup').send({ ...user, username: 'beto', email: 'beto@test.com' });
-  const login2 = await request(app).post('/users/signin').send({ username: 'beto', password: 'secreto123' });
+  const login2 = await request(app).post('/users/signin').send({ username: 'beto@test.com', password: 'secreto123' });
   otherToken = sessionToken(login2);
 });
 

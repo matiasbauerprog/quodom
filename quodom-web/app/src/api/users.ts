@@ -6,7 +6,9 @@ export const users = {
     apiFetch<User>('/users/signin', { method: 'POST', body }),
   signout: () =>
     apiFetch<{ res: boolean }>('/users/signout', { method: 'POST' }),
-  signup: (body: { username: string; email: string; nombre: string; apellido?: string; password: string; codArea: string; telefono: string; dni?: string }) =>
+  // Sin `username` ni `codArea`: el alta ya no los pide (se entra con el mail y
+  // el código de área es fijo). El contrato los descarta si igual se mandan.
+  signup: (body: { email: string; nombre: string; apellido?: string; password: string; telefono: string }) =>
     apiFetch<{ res: boolean; id?: string; message: string }>('/users/signup', { method: 'POST', body }),
   reset: (body: { email: string }) =>
     apiFetch<{ res: boolean; message: string }>('/users/reset', { method: 'POST', body }),
@@ -20,7 +22,7 @@ export const users = {
     apiFetch<{ res: boolean; message?: string }>('/users/validateReset/' + encodeURIComponent(token)),
   current: () =>
     apiFetch<User>('/users/current'),
-  update: (body: Partial<Pick<User, 'username' | 'email' | 'nombre' | 'apellido' | 'dni' | 'codArea' | 'telefono'>> & { password?: string }) =>
+  update: (body: Partial<Pick<User, 'email' | 'nombre' | 'apellido' | 'telefono' | 'empresa' | 'cuit' | 'facturaA'>> & { password?: string }) =>
     apiFetch<{ res: boolean; message: string }>('/users/', { method: 'PUT', body }),
   getDirecciones: () =>
     apiFetch<Direccion[]>('/users/dire/'),
