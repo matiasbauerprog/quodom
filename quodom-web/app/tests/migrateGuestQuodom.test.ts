@@ -3,7 +3,6 @@ import { planificarMigracion, migrarRubro } from '../src/guest/migrateGuestQuodo
 import { quodom as quodomApi } from '../src/api/quodom';
 import { quodomLines } from '../src/api/quodom_lines';
 import { categorias } from '../src/api/categorias';
-import { reiniciarCacheRubros } from '../src/quodom/rubrosDisponibles';
 import { addGuestLine, clearGuestQuodoms, getGuestCart } from '../src/guest/guestQuodom';
 
 vi.mock('../src/api/quodom', () => ({
@@ -32,7 +31,6 @@ const LAVANDINA = { idproducto: 100, nombreProducto: 'Lavandina 1L', cantidad: 1
 
 describe('guest migration by rubro', () => {
   beforeEach(() => {
-    reiniciarCacheRubros();
     clearGuestQuodoms();
     [activoPorRubro, create, eliminar, addLine, raiz].forEach(m => m.mockReset());
     raiz.mockResolvedValue(RUBROS_HABILITADOS);

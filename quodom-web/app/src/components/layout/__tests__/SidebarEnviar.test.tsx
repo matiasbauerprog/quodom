@@ -15,7 +15,9 @@ vi.mock('../../../api/quodom_lines', () => ({
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../../quodom/rubrosDisponibles', () => ({
-  rubrosDisponibles: vi.fn(() => Promise.resolve([1, 2, 3, 4, 5, 6, 7, 8]))
+  rubrosDisponibles: vi.fn(() => Promise.resolve([1, 2, 3, 4, 5, 6, 7, 8])),
+  // setup.ts lo llama en cada beforeEach.
+  reiniciarCacheRubros: vi.fn()
 }));
 vi.mock('../../../utils/whatsapp', () => ({ openWhatsappLink: vi.fn() }));
 vi.mock('../../../api/users', () => ({ users: { getDirecciones: vi.fn() } }));

@@ -13,7 +13,9 @@ vi.mock('../../../api/quodom_lines', () => ({
 }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../../quodom/rubrosDisponibles', () => ({
-  rubrosDisponibles: vi.fn(() => Promise.resolve([1, 2, 3, 4, 5, 6, 7, 8]))
+  rubrosDisponibles: vi.fn(() => Promise.resolve([1, 2, 3, 4, 5, 6, 7, 8])),
+  // setup.ts lo llama en cada beforeEach.
+  reiniciarCacheRubros: vi.fn()
 }));
 // El sidebar pregunta si el usuario tiene dirección para saber si puede
 // enviar. Sin mockearlo sale un fetch real que falla en tiempos distintos
