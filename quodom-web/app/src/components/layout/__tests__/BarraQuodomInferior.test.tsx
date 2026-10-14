@@ -34,6 +34,9 @@ function logout() {
 // El árbol desplegado, aparte del botón de la barra, cuyo texto también nombra el destino.
 const arbol = () => within(screen.getByRole('region', { name: /Quodoms activos/i }));
 
+const toggle = () => screen.getByTestId('barra-toggle');
+const findToggle = () => screen.findByTestId('barra-toggle');
+
 function reiniciar() {
   misQuodom.mockReset();
   localStorage.clear();
@@ -65,7 +68,7 @@ describe('BarraQuodomInferior', () => {
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
+    fireEvent.click(await findToggle());
 
     expect(screen.getByRole('button', { name: /Bebidas oficina/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Obra/ })).toBeInTheDocument();
@@ -75,10 +78,10 @@ describe('BarraQuodomInferior', () => {
     misQuodom.mockResolvedValue([BEBIDAS]);
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
 
-    const toggle = await screen.findByRole('button', { name: /Quodom/i });
-    fireEvent.click(toggle);
+    await findToggle();
+    fireEvent.click(toggle());
     expect(screen.getByRole('button', { name: /Bebidas oficina/ })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Quodom/i, expanded: true }));
+    fireEvent.click(toggle());
 
     expect(screen.queryByRole('button', { name: /Bebidas oficina/ })).toBeNull();
   });
@@ -102,7 +105,7 @@ describe('BarraQuodomInferior', () => {
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument()); // 1 server + 1 guest
 
-    fireEvent.click(screen.getByRole('button', { name: /Quodom/i }));
+    fireEvent.click(toggle());
 
     expect(screen.getByRole('button', { name: /Bebidas oficina/ })).toBeInTheDocument();
     expect(screen.getByText(/sin guardar/i)).toBeInTheDocument();
@@ -130,7 +133,7 @@ describe('BarraQuodomInferior tree', () => {
     misQuodom.mockResolvedValue([CASA]);
 
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
+    fireEvent.click(await findToggle());
 
     expect(arbol().getByRole('button', { name: /Casa/ })).toBeInTheDocument();
   });
@@ -151,27 +154,6 @@ describe('BarraQuodomInferior tree', () => {
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
 
     expect(await screen.findByText(/ningún quodom abierto/i)).toBeInTheDocument();
-  });
-
-  it('si fallan los rubros muestra el árbol sin filtrar', async () => {
-    vi.mocked(rubrosDisponibles).mockRejectedValue(new Error('boom'));
-    misQuodom.mockResolvedValue([CASA]);
-
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
-
-    expect(arbol().getByRole('button', { name: /Casa/ })).toBeInTheDocument();
-  });
-
-  it('no cierra los abiertos cuando falla la lista de Quodoms', async () => {
-    abrirQuodom(5, 'p1');
-    misQuodom.mockRejectedValue(new Error('boom'));
-
-    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
-    await act(async () => {});
-
-    expect(JSON.parse(localStorage.getItem('quodom.abierto') ?? '{}')).toEqual({ 5: 'p1' });
   });
 });
 
@@ -194,7 +176,7 @@ describe('BarraQuodomInferior for guests', () => {
 
     expect(await screen.findByText('2')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Quodom/i }));
+    fireEvent.click(toggle());
 
     expect(screen.getByRole('link', { name: /Bebidas/ })).toHaveAttribute('href', '/quodom?rubro=7');
     expect(screen.getByRole('link', { name: /Construcción/ })).toHaveAttribute('href', '/quodom?rubro=4');

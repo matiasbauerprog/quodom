@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { quodom as quodomApi } from '../../api/quodom';
@@ -11,85 +11,34 @@ import { ArbolQuodoms } from './ArbolQuodoms';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
 import { bloqueoDeEnvio } from '../../quodom/bloqueosEnvio';
-import { sanearAbiertos } from '../../quodom/quodomAbierto';
-import { ramasDeQuodoms } from '../../quodom/ramas';
-import { rubrosDisponibles } from '../../quodom/rubrosDisponibles';
+import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import './MisQuodomsSidebar.css';
 
 export function MisQuodomsSidebar() {
   const { user } = useAuth();
   const tieneDireccion = useTieneDireccion(!!user);
-  const [list, setList] = useState<Quodom[] | null>(null);
-  // null = no se pudo saber qué rubros hay: se muestra todo sin filtrar.
-  const [disponibles, setDisponibles] = useState<number[] | null>(null);
   const [invitado, setInvitado] = useState<ResumenInvitado[]>(resumenCarritosInvitado);
-  const [nonce, setNonce] = useState(0);
   // Clave del carrito de invitado desplegado ('g:<rubro>'). Los del servidor se
   // despliegan en el árbol, que recuerda su propio abierto por rubro.
   const [abierto, setAbierto] = useState<string | null>(null);
   const [enviando, setEnviando] = useState<string | null>(null);
   const [errEnviar, setErrEnviar] = useState<string | null>(null);
-  // Guards against `quodom:changed` firing repeatedly in quick succession:
-  // only the response for the most recently started request is applied, so
-  // an earlier request resolving after a later one can't overwrite it with
-  // stale data.
-  const requestIdRef = useRef(0);
+  const { list, ramas, refresh } = useQuodomsEnArmado(user?.id);
 
+  // Los carritos de invitado se releen siempre: sobreviven a un login que
+  // canceló la migración, así que también hay que mostrarlos con sesión.
   useEffect(() => {
-    let alive = true;
-    const cargar = () => {
-      // Los carritos de invitado se releen siempre: sobreviven a un login que
-      // canceló la migración, así que también hay que mostrarlos con sesión.
-      setInvitado(resumenCarritosInvitado());
-      if (!user) { setList([]); return; }
-      const requestId = ++requestIdRef.current;
-      // Dos preguntas distintas: los Quodoms son lo que el panel existe para
-      // mostrar; los rubros son dato de referencia que sólo esconde los
-      // retirados. Si fallan los rubros se muestra todo sin filtrar (el backend
-      // ya rechaza un rubro retirado con 400), antes que perder el panel.
-      Promise.allSettled([quodomApi.misQuodom(), rubrosDisponibles()])
-        .then(([quodoms, rubros]) => {
-          if (!alive || requestId !== requestIdRef.current) return;
-          if (quodoms.status === 'rejected') throw quodoms.reason;
-          const d = quodoms.value;
-          setList(d);
-          setDisponibles(rubros.status === 'fulfilled' ? rubros.value : null);
-          // Sólo tras una carga buena de Quodoms: sanear descarta todo lo que
-          // no esté en la lista, así que con una carga pendiente o fallida
-          // cerraría los Quodoms que el usuario tenía abiertos sin motivo.
-          sanearAbiertos(d.filter(q => q.estado === 'CREADO').map(q => q.id));
-        })
-        .catch(() => {
-          if (!alive || requestId !== requestIdRef.current) return;
-          // A refresh triggered by `quodom:changed` can fail transiently
-          // (e.g. the network is busy right after the mutation that fired
-          // the event). Only wipe the list when there was nothing good to
-          // keep yet (the very first load); otherwise keep showing the
-          // last-known-good list rather than blanking a correct sidebar.
-          setList(prev => (prev === null ? [] : prev));
-        });
-    };
-    cargar();
-    window.addEventListener('quodom:changed', cargar);
-    window.addEventListener('storage', cargar);
+    const releer = () => setInvitado(resumenCarritosInvitado());
+    releer();
+    window.addEventListener('quodom:changed', releer);
+    window.addEventListener('storage', releer);
     return () => {
-      alive = false;
-      window.removeEventListener('quodom:changed', cargar);
-      window.removeEventListener('storage', cargar);
+      window.removeEventListener('quodom:changed', releer);
+      window.removeEventListener('storage', releer);
     };
-  // Depend on the user's id (a primitive), not the `user` object itself:
-  // an object reference can change across renders without the logged-in
-  // user actually changing, which would otherwise re-fire this effect (and
-  // refetch) on every unrelated re-render.
-  }, [user?.id, nonce]);
+  }, [user?.id]);
 
-  const refresh = useCallback(() => setNonce(n => n + 1), []);
-
-  // A la derecha va sólo lo que está en armado: los enviados son historial y
-  // viven en Mis Quodoms, a un clic del pie del árbol.
-  const todos = list ?? [];
-  const ramas = ramasDeQuodoms(todos, disponibles ?? todos.map(q => q.idrubro));
   const hayInvitado = invitado.length > 0;
   const toggle = (clave: string) => setAbierto(a => (a === clave ? null : clave));
 
