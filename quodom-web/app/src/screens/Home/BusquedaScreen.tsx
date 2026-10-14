@@ -4,10 +4,10 @@ import { busqueda } from '../../api/busqueda';
 import { historial } from '../../api/hist_busquedas';
 import type { BusquedaResult } from '../../api/types';
 import { ApiError } from '../../api/client';
+import { useAuth } from '../../auth/AuthContext';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
-import { useAuth } from '../../auth/AuthContext';
 import { Loader } from '../../components/Loader';
 import { ProductImage } from '../../components/ProductImage';
 import { IconoMas } from '../../components/icons/IconoMas';
@@ -87,9 +87,11 @@ export function BusquedaScreen() {
                     <span className="prod-name">{r.nombre}</span>
                   </span>
                   <div className="prod-botones">
+                    {user && (
                     <button className="prod-otro" aria-label={'Agregar ' + r.nombre + ' a otro Quodom'} disabled={agregando} onClick={() => agregarEnOtro(r)}>
                       ···
                     </button>
+                    )}
                     <button className="prod-add" aria-label={'Agregar ' + r.nombre} disabled={agregando} onClick={() => agregar(r)}>
                       <IconoMas />
                     </button>

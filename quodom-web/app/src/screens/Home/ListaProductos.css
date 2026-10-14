@@ -140,15 +140,18 @@
   background: var(--color-exito);
   color: #fff;
 }
-.prod-botones { display: flex; align-items: flex-end; gap: var(--sp-1); flex-shrink: 0; }
+/* gap de 14px: cada botón extiende su zona de toque a 40px (ver ::after) y las zonas no pueden pisarse. */
+.prod-botones { display: flex; align-items: flex-end; gap: 14px; flex-shrink: 0; }
+.prod-add, .prod-otro { position: relative; }
+.prod-add::after, .prod-otro::after { content: ''; position: absolute; inset: -7px; }
 
 /* El ··· es la salida para mandar el producto a un Quodom que no es el abierto:
    mismo tamaño y hoja que el +, en gris para que no compita con él. */
 .prod-otro {
   align-self: flex-end;
-  min-width: 26px;
+  width: 26px;
   height: 26px;
-  padding: 0 6px;
+  padding: 0;
   flex-shrink: 0;
   border-top-left-radius: 8px;
   border-bottom-right-radius: 8px;

@@ -6,6 +6,7 @@ import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { ProductImage } from '../../components/ProductImage';
 import { IconoMas } from '../../components/icons/IconoMas';
+import { useAuth } from '../../auth/AuthContext';
 import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
@@ -22,6 +23,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   const [selected, setSelected] = useState<Product | null>(null);
   const [elegido, setElegido] = useState<Record<number, Eleccion>>({});
   const [nonce, setNonce] = useState(0);
+  const { user } = useAuth();
   const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, pedirDestino, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
@@ -119,9 +121,11 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
                   {selector(p, 2)}
                 </div>
                 <div className="prod-botones">
+                  {user && (
                   <button className="prod-otro" aria-label={'Agregar ' + p.nombreproducto + ' a otro Quodom'} disabled={agregando} onClick={() => agregarEnOtro(p)}>
                     ···
                   </button>
+                  )}
                   <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} disabled={agregando} onClick={() => agregar(p)}>
                     <IconoMas />
                   </button>

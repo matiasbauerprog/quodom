@@ -3,11 +3,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BusquedaScreen } from '../BusquedaScreen';
 import { busqueda } from '../../../api/busqueda';
+import { historial } from '../../../api/hist_busquedas';
 import { useAgregarProducto } from '../../../quodom/useAgregarProducto';
 
 vi.mock('../../../api/busqueda', () => ({ busqueda: { buscar: vi.fn() } }));
 vi.mock('../../../api/hist_busquedas', () => ({ historial: { list: vi.fn(), add: vi.fn() } }));
-vi.mock('../../../auth/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
+const auth = vi.hoisted(() => ({ user: { id: 'u-1' } as { id: string } | null }));
+vi.mock('../../../auth/AuthContext', () => ({ useAuth: () => ({ user: auth.user }) }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({ useAgregarProducto: vi.fn() }));
 
 const agregar = vi.fn();
@@ -17,6 +19,8 @@ const COCA = { id: 700, nombre: 'Coca Cola 2L', categoriaPadre: 7 };
 beforeEach(() => {
   agregar.mockReset();
   pedirDestino.mockReset();
+  vi.mocked(historial.list).mockResolvedValue([]);
+  auth.user = { id: 'u-1' };
   vi.mocked(busqueda.buscar).mockResolvedValue([COCA] as never);
   vi.mocked(useAgregarProducto).mockReturnValue({
     agregar, pedirDestino, agregando: false, error: null, destino: null,
@@ -44,5 +48,15 @@ describe('BusquedaScreen · mandar a otro Quodom', () => {
       expect.objectContaining({ idproducto: 700, cantidad: 1 }), 7
     );
     expect(agregar).not.toHaveBeenCalled();
+  });
+});
+
+describe('BusquedaScreen · ··· y la sesión', () => {
+  it('un invitado no ve el ···: no tiene a dónde elegir', async () => {
+    auth.user = null;
+    montar();
+    await screen.findByRole('button', { name: /^agregar coca cola 2l$/i });
+
+    expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
   });
 });

@@ -6,6 +6,8 @@ import { useAgregarProducto } from '../../../quodom/useAgregarProducto';
 
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({ useAgregarProducto: vi.fn() }));
+const auth = vi.hoisted(() => ({ user: { id: 'u-1' } as { id: string } | null }));
+vi.mock('../../../auth/AuthContext', () => ({ useAuth: () => ({ user: auth.user }) }));
 
 const porCategoria = productos.porCategoria as unknown as ReturnType<typeof vi.fn>;
 const agregar = vi.fn();
@@ -33,6 +35,7 @@ beforeEach(() => {
   porCategoria.mockReset();
   agregar.mockReset();
   pedirDestino.mockReset();
+  auth.user = { id: 'u-1' };
   vi.mocked(useAgregarProducto).mockReturnValue({
     agregar, agregando: false, error: null, destino: null,
     elegir: vi.fn(), crear: vi.fn(), cancelar: vi.fn(), pedirDestino
@@ -239,5 +242,24 @@ describe('ListaProductos · mandar a otro Quodom', () => {
       expect.objectContaining({ idproducto: 41, cantidad: 1, atributo1: 'Negra 60 x 90' }), 7
     );
     expect(agregar).not.toHaveBeenCalled();
+  });
+});
+
+describe('ListaProductos · ··· y la sesión', () => {
+  it('un invitado no ve el ···: no tiene a dónde elegir', async () => {
+    auth.user = null;
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+
+    expect(screen.queryByRole('button', { name: /a otro quodom/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^agregar coca cola 2l$/i })).toBeInTheDocument();
+  });
+
+  it('con sesión sí lo muestra', async () => {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+
+    expect(await screen.findByRole('button', { name: /a otro quodom/i })).toBeInTheDocument();
   });
 });

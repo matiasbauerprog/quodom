@@ -4,6 +4,7 @@ import { useAgregarProducto } from '../useAgregarProducto';
 import * as agregarModule from '../agregarProducto';
 import type { Quodom } from '../../api/types';
 import { quodom as quodomApi } from '../../api/quodom';
+import { abrirQuodom } from '../quodomAbierto';
 
 vi.mock('../../auth/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'u-1' } })
@@ -194,16 +195,20 @@ describe('useAgregarProducto · pedirDestino', () => {
   beforeEach(() => { vi.restoreAllMocks(); });
 
   it('opens the destination list without adding anything, even if the rubro has an open quodom', async () => {
+    localStorage.clear();
+    abrirQuodom(7, 'q-depto');
     const agregarSpy = vi.spyOn(agregarModule, 'agregarProducto');
     const destinoSpy = vi.spyOn(agregarModule, 'agregarADestino').mockResolvedValue();
-    vi.spyOn(quodomApi, 'activosPorRubro').mockResolvedValue([CASA]);
+    const DEPTO = { id: 'q-depto', descripcion: 'Depto', idrubro: 7 } as unknown as Quodom;
+    vi.spyOn(quodomApi, 'activosPorRubro').mockResolvedValue([CASA, DEPTO]);
     render(<ProbeOtro />);
 
     fireEvent.click(screen.getByText('a otro'));
 
-    await waitFor(() => expect(screen.getByText('candidatos: Casa')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('candidatos: Casa,Depto')).toBeInTheDocument());
     expect(agregarSpy).not.toHaveBeenCalled();
     expect(destinoSpy).not.toHaveBeenCalled();
+    localStorage.clear();
   });
 
   it('adds the product to the chosen destination', async () => {
