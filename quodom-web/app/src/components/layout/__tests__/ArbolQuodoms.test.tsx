@@ -90,10 +90,24 @@ describe('ArbolQuodoms', () => {
     expect(screen.getByText(/ningún quodom en armado/i)).toBeInTheDocument();
   });
 
-  it('el rubro del Quodom abierto arranca desplegado', () => {
+  it('un Quodom que ya estaba abierto arranca marcado', () => {
     abrirQuodom(1, 'l1');
     montar();
 
-    expect(screen.getByRole('button', { name: /Oficina/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Oficina/ })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /Casa/ })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // El arrastre busca sus destinos en el DOM por estos dos atributos; si se pierden,
+  // nada más falla y arrastrar deja de funcionar sin avisar.
+  it('cada Quodom lleva los datos que el arrastre usa para encontrarlo', () => {
+    montar();
+
+    const casa = screen.getByRole('button', { name: /Casa/ });
+    expect(casa).toHaveAttribute('data-destino', 'p1');
+    expect(casa).toHaveAttribute('data-rubro', '5');
+    const oficina = screen.getByRole('button', { name: /Oficina/ });
+    expect(oficina).toHaveAttribute('data-destino', 'l1');
+    expect(oficina).toHaveAttribute('data-rubro', '1');
   });
 });
