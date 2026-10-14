@@ -96,6 +96,19 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     }
   }
 
+  // Tras un arrastre el navegador puede disparar un clic sobre el elemento donde
+  // empezó el gesto (la tarjeta es un botón que abre el detalle): se traga uno solo,
+  // y el bloqueo caduca por sí mismo para no comerse un clic ajeno más tarde.
+  function tragarClic() {
+    const tragar = (c: Event) => { c.preventDefault(); c.stopPropagation(); quitar(); };
+    const timer = setTimeout(() => quitar(), 100);
+    function quitar() {
+      clearTimeout(timer);
+      window.removeEventListener('click', tragar, true);
+    }
+    window.addEventListener('click', tragar, true);
+  }
+
   function terminar(e: PointerEvent) {
     window.removeEventListener('pointermove', mover);
     window.removeEventListener('pointerup', terminar);
@@ -107,6 +120,7 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     // Cancelar (el sistema interrumpe el gesto) no es soltar: sin esto se agregaría
     // el producto donde el puntero haya quedado.
     if (e.type === 'pointercancel') return;
+    tragarClic();
     const blanco = blancoBajo(e.clientX, e.clientY);
     // Soltar en el vacío, o sobre un Quodom de otro rubro, no hace nada y no es
     // un error: el usuario ya vio el borde rojo mientras arrastraba.

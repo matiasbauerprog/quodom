@@ -384,3 +384,51 @@ describe('ListaProductos · arrastrar al árbol', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
 });
+
+describe('ListaProductos · el clic que sigue a un arrastre', () => {
+  async function tarjeta() {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+    return document.querySelector('.prod-info')!;
+  }
+
+  function arrastrarYSoltar(origen: Element) {
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(null);
+    fireEvent.pointerDown(origen, { clientX: 100, clientY: 100, button: 0 });
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 300, clientY: 100 }));
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 300, clientY: 100 }));
+  }
+
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
+
+  it('soltar en el vacío tras arrastrar no abre el detalle', async () => {
+    const info = await tarjeta();
+
+    arrastrarYSoltar(info);
+    fireEvent.click(info);
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('un clic común sigue abriendo el detalle', async () => {
+    const info = await tarjeta();
+
+    fireEvent.pointerDown(info, { clientX: 100, clientY: 100, button: 0 });
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 101, clientY: 100 }));
+    fireEvent.click(info);
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('si el clic nunca llega, el bloqueo caduca y no se traga uno posterior', async () => {
+    const info = await tarjeta();
+    vi.useFakeTimers();
+
+    arrastrarYSoltar(info);
+    vi.advanceTimersByTime(500);
+    fireEvent.click(info);
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+});
