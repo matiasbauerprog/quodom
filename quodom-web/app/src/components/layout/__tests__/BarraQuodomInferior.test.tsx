@@ -5,17 +5,22 @@ import { BarraQuodomInferior } from '../BarraQuodomInferior';
 import { quodom as quodomApi } from '../../../api/quodom';
 import { useAuth } from '../../../auth/AuthContext';
 import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
+import { abrirQuodom } from '../../../quodom/quodomAbierto';
+import { rubrosDisponibles } from '../../../quodom/rubrosDisponibles';
 
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn() } }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../../../quodom/rubrosDisponibles', () => ({
+  rubrosDisponibles: vi.fn(),
+  reiniciarCacheRubros: vi.fn()
+}));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
-// Distinct from its own rubro name (like MisQuodomsSidebar's test data, Task
-// 11): a real Quodom's descripcion and its rubro label are two different
-// pieces of text on screen, and using the same string for both would make
-// `getByText` ambiguous between the two spans that render it.
+// Distinct from its own rubro name: a real Quodom's descripcion and its rubro
+// label are two different pieces of text on screen.
 const BEBIDAS = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-1', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, createdBy: 'u-1', iddireccion: null };
 const OBRA = { id: 'q-4', descripcion: 'Obra', estado: 'CREADO', nro: 'QD-2', idrubro: 4, nombrerubro: 'Construcción', cantproductos: 1, createdBy: 'u-1', iddireccion: null };
+const CASA = { id: 'p1', descripcion: 'Casa', estado: 'CREADO', nro: 'QD-1', idrubro: 5, nombrerubro: 'Pinturería', cantproductos: 2, porccompletado: 100 };
 const GASEOSA = { idproducto: 700, nombreProducto: 'Gaseosa 2L', cantidad: 2 };
 
 function login() {
@@ -26,10 +31,16 @@ function logout() {
   vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
 }
 
+function reiniciar() {
+  misQuodom.mockReset();
+  localStorage.clear();
+  clearGuestQuodoms();
+  vi.mocked(rubrosDisponibles).mockResolvedValue([1, 4, 5, 7]);
+}
+
 describe('BarraQuodomInferior', () => {
   beforeEach(() => {
-    misQuodom.mockReset();
-    clearGuestQuodoms();
+    reiniciar();
     login();
   });
 
@@ -39,37 +50,34 @@ describe('BarraQuodomInferior', () => {
     await waitFor(() => expect(container.querySelector('.barra-quodom')).toBeNull());
   });
 
-  it('shows the label with the number of open quodoms, collapsed', async () => {
+  it('shows the number of quodoms in armado, collapsed', async () => {
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
 
-    await waitFor(() => expect(screen.getByText(/Mis Quodoms activos/i)).toBeInTheDocument());
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.queryByRole('list')).toBeNull();
+    expect(await screen.findByText('2')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Bebidas oficina/ })).toBeNull();
   });
 
-  it('expands the panel on click and lists each open quodom', async () => {
+  it('expands the tree on click and lists each open quodom', async () => {
     misQuodom.mockResolvedValue([BEBIDAS, OBRA]);
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    await waitFor(() => screen.getByText(/Mis Quodoms activos/i));
 
-    fireEvent.click(screen.getByRole('button', { name: /Mis Quodoms activos/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
 
-    expect(screen.getByRole('list')).toBeInTheDocument();
-    expect(screen.getByText('Bebidas')).toBeInTheDocument();
-    expect(screen.getByText('Construcción')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Bebidas oficina/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Obra/ })).toBeInTheDocument();
   });
 
   it('collapses again on a second click', async () => {
     misQuodom.mockResolvedValue([BEBIDAS]);
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
-    await waitFor(() => screen.getByText(/Mis Quodoms activos/i));
 
-    const toggle = screen.getByRole('button', { name: /Mis Quodoms activos/i });
+    const toggle = await screen.findByRole('button', { name: /Quodom/i });
     fireEvent.click(toggle);
-    fireEvent.click(toggle);
+    expect(screen.getByRole('button', { name: /Bebidas oficina/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Quodom/i, expanded: true }));
 
-    expect(screen.queryByRole('list')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Bebidas oficina/ })).toBeNull();
   });
 
   it('refreshes the list when quodom:changed fires', async () => {
@@ -91,20 +99,82 @@ describe('BarraQuodomInferior', () => {
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument()); // 1 server + 1 guest
 
-    fireEvent.click(screen.getByRole('button', { name: /Mis Quodoms activos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Quodom/i }));
 
-    expect(screen.getByText('Bebidas')).toBeInTheDocument();
-    expect(screen.getByText('Construcción')).toBeInTheDocument();
-    // Labelled distinctly so it doesn't read as a saved server Quodom.
+    expect(screen.getByRole('button', { name: /Bebidas oficina/ })).toBeInTheDocument();
     expect(screen.getByText(/sin guardar/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Construcción/ })).toHaveAttribute('href', '/quodom?rubro=4');
   });
 });
 
+describe('BarraQuodomInferior tree', () => {
+  beforeEach(() => {
+    reiniciar();
+    login();
+  });
+
+  it('dice a qué Quodom está sumando cada rubro', async () => {
+    abrirQuodom(5, 'p1');
+    misQuodom.mockResolvedValue([CASA]);
+
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+
+    expect(await screen.findByText(/sumando a/i)).toBeInTheDocument();
+    expect(screen.getByText(/Casa/)).toBeInTheDocument();
+  });
+
+  it('al desplegarla aparece el mismo árbol', async () => {
+    misQuodom.mockResolvedValue([CASA]);
+
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
+
+    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+  });
+
+  it('con uno abierto, el botón se llama "sumando a" y el árbol lo muestra', async () => {
+    abrirQuodom(5, 'p1');
+    misQuodom.mockResolvedValue([CASA]);
+
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: /sumando a/i }));
+
+    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+  });
+
+  it('sin nada abierto lo dice en vez de mentir', async () => {
+    misQuodom.mockResolvedValue([CASA]);
+
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+
+    expect(await screen.findByText(/ningún quodom abierto/i)).toBeInTheDocument();
+  });
+
+  it('si fallan los rubros muestra el árbol sin filtrar', async () => {
+    vi.mocked(rubrosDisponibles).mockRejectedValue(new Error('boom'));
+    misQuodom.mockResolvedValue([CASA]);
+
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: /Quodom/i }));
+
+    expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
+  });
+
+  it('no cierra los abiertos cuando falla la lista de Quodoms', async () => {
+    abrirQuodom(5, 'p1');
+    misQuodom.mockRejectedValue(new Error('boom'));
+
+    render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    await act(async () => {});
+
+    expect(JSON.parse(localStorage.getItem('quodom.abierto') ?? '{}')).toEqual({ 5: 'p1' });
+  });
+});
+
 describe('BarraQuodomInferior for guests', () => {
   beforeEach(() => {
-    misQuodom.mockReset();
-    clearGuestQuodoms();
+    reiniciar();
     logout();
   });
 
@@ -119,10 +189,9 @@ describe('BarraQuodomInferior for guests', () => {
     addGuestLine(4, { idproducto: 400, nombreProducto: 'Cemento 50kg', cantidad: 1 });
     render(<MemoryRouter><BarraQuodomInferior /></MemoryRouter>);
 
-    await waitFor(() => expect(screen.getByText(/Mis Quodoms activos/i)).toBeInTheDocument());
-    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(await screen.findByText('2')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Mis Quodoms activos/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Quodom/i }));
 
     expect(screen.getByRole('link', { name: /Bebidas/ })).toHaveAttribute('href', '/quodom?rubro=7');
     expect(screen.getByRole('link', { name: /Construcción/ })).toHaveAttribute('href', '/quodom?rubro=4');
@@ -135,6 +204,6 @@ describe('BarraQuodomInferior for guests', () => {
     addGuestLine(7, GASEOSA);
     act(() => { window.dispatchEvent(new Event('quodom:changed')); });
 
-    await waitFor(() => expect(screen.getByText(/Mis Quodoms activos/i)).toBeInTheDocument());
+    await waitFor(() => expect(container.querySelector('.barra-quodom')).not.toBeNull());
   });
 });

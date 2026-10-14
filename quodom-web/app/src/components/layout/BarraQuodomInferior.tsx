@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { quodom as quodomApi } from '../../api/quodom';
+import type { Quodom } from '../../api/types';
 import { resumenCarritosInvitado } from '../../guest/resumenInvitado';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
-import { PanelQuodomsActivos, quodomsAItems, type ItemActivo } from './PanelQuodomsActivos';
+import { ArbolQuodoms } from './ArbolQuodoms';
+import { PanelQuodomsActivos, type ItemActivo } from './PanelQuodomsActivos';
+import { abiertoDe, sanearAbiertos } from '../../quodom/quodomAbierto';
+import { ramasDeQuodoms } from '../../quodom/ramas';
+import { rubrosDisponibles } from '../../quodom/rubrosDisponibles';
 import './BarraQuodomInferior.css';
 
 // A guest cart left over after a declined ('cancelar') migration, or one
 // simply never logged into, stays in localStorage (spec §6). Once logged in,
-// the sidebar/panel/Mis Quodoms only list server Quodoms, so without this it
-// becomes unreachable except by typing /quodom?rubro=<id> or signing out.
+// the tree only lists server Quodoms, so without this it becomes unreachable
+// except by typing /quodom?rubro=<id> or signing out.
 // Labelled distinctly ('sin guardar') so it doesn't read as a server Quodom.
 function itemsCarritosInvitado(): ItemActivo[] {
   return resumenCarritosInvitado().map(r => ({
@@ -24,53 +29,59 @@ function itemsCarritosInvitado(): ItemActivo[] {
 
 export function BarraQuodomInferior() {
   const { user } = useAuth();
-  // `null` means "no data loaded yet" (distinct from an empty list, which
-  // means "loaded, and there is nothing open"). Mirrors MisQuodomsSidebar
-  // (Task 11) so a transient refresh failure can tell those two apart.
-  const [items, setItems] = useState<ItemActivo[] | null>(null);
+  // `null` = todavía no hay datos (distinto de una lista vacía: "cargó y no hay nada").
+  const [list, setList] = useState<Quodom[] | null>(null);
+  // null = no se pudo saber qué rubros hay: se muestra todo sin filtrar.
+  const [disponibles, setDisponibles] = useState<number[] | null>(null);
+  const [invitados, setInvitados] = useState<ItemActivo[]>(itemsCarritosInvitado);
   const [abierto, setAbierto] = useState(false);
+  const [nonce, setNonce] = useState(0);
+  // El abierto de cada rubro vive en localStorage: sin suscribirse, el resumen
+  // de la barra cerrada no se repintaría al cambiarlo desde el árbol.
+  const [, setVersion] = useState(0);
   const contenedor = useRef<HTMLDivElement>(null);
+  // Sólo se aplica la respuesta del pedido más reciente.
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     let alive = true;
-    // Guards against `quodom:changed` firing repeatedly in quick succession:
-    // only the response for the most recently started request is applied, so
-    // an earlier request resolving after a later one can't overwrite it with
-    // stale data. Matches MisQuodomsSidebar's approach (Task 11).
-    let requestId = 0;
     const cargar = () => {
-      if (!user) {
-        setItems(itemsCarritosInvitado());
-        return;
-      }
-      const thisRequestId = ++requestId;
-      quodomApi.misQuodom()
-        .then(lista => {
-          if (alive && thisRequestId === requestId) setItems([...quodomsAItems(lista), ...itemsCarritosInvitado()]);
+      setInvitados(itemsCarritosInvitado());
+      if (!user) { setList([]); return; }
+      const requestId = ++requestIdRef.current;
+      // Los rubros sólo esconden los retirados: si fallan, el árbol sale sin
+      // filtrar en vez de desaparecer. Mismo criterio que MisQuodomsSidebar.
+      Promise.allSettled([quodomApi.misQuodom(), rubrosDisponibles()])
+        .then(([quodoms, rubros]) => {
+          if (!alive || requestId !== requestIdRef.current) return;
+          if (quodoms.status === 'rejected') throw quodoms.reason;
+          const d = quodoms.value;
+          setList(d);
+          setDisponibles(rubros.status === 'fulfilled' ? rubros.value : null);
+          // Sólo tras una carga buena: con una lista vacía por error cerraría
+          // todos los Quodoms que el usuario tenía abiertos.
+          sanearAbiertos(d.filter(q => q.estado === 'CREADO').map(q => q.id));
         })
         .catch(() => {
-          if (!alive || thisRequestId !== requestId) return;
-          // A refresh triggered by `quodom:changed` can fail transiently
-          // (e.g. the network is busy right after the mutation that fired
-          // the event). Only wipe the list when there was nothing good to
-          // keep yet (the very first load); otherwise keep showing the
-          // last-known-good list rather than blanking a correct bar.
-          setItems(prev => (prev === null ? [] : prev));
+          if (!alive || requestId !== requestIdRef.current) return;
+          // Un refresco puede fallar de forma transitoria: sólo se vacía si
+          // todavía no había nada bueno que mostrar.
+          setList(prev => (prev === null ? [] : prev));
         });
     };
     cargar();
+    const releer = () => setVersion(v => v + 1);
     window.addEventListener('quodom:changed', cargar);
     window.addEventListener('storage', cargar);
+    window.addEventListener('quodom:abierto', releer);
     return () => {
       alive = false;
       window.removeEventListener('quodom:changed', cargar);
       window.removeEventListener('storage', cargar);
+      window.removeEventListener('quodom:abierto', releer);
     };
-  // Depend on the user's id (a primitive), not the `user` object itself: an
-  // object reference can change across renders without the logged-in user
-  // actually changing, which would otherwise re-fire this effect (and
-  // refetch) on every unrelated re-render (e.g. toggling `abierto`).
-  }, [user?.id]);
+  // Depend on the user's id (a primitive), not the `user` object itself.
+  }, [user?.id, nonce]);
 
   useEffect(() => {
     if (!abierto) return;
@@ -86,14 +97,30 @@ export function BarraQuodomInferior() {
     };
   }, [abierto]);
 
-  if (!items || items.length === 0) return null;
+  const todos = list ?? [];
+  const ramas = ramasDeQuodoms(todos, disponibles ?? todos.map(q => q.idrubro));
+  const enArmado = ramas.reduce((n, r) => n + r.quodoms.length, 0);
+  const total = enArmado + invitados.length;
+
+  if (list === null || total === 0) return null;
+
+  // A qué Quodom suma cada rubro: sólo cuenta el abierto que sigue en la lista.
+  const sumando = ramas.flatMap(r => {
+    const q = r.quodoms.find(x => x.id === abiertoDe(r.idrubro));
+    return q ? [{ idrubro: r.idrubro, texto: `${r.nombre} · ${q.descripcion || q.nro}` }] : [];
+  });
 
   return (
     <div className="barra-quodom-wrap" ref={contenedor}>
       {abierto && (
         <div className="barra-quodom-panel">
-          <PanelQuodomsActivos items={items} onNavegar={() => setAbierto(false)} />
-          {!user && items.some(i => i.sinGuardar) && (
+          {ramas.length > 0 && (
+            <ArbolQuodoms ramas={ramas} onCambio={() => setNonce(n => n + 1)} />
+          )}
+          {invitados.length > 0 && (
+            <PanelQuodomsActivos items={invitados} onNavegar={() => setAbierto(false)} />
+          )}
+          {!user && invitados.length > 0 && (
             <AvisoSinGuardar onNavegar={() => setAbierto(false)} />
           )}
         </div>
@@ -104,8 +131,17 @@ export function BarraQuodomInferior() {
         aria-expanded={abierto}
         onClick={() => setAbierto(a => !a)}
       >
-        <span className="barra-quodom-count">{items.length}</span>
-        <span className="barra-quodom-label">Mis Quodoms activos</span>
+        <span className="barra-quodom-count">{total}</span>
+        <span className="barra-quodom-label">
+          {abierto ? 'Mis Quodoms activos' : sumando.length === 0 ? (
+            <span className="barra-quodom-nada">Ningún Quodom abierto</span>
+          ) : (
+            <>
+              <span className="barra-quodom-prefijo">Sumando a:</span>
+              {sumando.map(s => <span key={s.idrubro} className="barra-quodom-destino">{s.texto}</span>)}
+            </>
+          )}
+        </span>
         <span className="barra-quodom-arrow" aria-hidden="true">{abierto ? '⌄' : '⌃'}</span>
       </button>
     </div>
