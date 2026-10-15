@@ -18,6 +18,14 @@ function model(sequelize) {
         idprovincia: { type: DataTypes.STRING, allowNull: true },
         idpartido: { type: DataTypes.STRING, allowNull: true },
         observaciones: { type: DataTypes.STRING, allowNull: true },
+        // Datos del mapa. `placeid` es el identificador de Google y es el único
+        // dato de Places que se puede guardar sin límite de tiempo; las
+        // coordenadas son caché de 30 días y se vuelven a resolver desde él.
+        // Todo nullable: una dirección cargada a mano sigue siendo válida.
+        placeid: { type: DataTypes.STRING, allowNull: true },
+        lat: { type: DataTypes.FLOAT, allowNull: true },
+        lng: { type: DataTypes.FLOAT, allowNull: true },
+        coords_actualizado: { type: DataTypes.DATE, allowNull: true },
     };
 
     const options = {
