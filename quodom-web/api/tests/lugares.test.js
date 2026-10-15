@@ -66,6 +66,48 @@ describe('GET /lugares/sugerencias', () => {
     }
   });
 
+  // El de por minuto acota el RITMO y no el TOTAL. Por este balde pasan el
+  // autocompletado y el pin arrastrable, y 40/min sostenidos son 57.600
+  // consultas pagas en un dia: un bucle de recarga en caliente, en desarrollo,
+  // llega solo. Es el mismo defecto que ya se arreglo en proveedores, que
+  // quedo con tope diario mientras este se quedo sin ninguno.
+  it('tiene tope por dia, y su aviso no manda a esperar un rato', async () => {
+    const antes = process.env.LUGARES_RATE_LIMIT_PER_DAY;
+    process.env.LUGARES_RATE_LIMIT_PER_DAY = '1';
+    places.sugerencias.mockResolvedValue([]);
+
+    try {
+      await auth(request(app).get('/lugares/sugerencias?q=corrientes&sesion=s1'));
+      const res = await auth(request(app).get('/lugares/sugerencias?q=corrientes&sesion=s1'));
+
+      expect(res.status).toBe(429);
+      expect(res.body.message).toMatch(/hoy|mañana/i);
+      // "Esperá un momento" es consejo equivocado cuando la respuesta es mañana.
+      expect(res.body.message).not.toMatch(/esperá un momento/i);
+    } finally {
+      if (antes === undefined) delete process.env.LUGARES_RATE_LIMIT_PER_DAY;
+      else process.env.LUGARES_RATE_LIMIT_PER_DAY = antes;
+    }
+  });
+
+  // El tope diario tambien cubre el pin: es el mismo balde, y es el camino que
+  // mas facil se dispara en un bucle, porque no lo tipea nadie.
+  it('el tope por dia tambien alcanza al punto del mapa', async () => {
+    const antes = process.env.LUGARES_RATE_LIMIT_PER_DAY;
+    process.env.LUGARES_RATE_LIMIT_PER_DAY = '1';
+    places.direccionDePunto.mockResolvedValue(null);
+
+    try {
+      await auth(request(app).get('/lugares/punto?lat=-34.5&lng=-58.5'));
+      const res = await auth(request(app).get('/lugares/punto?lat=-34.5&lng=-58.5'));
+
+      expect(res.status).toBe(429);
+    } finally {
+      if (antes === undefined) delete process.env.LUGARES_RATE_LIMIT_PER_DAY;
+      else process.env.LUGARES_RATE_LIMIT_PER_DAY = antes;
+    }
+  });
+
   // Review Focus 3: el error tiene que nombrar lo que falta, no ser un 500 mudo.
   it('sin clave configurada responde 503 nombrando la variable', async () => {
     places.sugerencias.mockRejectedValue(
