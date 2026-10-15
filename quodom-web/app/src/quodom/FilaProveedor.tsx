@@ -7,6 +7,17 @@ type Props = {
   ocupado: boolean;
   /** Se le está preguntando por qué no se envió. */
   preguntandoMotivo: boolean;
+  /**
+   * Si el renglón ofrece "No se envió". Por omisión sí, que es lo que hace
+   * falta en el momento del envío: el comprador acaba de tocar el botón y vio
+   * que WhatsApp no abrió. **El historial lo apaga**, porque ese botón escribe
+   * `sin_whatsapp`, un dato global, permanente y sin fecha por place_id que
+   * leen las listas de todos los demás compradores. Días después ya no es una
+   * observación sino un recuerdo —el comercio puede haber activado WhatsApp— y
+   * lo que el comprador suele querer decir ahí es que no le contestaron, que es
+   * otra cosa. Un toque degradaría a ese comercio para todo el mundo.
+   */
+  permiteDeshacer?: boolean;
   onEnviar: () => void;
   onPreguntarMotivo: () => void;
   onDeshacer: (motivo: 'sin_whatsapp' | 'otro') => void;
@@ -55,7 +66,8 @@ function cuando(iso: string): string {
  * - `esfijo` es un aviso y nunca un bloqueo: un fijo puede tener WhatsApp Business.
  */
 export function FilaProveedor({
-  proveedor: p, ocupado, preguntandoMotivo, onEnviar, onPreguntarMotivo, onDeshacer
+  proveedor: p, ocupado, preguntandoMotivo, permiteDeshacer = true,
+  onEnviar, onPreguntarMotivo, onDeshacer
 }: Props) {
   const contactado = !!p.contactadoen;
   const fecha = p.contactadoen ? cuando(p.contactadoen) : '';
@@ -118,7 +130,7 @@ export function FilaProveedor({
         <a className="dp-link" href={linkMaps(p)} target="_blank" rel="noopener noreferrer">
           Ver en Maps
         </a>
-        {contactado && !preguntandoMotivo && (
+        {contactado && permiteDeshacer && !preguntandoMotivo && (
           <button
             type="button"
             className="dp-deshacer"
@@ -130,7 +142,7 @@ export function FilaProveedor({
         )}
       </div>
 
-      {contactado && preguntandoMotivo && (
+      {contactado && permiteDeshacer && preguntandoMotivo && (
         <div className="dp-motivos" role="group" aria-label="Por qué no se envió">
           <span className="dp-motivos-txt">¿Qué pasó?</span>
           <button

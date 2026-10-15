@@ -220,7 +220,11 @@ describe('sidebar: el envío bloqueado', () => {
     expect(within(tarjeta).getByText(/listo para pedir presupuesto/i)).toBeInTheDocument();
   });
 
-  it('no llama al API con el envío bloqueado', async () => {
+  // Bloqueado no abre ni el selector: cada apertura es una búsqueda **paga** a
+  // Google, y acá se gastaría para un envío que el servidor rechaza con 409.
+  // Mirar sólo `whatsapp` no alcanza desde que el sidebar no lo llama nunca:
+  // esa aserción sola no puede fallar aunque se caiga la guarda del botón.
+  it('no llama al API ni abre el selector con el envío bloqueado', async () => {
     misQuodom.mockResolvedValue([{ ...BEBIDAS, porccompletado: 50 }]);
 
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
@@ -228,6 +232,8 @@ describe('sidebar: el envío bloqueado', () => {
 
     fireEvent.click(within(tarjetaBebidas()).getByRole('button', { name: /cotizar/i }));
 
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(delQuodom).not.toHaveBeenCalled();
     expect(whatsapp).not.toHaveBeenCalled();
   });
 

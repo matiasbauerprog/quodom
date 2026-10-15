@@ -96,19 +96,57 @@ describe('DetalleQuodom: los proveedores de un Quodom enviado', () => {
   });
 
   // El renglón del contactado es el mismo del selector, con sus tres estados de
-  // teléfono y su "no se envió": si se copiara, las dos copias se despegarían.
-  it('al contactado le muestra la fecha y le deja deshacer el envío', async () => {
-    vi.mocked(proveedores.noEnviado).mockResolvedValue({ res: true });
-
+  // teléfono: si se copiara, las dos copias se despegarían.
+  //
+  // Lo que no viaja es "No se envió". Ese botón escribe `sin_whatsapp`, un dato
+  // global, permanente y sin fecha por place_id que leen las listas de todos
+  // los demás compradores, y lo que lo justifica es "acabé de tocar el botón y
+  // WhatsApp no abrió". Desde el historial, tres semanas después, es un
+  // recuerdo y no una observación: el comercio puede haber activado WhatsApp, y
+  // lo que el comprador suele estar explicando es que no le contestaron, que es
+  // otra cosa. De paso, deshacer el único contactado dejaba la sección diciendo
+  // "Le mandaste a 0 de 2" debajo de un botón que dice "Ya cotizado".
+  it('al contactado le deja volver a enviar, pero no deshacer el envío', async () => {
     montar({ estado: 'ENVIADO' });
 
     expect(await screen.findByText(/ya le mandaste/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /no se envió/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /no tiene whatsapp/i }));
+    expect(screen.getByRole('button', { name: /volver a enviar/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /no se envió/i })).toBeNull();
+    // El de los que faltan sigue estando: la sección existe para eso.
+    expect(screen.getByRole('button', { name: /enviar por whatsapp/i })).toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(proveedores.noEnviado).toHaveBeenCalledWith('q-7', 'p1', 'sin_whatsapp'));
-    // Vuelve a estar disponible, y la cuenta lo acompaña.
-    expect(await screen.findByText(/0 de 2/i)).toBeInTheDocument();
+  // Cada apertura y cada recarga es una búsqueda **paga** a Google, con tope de
+  // 10/min por usuario. El envío pasa el Quodom a ENVIADO y el nonce lo
+  // recarga, así que montar la sección ahí la montaba **detrás del selector
+  // abierto**: una tercera búsqueda por cada envío, para una lista que el
+  // comprador no está viendo, y dos copias del mismo estado donde deshacer en
+  // una dejaba a la otra mostrando el proveedor como contactado.
+  it('no gasta una búsqueda extra montando la sección detrás del selector', async () => {
+    vi.mocked(quodom.porId).mockResolvedValueOnce({
+      id: 'q-7', nro: 'QD-7', descripcion: 'Pintura del frente', estado: 'CREADO', idrubro: 1
+    } as never);
+    vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/541155550000?text=hola' });
+
+    montar({ estado: 'ENVIADO' });
+    await screen.findByText('Latex Interior Blanco Mate');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
+    // 1: la que abre el selector.
+    await waitFor(() => expect(proveedores.delQuodom).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(await screen.findByRole('button', { name: /enviar por whatsapp/i }));
+    await waitFor(() => expect(quodom.whatsapp).toHaveBeenCalled());
+
+    // 2: la recarga que deja el renglón marcado. Y ninguna más.
+    await waitFor(() => expect(proveedores.delQuodom).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/proveedores contactados/i)).toBeNull();
+
+    // Al cerrar el selector la sección sí aparece, y recién ahí gasta la suya:
+    // esa búsqueda el comprador la ve.
+    fireEvent.click(screen.getByRole('button', { name: /cerrar/i }));
+    expect(await screen.findByText(/proveedores contactados/i)).toBeInTheDocument();
+    expect(proveedores.delQuodom).toHaveBeenCalledTimes(3);
   });
 
   it('un Quodom en armado no muestra la sección', async () => {

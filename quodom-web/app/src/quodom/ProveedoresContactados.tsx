@@ -55,6 +55,12 @@ export function ProveedoresContactados({ idquodom }: { idquodom: string }) {
                   proveedor={p}
                   ocupado={ocupado === p.placeid}
                   preguntandoMotivo={preguntandoMotivo === p.placeid}
+                  // Acá no: "No tiene WhatsApp" escribe un dato global y
+                  // permanente sobre el comercio, y desde el historial es un
+                  // recuerdo y no lo que el comprador acaba de ver (ver
+                  // FilaProveedor). "Volver a enviar" y los que faltan sí,
+                  // que es para lo que existe esta sección.
+                  permiteDeshacer={false}
                   onEnviar={() => enviarA(p)}
                   onPreguntarMotivo={() => setPreguntandoMotivo(p.placeid)}
                   onDeshacer={motivo => deshacer(p, motivo)}

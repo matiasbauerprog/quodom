@@ -320,8 +320,14 @@ export function DetalleQuodom() {
         )}
 
         {/* Enviado no es el final: el comprador le manda a uno, no le contestan
-            y le manda a otro, y a quién ya le mandó sólo lo sabe el servidor. */}
-        {yaEnviado && server && <ProveedoresContactados idquodom={server.quodom.id} />}
+            y le manda a otro, y a quién ya le mandó sólo lo sabe el servidor.
+            No se monta con el selector abierto, y eso no es cosmética: el envío
+            pasa el Quodom a ENVIADO y el nonce lo recarga, así que la sección
+            aparecía **detrás** del diálogo y gastaba una búsqueda paga más por
+            cada envío (tres por el primero) para una lista que el comprador no
+            ve. Y eran dos `useProveedores` del mismo Quodom con estados
+            separados: deshacer en uno dejaba al otro mostrándolo contactado. */}
+        {yaEnviado && server && !selector && <ProveedoresContactados idquodom={server.quodom.id} />}
 
         {selector && (
           <DialogoProveedores
