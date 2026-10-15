@@ -96,4 +96,19 @@ describe('puntoDelQuodom', () => {
     expect(p2.preciso).toBe(false);
     expect(p2.lat).toBeCloseTo(-34.5492, 4);
   });
+
+  // Un try/catch que devolviera null acá convertiría una caída de Google en
+  // "no pudimos ubicar tu dirección", y el usuario iría a corregir un dato que
+  // está bien. El error sube: lo traduce quien atiende el pedido, no este helper.
+  // El error se arma a mano porque `places` está automockeado y su PlacesError
+  // también: una instancia del mock no es un Error de verdad.
+  it('propaga el error cuando Google se cae', async () => {
+    await direccion({ userid: 'u-8', calle: 'X', numero: '1', localidad: 'Tandil', provincia: 'Buenos Aires' });
+    const falla = new Error('Places respondió 503');
+    falla.name = 'PlacesError';
+    falla.codigo = 'upstream';
+    places.puntoDeLocalidad.mockRejectedValue(falla);
+
+    await expect(puntoDelQuodom('u-8')).rejects.toThrow('Places respondió 503');
+  });
 });
