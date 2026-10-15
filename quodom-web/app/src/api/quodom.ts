@@ -14,8 +14,12 @@ export const quodom = {
     apiFetch<Quodom>('/quodom/' + encodeURIComponent(id), { method: 'PUT', body }),
   eliminar: (id: string) =>
     apiFetch<{ res: boolean }>('/quodom/' + encodeURIComponent(id), { method: 'DELETE' }),
-  whatsapp: (id: string) =>
-    apiFetch<{ res: boolean; link: string }>('/quodom/whatsapp/' + encodeURIComponent(id)),
+  // Los dos parámetros del proveedor viajan juntos o no viajan: el servidor
+  // rechaza con 400 la mitad del par, porque un placeid sin teléfono armaría un
+  // link sin destinatario creyendo que lo tiene.
+  whatsapp: (id: string, opts?: { proveedor: string; tel: string }) =>
+    apiFetch<{ res: boolean; link: string }>('/quodom/whatsapp/' + encodeURIComponent(id) +
+      (opts ? '?proveedor=' + encodeURIComponent(opts.proveedor) + '&tel=' + encodeURIComponent(opts.tel) : '')),
   repetir: (id: string) =>
     apiFetch<{ res: boolean; idquodom: string }>('/quodom/repetir/' + encodeURIComponent(id), { method: 'POST' })
 };
