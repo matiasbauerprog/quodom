@@ -1,3 +1,5 @@
 {
-  "env": { "API_DOCS": "true" }
+  "env": { "API_DOCS": "true" },
+  "_comment_ext": "openapi.yaml se lee UNA VEZ al arrancar (helpers/openapi.js). Sin .yaml aca, nodemon no reinicia al tocar el contrato y el server sigue validando contra el viejo: una ruta nueva no existe para el validador, sus query params llegan como no declarados y los rechaza con 400 nombrandolos. El sintoma es un error sobre campos que estan perfectos, y ya costo una sesion de diagnostico.",
+  "ext": "js,json,yaml"
 }

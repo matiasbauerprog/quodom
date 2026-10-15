@@ -187,6 +187,23 @@ describe('DialogoMapa', () => {
     expect(screen.getByRole('button', { name: /usar esta ubicaci/i })).toBeDisabled();
   });
 
+
+  // El 400 lo contesta el validador del contrato ("Faltan datos o hay datos
+  // invalidos: lat"): es diagnostico, esta escrito para un programador, y el
+  // usuario lo leyo en pantalla. Se conserva el texto del servidor SOLO donde
+  // lo escribio este repo para esta pantalla — el 404 y el tope del dia —,
+  // igual que `mensajeDeBusqueda` en el selector de proveedores.
+  it('no le muestra al usuario el texto del validador', async () => {
+    const sdk = sdkFalso();
+    vi.mocked(cargarMapa).mockResolvedValue(sdk.api);
+    punto.mockRejectedValue(new ApiError('Faltan datos o hay datos inválidos: lat, lng', 400));
+
+    render(<DialogoMapa lat={-34.5} lng={-58.5} onElegir={vi.fn()} onCerrar={vi.fn()} />);
+
+    expect(await screen.findByText(/no pudimos leer la direcci/i)).toBeInTheDocument();
+    expect(screen.queryByText(/faltan datos/i)).toBeNull();
+  });
+
   it('cierra con Escape y con Cancelar', async () => {
     const sdk = sdkFalso();
     vi.mocked(cargarMapa).mockResolvedValue(sdk.api);

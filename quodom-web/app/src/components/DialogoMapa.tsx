@@ -156,7 +156,15 @@ export function DialogoMapa({ lat, lng, onElegir, onCerrar, soloLectura, titulo,
       // Se informa, pero **no bloquea**: el punto que el usuario eligió sirve
       // igual para medir distancias, y es lo que vino a arreglar. Sin dirección
       // se confirma el punto solo.
-      setErrDir(e instanceof ApiError ? e.message : 'No pudimos leer la dirección de ese punto.');
+      // El texto del servidor se conserva **sólo** donde lo escribió este repo
+      // para esta pantalla: el 404 ("mové el pin a una calle") y el 429 (el
+      // tope del día). Lo demás es diagnóstico — el validador del contrato
+      // contesta "Faltan datos o hay datos inválidos: lat" — y eso lo leyó un
+      // usuario en pantalla. Misma regla que `mensajeDeBusqueda`.
+      const suyo = e instanceof ApiError && (e.status === 404 || e.status === 429);
+      setErrDir(suyo
+        ? e.message
+        : 'No pudimos leer la dirección de ese punto. Podés usarlo igual, o mover el pin.');
     } finally {
       setBuscando(false);
     }
