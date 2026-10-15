@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { Quodom } from '../api/types';
-import type { BloqueoEnvio } from '../quodom/bloqueosEnvio';
 import { quodom as quodomApi } from '../api/quodom';
 import { ApiError } from '../api/client';
 import './QuodomCard.css';
 
 type Variant = 'sidebar' | 'page';
-
-const HOURS_72 = 72 * 60 * 60 * 1000;
 
 function formatDate(iso?: string | null): string {
   if (!iso) return '';
@@ -19,11 +16,17 @@ function formatDate(iso?: string | null): string {
   return dd + '/' + mm + '/' + yy;
 }
 
-function estadoInfo(q: Quodom): { code: 'creado' | 'enviado' | 'vencido'; label: string; detail?: string } {
+/**
+ * Dos estados y no tres. Hubo un **VENCIDO** que apareciía a las 72hs de
+ * enviado ("Pasaron las 72hs y se venció tu pedido"), herencia de Quodom 1.0,
+ * donde los vendedores tenían ese plazo para cotizar. Acá no hay vendedores ni
+ * cotizaciones y **nada vence**: el pedido sale por WhatsApp y el proveedor
+ * contesta cuando puede. No existía en el backend ni en el contrato —sólo en
+ * este archivo—, así que a los tres días un pedido que estaba perfecto se leía
+ * como fracasado, y el usuario lo reportó mirando su propio historial.
+ */
+function estadoInfo(q: Quodom): { code: 'creado' | 'enviado'; label: string; detail?: string } {
   if (q.estado === 'CREADO') return { code: 'creado', label: 'En armado', detail: (q.cantproductos ?? 0) + ' productos' };
-  const enviadoDate = q.fechaenvio ? new Date(q.fechaenvio).getTime() : 0;
-  const vencido = enviadoDate > 0 && (Date.now() - enviadoDate) > HOURS_72;
-  if (vencido) return { code: 'vencido', label: 'VENCIDO', detail: 'Pasaron las 72hs y se venció tu pedido.' };
   return { code: 'enviado', label: 'ENVIADO', detail: 'Enviado el ' + formatDate(q.fechaenvio) };
 }
 
@@ -35,7 +38,18 @@ function ZigZag() {
   );
 }
 
-export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, onEnviar, enviando, bloqueo }: {
+/**
+ * La tarjeta **no envía**. Tuvo un `enviable` que abría el selector de
+ * proveedores acá adentro, y lo pasaba únicamente su test: ningún padre de
+ * producción lo pasaba, así que el botón y el diálogo no se renderizaban nunca.
+ * Se borró en vez de cablearlo porque ese montaje ponía el diálogo **dentro**
+ * de la tarjeta, que es lo que `MisQuodomsSidebar` se reestructuró para evitar:
+ * en Mis Quodoms, el `onChange` de después de un envío mueve la tarjeta de la
+ * lista de armado a la de enviados, así que la tarjeta se desmonta y el diálogo
+ * se cierra a mitad del flujo. Los dos caminos que envían son el pie del árbol
+ * (`MisQuodomsSidebar`) y el detalle (`DetalleQuodom`).
+ */
+export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, onAbrir }: {
   quodom: Quodom;
   variant?: Variant;
   rubroLabel?: string;
@@ -44,13 +58,11 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   // de navegar. La variante `page` no lo pasa y sigue navegando como siempre.
   expandido?: boolean;
   onToggle?: () => void;
-  // Sin `onEnviar` la tarjeta no ofrece enviar: los carritos de invitado
-  // necesitan login y migración antes, y eso vive en el detalle.
-  onEnviar?: () => void | Promise<void>;
-  enviando?: boolean;
-  // Lo que impide enviar, si algo lo impide. Lo calcula quien tiene los datos
-  // (`bloqueoDeEnvio`): la tarjeta no sabe si el usuario cargó una dirección.
-  bloqueo?: BloqueoEnvio | null;
+  // Con `onAbrir`, tocar la tarjeta llama a esto en lugar de navegar al
+  // detalle. Lo pasa el historial, que abre su ventana de sólo lectura: irse de
+  // la pantalla para mirar un pedido y volver pierde el lugar en la lista, y la
+  // pantalla de detalle es la de **editar**, que sobre un enviado no va.
+  onAbrir?: () => void;
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -85,6 +97,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
 
   function activar() {
     if (onToggle) onToggle();
+    else if (onAbrir) onAbrir();
     else openDetail();
   }
 
@@ -132,7 +145,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
       </button>
       {menuOpen && (
         <div className="qc-menu-panel" onClick={e => e.stopPropagation()}>
-          {(info.code === 'enviado' || info.code === 'vencido') && (
+          {info.code === 'enviado' && (
             <button className="qc-menu-item" onClick={onRepetir}>Repetir</button>
           )}
           <button
@@ -171,15 +184,6 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
       <div className="qc-zigzag-wrap"><ZigZag /></div>
 
       <div className="qc-right">
-        {info.code === 'vencido' && (
-          <>
-            <div className="qc-estado-label qc-estado-vencido-label">
-              <span className="qc-vencido-x" aria-hidden="true">×</span> VENCIDO
-            </div>
-            <div className="qc-detail">{info.detail}</div>
-            <button className="qc-action" onClick={onRepetir} disabled={busy}>{busy ? '…' : '¡Repetilo!'}</button>
-          </>
-        )}
         {info.code === 'enviado' && (
           <>
             <div className="qc-estado-label qc-estado-enviado-label">ENVIADO</div>
@@ -193,24 +197,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
             <div className="qc-detail">{info.detail}</div>
             <div className="qc-acciones">
               <button className="qc-action" onClick={e => { e.stopPropagation(); seguirEnElRubro(); }}>Continuar</button>
-              {onEnviar && (
-                <button
-                  className="qc-action qc-action-enviar"
-                  disabled={enviando || !!bloqueo}
-                  onClick={e => { e.stopPropagation(); if (!bloqueo) onEnviar(); }}
-                >{enviando ? 'Cotizando…' : 'Cotizar por WhatsApp'}</button>
-              )}
             </div>
-            {onEnviar && bloqueo && (
-              <p className="qc-bloqueo">
-                {bloqueo.texto}{' '}
-                {bloqueo.motivo === 'direccion' ? (
-                  <Link to="/direcciones/nuevo" onClick={e => e.stopPropagation()}>{bloqueo.accion}</Link>
-                ) : (
-                  <span className="qc-bloqueo-accion">{bloqueo.accion}</span>
-                )}
-              </p>
-            )}
           </>
         )}
         {err && <div className="qc-err">{err}</div>}

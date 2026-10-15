@@ -2,6 +2,8 @@ const db = require('../helpers/db');
 const serie = require('../helpers/series');
 const { httpError } = require('../helpers/http-error');
 const { esRubroActivo } = require('../config/rubros');
+const { resolverDireccion, getDireccionDefault } = require('../helpers/direccionDelQuodom');
+const { analizarTelefono } = require('../helpers/telefonoWhatsapp');
 
 module.exports = {
     getById,
@@ -124,34 +126,38 @@ function atributosSinElegir(linea) {
     return faltan;
 }
 
-// La dirección define a qué proveedores les llega el WhatsApp, así que un
-// pedido sin ella no se puede cotizar. No alcanza con mirar `iddireccion`: se
-// copia al crear el Quodom, y quien no tenía ninguna entonces quedaba con null
-// para siempre, incluso después de cargarla. Se resuelve al enviar.
-async function resolverDireccion(quodom, userId) {
-    if (quodom.iddireccion) {
-        const propia = await db.user_direcciones.findOne({
-            where: { id: quodom.iddireccion, userid: userId }
-        });
-        if (propia) return quodom.iddireccion;
-    }
-
-    const direccion = await getDireccionDefault(userId)
-        || await db.user_direcciones.findOne({ where: { userid: userId } });
-    if (!direccion) {
-        throw httpError(409, 'falta_direccion',
-            'Cargá una dirección antes de enviar: define a qué proveedores les llega el pedido.');
-    }
-
-    quodom.iddireccion = direccion.id;
-    await quodom.save();
-    return direccion.id;
-}
-
-async function whatsappLink(id, userId) {
+async function whatsappLink(id, userId, proveedor, tel) {
     const quodom = await getQuodom(id);
     if (quodom.createdBy !== userId) {
         throw 'El Id Quodom no pertenece a el usuario.';
+    }
+
+    // El proveedor y su teléfono van juntos o no va ninguno. El camino sin
+    // destinatario —la salida cuando no hay proveedores cerca, cuando Google
+    // falla, o para un proveedor propio— no manda ninguno de los dos, así que
+    // medio par es siempre un bug del cliente y tiene que ser ruidoso. Y es
+    // alcanzable de verdad: un proveedor de la lista puede venir con
+    // `telefono: null` (un 0800, o un local sin teléfono). Tomarlo como "sin
+    // proveedor" devolvía 200 con un link sin destinatario y el Quodom ya en
+    // ENVIADO: el comprador caía en el selector de contactos vacío de WhatsApp,
+    // el popup seguía mostrando al proveedor como no contactado, y el pedido ya
+    // no se podía volver a mandar.
+    if (!!proveedor !== !!tel) {
+        throw 'Para mandarle a un proveedor hacen falta su identificador y su teléfono.';
+    }
+
+    // El número se revisa antes de tocar nada, para que un teléfono que no
+    // sirve deje el Quodom en CREADO y no a medio enviar. Se rechaza también el
+    // que es válido pero no recibe WhatsApp (un 0800): armarle el link igual
+    // manda al comprador a un chat que nunca abre, y eso se lee como que el
+    // comercio no tiene WhatsApp. La app ya esconde el botón; esto es la red.
+    let destino = null;
+    if (proveedor) {
+        const n = analizarTelefono(tel);
+        if (!n || !n.sirveWhatsapp) {
+            throw 'El teléfono del proveedor no es válido.';
+        }
+        destino = n.e164.replace('+', '');
     }
 
     const lines = await db.v_Quodoms_lines.findAll({
@@ -230,6 +236,22 @@ async function whatsappLink(id, userId) {
         });
     }
 
+    if (destino) {
+        // Se marca el toque del botón, que es lo único observable: lo que pasa
+        // dentro de WhatsApp no se ve. Fingir más conocimiento sería peor.
+        // `findOrCreate` y no `create` porque la tabla no tiene unique sobre
+        // (idquodom, placeid): mandarle dos veces al mismo duplicaría la fila y
+        // el popup lo mostraría repetido.
+        const [fila] = await db.quodom_proveedores.findOrCreate({
+            where: { idquodom: id, placeid: proveedor },
+            defaults: { idquodom: id, placeid: proveedor }
+        });
+        fila.contactado_en = new Date();
+        await fila.save();
+
+        return 'https://wa.me/' + destino + '?text=' + encodeURIComponent(msg);
+    }
+
     return 'https://wa.me/?text=' + encodeURIComponent(msg);
 }
 
@@ -268,11 +290,4 @@ async function getQuodom(id) {
     const quodom = await db.Quodom.findByPk(id);
     if (!quodom) throw 'Err. Quodom no encontrado.';
     return quodom;
-}
-
-async function getDireccionDefault(userId) {
-    return await db.user_direcciones.findOne({
-        where: { userid: userId, default: true },
-        attributes: { exclude: ['createdAt', 'updatedAt'] }
-    });
 }

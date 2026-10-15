@@ -1,0 +1,29 @@
+/* La sección vive dentro del detalle del Quodom, así que no repite la tarjeta:
+   se separa del pedido con un título y aire, y los renglones traen su propio
+   borde desde FilaProveedor.css. */
+.pc { margin-top: var(--sp-5); }
+.pc-titulo {
+  font-size: var(--fs-h2);
+  margin: 0 0 var(--sp-1) 0;
+}
+.pc-cuenta {
+  margin: 0 0 var(--sp-3) 0;
+  font-size: var(--fs-small);
+  color: #5C5C5C;
+}
+.pc-lista {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.pc-error {
+  margin: var(--sp-2) 0;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  color: var(--color-acento);
+  font-weight: 600;
+}
+.pc-atribucion {
+  margin: var(--sp-2) 0 0 0;
+  font-size: var(--fs-tiny);
+  color: #8A8A8A;
+}

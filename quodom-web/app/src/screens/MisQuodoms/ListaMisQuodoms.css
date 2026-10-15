@@ -30,25 +30,4 @@
   flex-direction: column;
 }
 
-/* Repetí un pedido: los últimos enviados, en verde suave para leerse como
-   cerrados de un vistazo. */
-.mq-repetir { margin-bottom: var(--sp-5); }
-.mq-repetir-titulo { font-size: var(--fs-h2); margin: 0 0 var(--sp-3) 0; }
-.mq-terminado {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
-  background: rgba(45, 171, 102, 0.12);
-  border: 1px solid rgba(45, 171, 102, 0.42);
-}
-.mq-terminado-datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.mq-terminado-rubro { font-family: var(--font-prompt); }
-.mq-terminado-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mq-terminado-meta { font-size: var(--fs-tiny); opacity: 0.7; }
-.mq-terminado-repetir { flex: 0 0 auto; background: var(--color-exito); color: #fff; border: none; }
-.mq-terminado-repetir:disabled { opacity: 0.6; cursor: default; }
-.mq-terminado-repetir:focus-visible { outline: 3px solid var(--color-texto); outline-offset: 2px; }
 .mq-agregado { color: var(--color-exito); margin: 0 0 var(--sp-3); }
-.mq-repetir-err { color: var(--color-acento); margin: 0 0 var(--sp-3); }

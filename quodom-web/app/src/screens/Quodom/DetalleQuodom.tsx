@@ -14,7 +14,8 @@ import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { SelectorAtributo } from './SelectorAtributo';
 import { ProductImage } from '../../components/ProductImage';
-import { openWhatsappLink } from '../../utils/whatsapp';
+import { DialogoProveedores } from '../../quodom/DialogoProveedores';
+import { ProveedoresContactados } from '../../quodom/ProveedoresContactados';
 import { migrarRubro } from '../../guest/migrateGuestQuodom';
 import { nombreRubro } from '../../quodom/rubros';
 import { rubroDisponible } from '../../quodom/rubrosDisponibles';
@@ -50,6 +51,16 @@ export function DetalleQuodom() {
   const [busy, setBusy] = useState(false);
   const [attr, setAttr] = useState<{ lineIndex?: number; lineId?: number; idproducto: number; nombreatributo: string; slot: 1 | 2; actual: string | null | undefined } | null>(null);
   const [nonce, setNonce] = useState(0);
+  // El selector de proveedores abierto, y si al cerrarlo hay que salir de esta
+  // pantalla: el envío de un carrito de invitado lo migra primero, así que el
+  // carrito ya no existe y quedarse acá deja al comprador mirando un vacío.
+  const [selector, setSelector] = useState<{ idquodom: string; migrado: boolean } | null>(null);
+  // El selector ya se usó en esta visita. La sección de contactados no se monta
+  // después: el comprador acaba de ver esa misma lista en el diálogo, y montarla
+  // al cerrarlo gastaba una búsqueda **paga** más por envío (tres en total, una
+  // necesaria) para repetirle lo que tenía delante. En la próxima entrada a la
+  // pantalla aparece como siempre.
+  const [selectorUsado, setSelectorUsado] = useState(false);
   // A cart can outlive its rubro: guest carts live in the user's own
   // localStorage and survive a deploy that retires one. Sending such a cart
   // always fails (POST /quodom/create -> 400 idrubro_invalido), so the send
@@ -166,9 +177,9 @@ export function DetalleQuodom() {
         // confirmed on the server, so a failure here leaves it intact to retry.
         const idquodom = await migrarRubro(idrubro);
         if (!idquodom) { setErr('No hay productos en el Quodom.'); return; }
-        const r = await quodomApi.whatsapp(idquodom);
-        openWhatsappLink(r.link);
-        navigate('/mis-quodoms', { replace: true });
+        // Migrado y recién ahora se elige a quién: el selector es el que envía.
+        setSelector({ idquodom, migrado: true });
+        setSelectorUsado(true);
       } catch (e) {
         setErr(e instanceof ApiError ? e.message : 'No se pudo enviar.');
       } finally {
@@ -177,16 +188,27 @@ export function DetalleQuodom() {
       return;
     }
     if (!server) return;
-    setBusy(true);
-    try {
-      const r = await quodomApi.whatsapp(server.quodom.id);
-      openWhatsappLink(r.link);
-      setNonce(n => n + 1);
-      // El backend pasa el Quodom a ENVIADO al dar el link. Sin este aviso el
-      // sidebar y la barra inferior lo seguían mostrando en armado.
-      window.dispatchEvent(new Event('quodom:changed'));
-    } catch (e) { setErr(e instanceof ApiError ? e.message : 'No se pudo enviar.'); }
-    finally { setBusy(false); }
+    setSelector({ idquodom: server.quodom.id, migrado: false });
+    setSelectorUsado(true);
+  }
+
+  function cerrarSelector() {
+    const migrado = selector?.migrado;
+    setSelector(null);
+    // El carrito de invitado ya migró: esta pantalla quedó vacía, así que el
+    // lugar del Quodom es el historial.
+    if (migrado) navigate('/mis-quodoms', { replace: true });
+  }
+
+  // El backend pasa el Quodom a ENVIADO al dar el link. Sin este aviso el
+  // sidebar y la barra inferior lo seguían mostrando en armado. El selector
+  // sigue abierto: mandarle a varios proveedores es para lo que existe.
+  function avisarEnviado() {
+    // El nonce sólo recarga datos del servidor. En modo invitado además
+    // volvería a leer el carrito, que la migración dejó vacío, y eso dispara
+    // la redirección al Quodom del rubro en medio del envío.
+    if (mode === 'server') setNonce(n => n + 1);
+    window.dispatchEvent(new Event('quodom:changed'));
   }
 
   const lines = mode === 'guest'
@@ -303,6 +325,29 @@ export function DetalleQuodom() {
             {nombreRubro(idrubro!)} no está disponible por ahora, así que este Quodom no se puede enviar.
             Tus productos quedan guardados acá por si el rubro vuelve.
           </p>
+        )}
+
+        {/* Enviado no es el final: el comprador le manda a uno, no le contestan
+            y le manda a otro, y a quién ya le mandó sólo lo sabe el servidor.
+            No se monta mientras el selector está abierto NI después de haberlo
+            usado en esta visita, y eso no es cosmética: el envío pasa el Quodom
+            a ENVIADO y el nonce lo recarga, así que la sección aparecía
+            **detrás** del diálogo y gastaba una búsqueda paga más por cada
+            envío (tres por el primero, una necesaria) para repetir la lista que
+            el comprador tenía delante. Y eran dos `useProveedores` del mismo
+            Quodom con estados separados: deshacer en uno dejaba al otro
+            mostrándolo contactado. */}
+        {yaEnviado && server && !selector && !selectorUsado && (
+          <ProveedoresContactados idquodom={server.quodom.id} />
+        )}
+
+        {selector && (
+          <DialogoProveedores
+            idquodom={selector.idquodom}
+            onCerrar={cerrarSelector}
+            onEnviado={avisarEnviado}
+            onEnviadoSinProveedor={cerrarSelector}
+          />
         )}
 
         {attr && (

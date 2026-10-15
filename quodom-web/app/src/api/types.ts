@@ -18,3 +18,6 @@ export type Notificacion = S['Notificacion'];
 export type BusquedaResult = S['BusquedaResult'];
 export type SugerenciaLugar = S['SugerenciaLugar'];
 export type DireccionDeLugar = S['DireccionDeLugar'];
+// telefono es el número con el que se abre WhatsApp y telefonovisible el que se
+// muestra y se llama: un 0800 llega con telefono en null y telefonovisible puesto.
+export type Proveedor = S['Proveedor'];

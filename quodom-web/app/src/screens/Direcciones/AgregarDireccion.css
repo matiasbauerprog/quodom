@@ -5,3 +5,16 @@
 /* Columna de contenido centrada: mas especifico que .container, que apunta a
    1120px para las grillas de producto. */
 .container.dir-form { max-width: var(--pantalla-ancho); }
+
+/* Mirar el punto y corregirlo, juntos: el link abre Maps para confirmar y el
+   boton abre la ventana donde se arrastra el pin. Sin coordenadas el link no se
+   dibuja (LinkMapa devuelve null) y queda solo el boton, que ahi dice
+   "Marcar en el mapa". */
+.dir-mapa-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+.dir-mapa-ajustar { flex: 0 0 auto; }

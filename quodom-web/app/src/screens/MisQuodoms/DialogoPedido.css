@@ -1,0 +1,80 @@
+.dpd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 60;
+  padding: 0;
+}
+
+.dpd {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.dpd-cab { display: flex; flex-direction: column; gap: 2px; }
+
+.dpd-rubro {
+  margin: 0;
+  font-family: var(--font-prompt);
+  font-size: var(--fs-tiny);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-texto-suave, #6B6B6B);
+}
+
+.dpd-titulo { margin: 0; font-family: var(--font-prompt); font-size: var(--fs-h2); }
+
+.dpd-meta { margin: 0; font-size: var(--fs-small); color: var(--color-texto-suave, #6B6B6B); }
+
+/* Las líneas son un listado y no una tabla editable: ni botones, ni inputs.
+   Un pedido del historial ya lo recibió un proveedor. */
+.dpd-lineas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+
+.dpd-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid rgba(0, 0, 0, .07);
+}
+.dpd-linea:last-child { border-bottom: 0; }
+
+.dpd-linea-nombre { font-size: var(--fs-body); }
+
+.dpd-linea-datos {
+  flex: 0 0 auto;
+  font-size: var(--fs-small);
+  color: var(--color-texto-suave, #6B6B6B);
+  white-space: nowrap;
+}
+
+.dpd-vacio, .dpd-err { margin: 0; font-size: var(--fs-small); }
+.dpd-err { color: var(--color-error, var(--color-acento)); }
+
+.dpd-pie { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+/* Verde de WhatsApp: el botón lleva la marca de a dónde va. */
+.dpd-otro {
+  background: var(--color-whatsapp);
+  border-color: var(--color-whatsapp);
+  color: #fff;
+}
+.dpd-otro:hover:not(:disabled) { background: var(--color-whatsapp); filter: brightness(1.08); }
+
+@media (min-width: 601px) {
+  .dpd-backdrop { align-items: center; padding: var(--sp-4); }
+  .dpd { max-height: 80dvh; }
+  .dpd-pie { flex-direction: row; flex-wrap: wrap; }
+  .dpd-pie > .btn { flex: 1 1 auto; }
+  .dpd-cerrar { flex: 0 0 auto; }
+}

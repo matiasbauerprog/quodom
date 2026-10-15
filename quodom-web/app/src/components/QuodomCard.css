@@ -73,13 +73,6 @@
   letter-spacing: 0.06em;
   margin-bottom: var(--sp-1);
 }
-.qc-estado-vencido-label { color: #FFB4B4; display: flex; align-items: center; gap: 4px; }
-.qc-vencido-x {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; border-radius: 50%;
-  background: var(--color-error); color: #fff;
-  font-size: 14px; line-height: 1; font-weight: 700;
-}
 .qc-estado-enviado-label { color: #C7F0D8; }
 .qc-estado-creado-label { color: rgba(255,255,255,0.9); }
 .qc-detail { font-size: var(--fs-tiny); opacity: 0.8; line-height: 1.3; margin-bottom: var(--sp-2); }
@@ -95,16 +88,6 @@
 }
 .qc-acciones { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .qc-action:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
-/* Enviar es la acción que cierra el flujo: va en verde lleno, no delineada. */
-/* El verde de WhatsApp, no el de "éxito": el botón lleva la marca de a dónde va. */
-.qc-action-enviar {
-  background: var(--color-whatsapp);
-  border-color: var(--color-whatsapp);
-  color: #fff;
-}
-.qc-action-enviar:hover:not(:disabled) { background: var(--color-whatsapp); filter: brightness(1.08); }
-.qc-page .qc-action-enviar { color: #fff; }
-
 .qc-rename { margin: 0; }
 .qc-rename-input {
   width: 100%;
@@ -127,21 +110,9 @@
   box-shadow: var(--shadow-card);
 }
 .qc-page:hover { background: #FBFBFB; }
-.qc-page .qc-estado-vencido-label { color: var(--color-error); }
 .qc-page .qc-estado-enviado-label { color: var(--color-exito); }
 .qc-page .qc-estado-creado-label { color: var(--color-acento); }
 .qc-page .qc-action { color: var(--color-acento); }
 .qc-page .qc-action:hover:not(:disabled) { background: rgba(112,111,154,.08); }
 .qc-page .qc-err { color: var(--color-error); }
 
-/* El motivo por el que el envío está trabado. El sidebar es panel oscuro, así
-   que el aviso va en claro; en la variante de página se invierte. */
-.qc-bloqueo {
-  font-size: var(--fs-tiny);
-  line-height: 1.35;
-  margin-top: var(--sp-2);
-  color: #FFD9A0;
-}
-.qc-bloqueo a { color: inherit; text-decoration: underline; }
-.qc-bloqueo-accion { opacity: 0.85; }
-.qc-page .qc-bloqueo { color: #8A5A00; }

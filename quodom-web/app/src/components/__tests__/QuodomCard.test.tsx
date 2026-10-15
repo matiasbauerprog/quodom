@@ -39,6 +39,20 @@ beforeEach(() => {
 });
 
 describe('QuodomCard', () => {
+  // La tarjeta no envía. El `enviable` que abría el selector acá adentro lo
+  // pasaba únicamente este test, así que el botón no se renderizaba nunca en
+  // producción; y el montaje ponía el diálogo DENTRO de la tarjeta, que es lo
+  // que `MisQuodomsSidebar` se reestructuró para evitar — en Mis Quodoms el
+  // refresco de después del envío desmonta la tarjeta y cierra el diálogo a
+  // mitad del flujo. Esta aserción es para que no vuelva a aparecer sin que
+  // alguien resuelva eso.
+  it('no ofrece enviar: los caminos que envían son el árbol y el detalle', () => {
+    montar();
+
+    expect(screen.queryByRole('button', { name: /cotizar/i })).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('no muestra el porcentaje de completado', () => {
     montar();
 
@@ -55,12 +69,6 @@ describe('QuodomCard', () => {
     // Continuar es "seguir agregando productos de este rubro", no "abrir la
     // ficha": el catálogo de ese rubro es lo que hace falta a continuación.
     expect(await screen.findByTestId('url')).toHaveTextContent('/?rubro=7');
-  });
-
-  it('el botón de enviar dice cotizar por WhatsApp', () => {
-    montar({ onEnviar: vi.fn() });
-
-    expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeInTheDocument();
   });
 
   it('el menú ya no ofrece Cancelar', () => {
@@ -117,47 +125,31 @@ describe('QuodomCard', () => {
   });
 });
 
-// La dirección define a qué proveedores llega el pedido y la medida es lo que
-// el proveedor necesita para cotizar: sin eso el envío se bloquea, y el motivo
-// tiene que estar a la vista y ser accionable, no un botón muerto.
-describe('QuodomCard con el envío bloqueado', () => {
-  it('deshabilita enviar y muestra el motivo', () => {
-    montar({
-      onEnviar: vi.fn(),
-      bloqueo: { motivo: 'atributo', texto: 'Falta elegir la medida de algún producto.', accion: 'Abrí el Quodom y completá lo que falta.' }
-    });
+// Un pedido enviado dice ENVIADO para siempre.
+//
+// La tarjeta tenia un tercer estado, VENCIDO, que aparecia a las 72hs de
+// enviado: "Pasaron las 72hs y se vencio tu pedido". Es herencia de Quodom
+// 1.0, donde los vendedores tenian ese plazo para cotizar. En este producto no
+// hay vendedores ni cotizaciones y **nada vence**: el pedido sale por WhatsApp
+// y el proveedor contesta cuando puede. VENCIDO no existia en el backend ni en
+// el contrato, solo en este archivo, asi que a los tres dias el pedido se leia
+// como fracasado sin que nada hubiera fracasado.
+describe('QuodomCard: un enviado no vence', () => {
+  const haceDias = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
 
-    expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeDisabled();
-    expect(screen.getByText(/falta elegir la medida/i)).toBeInTheDocument();
+  const enviadoHace = (dias: number) => ({
+    ...BEBIDAS, estado: 'ENVIADO', fechaenvio: haceDias(dias)
+  }) as unknown as Quodom;
+
+  it('dice ENVIADO recien salido', () => {
+    montar({ quodom: enviadoHace(0) });
+    expect(screen.getByText('ENVIADO')).toBeInTheDocument();
   });
 
-  it('no llama a enviar cuando está bloqueado', () => {
-    const onEnviar = vi.fn();
-    montar({
-      onEnviar,
-      bloqueo: { motivo: 'direccion', texto: 'Falta tu dirección.', accion: 'Cargar dirección' }
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
-
-    expect(onEnviar).not.toHaveBeenCalled();
-  });
-
-  it('ofrece el link para cargar la dirección que falta', () => {
-    montar({
-      onEnviar: vi.fn(),
-      bloqueo: { motivo: 'direccion', texto: 'Falta tu dirección.', accion: 'Cargar dirección' }
-    });
-
-    expect(screen.getByRole('link', { name: /cargar dirección/i })).toHaveAttribute('href', '/direcciones/nuevo');
-  });
-
-  it('sin bloqueo el botón funciona como siempre', () => {
-    const onEnviar = vi.fn();
-    montar({ onEnviar, bloqueo: null });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
-
-    expect(onEnviar).toHaveBeenCalled();
+  it('sigue diciendo ENVIADO una semana despues, y nunca VENCIDO', () => {
+    montar({ quodom: enviadoHace(7) });
+    expect(screen.getByText('ENVIADO')).toBeInTheDocument();
+    expect(screen.queryByText(/vencido/i)).toBeNull();
+    expect(screen.queryByText(/72hs/i)).toBeNull();
   });
 });

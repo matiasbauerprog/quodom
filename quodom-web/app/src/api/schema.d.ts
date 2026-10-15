@@ -430,6 +430,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lugares/punto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * La direccion que hay en un punto del mapa (geocodificacion inversa)
+         * @description Para el pin arrastrable: el usuario mueve el punto y la pantalla le muestra la direccion en vez de las coordenadas. `lat` y `lng` vuelven tal como se pidieron y no como Google los emparejo: el punto que vale es el que marco el usuario, y la direccion es la confirmacion de que marco donde queria.
+         */
+        get: {
+            parameters: {
+                query: {
+                    lat: number;
+                    lng: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description La direccion en ese punto */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DireccionDeLugar"];
+                    };
+                };
+                /** @description Coordenadas que faltan o estan fuera de rango */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Google no conoce ninguna direccion en ese punto (mar, campo) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                429: components["responses"]["TooMany"];
+                503: components["responses"]["ServicioExterno"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lugares/{placeid}": {
         parameters: {
             query?: never;
@@ -1327,10 +1390,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Arma el link wa.me y pasa el Quodom a ENVIADO */
+        /**
+         * Arma el link wa.me y pasa el Quodom a ENVIADO
+         * @description Sin `proveedor` y `tel` el link no lleva destinatario, que es la salida cuando no hay proveedores en la zona, cuando Google falla, y para mandarle a un proveedor propio que no está en la lista.
+         */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description place_id del proveedor elegido */
+                    proveedor?: string;
+                    /** @description Teléfono del proveedor; el servidor lo valida y rechaza el que no recibe WhatsApp */
+                    tel?: string;
+                };
                 header?: never;
                 path: {
                     id: components["parameters"]["QuodomId"];
@@ -1402,6 +1473,112 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quodom/proveedores/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proveedores del rubro cerca de la dirección del Quodom */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Hasta 5 proveedores de la búsqueda de hoy, más los que el comprador ya contactó aunque hoy no hayan vuelto a salir (ésos llegan con `sindatos: true`). Lista vacía si no hay ninguno en la zona. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            proveedores: components["schemas"]["Proveedor"][];
+                            preciso: boolean;
+                            desde: string;
+                            atribucion: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                /** @description No se puede ubicar la dirección ni por su localidad */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                429: components["responses"]["TooMany"];
+                503: components["responses"]["ServicioExterno"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quodom/proveedores/{id}/no-enviado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deshacer el contacto con un proveedor */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        placeid: string;
+                        /** @enum {string} */
+                        motivo?: "sin_whatsapp" | "otro";
+                    };
+                };
+            };
+            responses: {
+                /** @description Desmarcado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            res: boolean;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2536,6 +2713,7 @@ export interface components {
             lng?: number | null;
             /** Format: date-time */
             coords_actualizado?: string | null;
+            punto_manual?: boolean | null;
         };
         DireccionInput: {
             alias?: string;
@@ -2551,6 +2729,7 @@ export interface components {
             placeid?: string | null;
             lat?: number | null;
             lng?: number | null;
+            punto_manual?: boolean | null;
         };
         SugerenciaLugar: {
             placeid: string;
@@ -2567,6 +2746,23 @@ export interface components {
             lat: number;
             lng: number;
             direccion: string;
+        };
+        Proveedor: {
+            placeid: string;
+            nombre: string;
+            rating?: number | null;
+            resenas?: number;
+            distanciakm: number | null;
+            telefono?: string | null;
+            telefonovisible?: string | null;
+            sintelefono: boolean;
+            sinwhatsapp: boolean;
+            direccion?: string;
+            lat?: number | null;
+            lng?: number | null;
+            /** Format: date-time */
+            contactadoen?: string | null;
+            sindatos: boolean;
         };
         Notificacion: {
             id: number;

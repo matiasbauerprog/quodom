@@ -280,6 +280,70 @@ se tocan. Punto de partida medido:
 | 5 Pintura | `pinturería` | Le Bleu, San Andrés, Devoto, Balcarce |
 | 7 Bebidas | `distribuidora de bebidas` | BMG, SCR, Fullescabio |
 
+**El mismo sondeo, el mismo día y con los mismos términos, en las otras dos zonas.**
+Queda anotado acá para que "anda en las tres" sea un dato y no una afirmación: la
+tabla de arriba es sólo Villa Ballester, y una zona no alcanza para elegir un término
+que corre para todo el país.
+
+> **De dónde salen estos números, y por qué nadie los puede confirmar leyendo el repo.**
+> Están **transcriptos a mano** de la salida de una corrida del 2026-10-15; esa salida
+> **no está guardada en ningún archivo del repositorio**, así que la única forma de
+> confirmarlos es volver a correr el script —
+> `node scripts/verificar-proveedores.js "Palermo, Ciudad Autónoma de Buenos Aires"` — y
+> los números van a diferir, porque las reseñas se mueven. La aclaración no es
+> burocracia: una transcripción mezcló resultados de Villa Ballester en la fila de
+> Librería de Palermo y así llegó a un commit, y lo único que lo delató fue un nombre
+> fuera de lugar ("Las Palabras **Ballester**" en una lista de Palermo). Si vas a tocar
+> un término apoyándote en estas listas, corré el script primero.
+
+**Palermo, CABA** (centro resuelto desde "Palermo, Ciudad Autónoma de Buenos Aires"):
+
+- Limpieza: Tienda Artículos de Limpieza (5★, 147), El Cacique Limpieza (5★, 81),
+  El Cacique (4,5★, 36), ARTÍCULOS DE LIMPIEZA FÉNIX (5★, 27)
+- Librería: Gráfica & Librería Copier (4,4★, 110), Librería Catriel (4,5★, 145),
+  Compañía de Libros (4,5★, 8), y **Librería Teorema (4,4★, 3.794 reseñas y sin teléfono)**
+- Papelera: Papelera Chacarita (3,2★, 231), PAPELERA MAGIC (4,8★, 155),
+  Librería y Papelera Aries (3,2★, 44), PAPELERA Y DESCARTABLES ORO (5★, 18)
+- Pintura: Prestigio (4★, 351), Rex (4,9★, 223), TABARES pinturería (4,5★, 108),
+  Pinturerías Liberato (4,5★, 18)
+- Bebidas: Señor Bebidas (4,9★, 103), Mal Trago Liquor Store (4,4★, 33),
+  Espacio bebidas (3,8★, 21), La Previa (4,9★, 11)
+
+**Nueva Córdoba, Córdoba:**
+
+- Limpieza: Aroma de Hogar (4,2★, 33), Aroma de Hogar mayorista (4,7★, 15),
+  Todo Bien Limpito! (4,4★, 7), Distribuidora San Lorenzo
+- Librería: Librería del Palacio (4,7★, 592), Librería Mil Trazos (4,3★, 655),
+  OVNI Librerías (4,2★, 113)
+- Papelera: **Papelera Santa Elena (4,3★, 810)**, Multipapel (4,3★, 665),
+  Pencilbag mayorista (4,4★, 320), La papelera (4,4★, 32)
+- Pintura: Pinturería Szumik (4,5★, 153), Garin Pinturerías (4,6★, 102),
+  Pinturería Color Home (4,6★, 57), **Rex (4,1★, 453, `0800-777-7739`)**
+- Bebidas: Coca Parque (4,1★, 209), Distribuidora Cofico (4,5★, 166),
+  El Paraíso Distribuidora de Bebidas (4,7★, 18), Bebidas 520 (4,1★, 7)
+
+Dos cosas que muestran estos datos y que no se ven en la tabla de Villa Ballester:
+
+- **`book_store` es malo en CABA y aceptable en Córdoba.** En Palermo devuelve
+  Cristoneitor (5★ con **una** reseña), Lirbano (sin reseñas), Almacén Astral (4,7★, 14)
+  y "365 Kioscos Argentinos" (2,2★, 10); por texto, la misma zona devuelve Copier (110
+  reseñas), Teorema (3.794) y Catriel (145). En Nueva Córdoba el tipo se porta bien
+  —Librería del Palacio (4,7★, 592) y OVNI Librerías (4,2★, 113), que son las
+  correctas— y el texto suma además Librería Mil Trazos (655). **Ese contraste es el
+  argumento del texto**, y pesa más que cualquier promedio: un tipo cuya calidad depende
+  de la ciudad no es una regla en la que se pueda confiar.
+- **El comercio sin teléfono no es el caso raro.** Librería Teorema tiene **3.794
+  reseñas** y Google no tiene su número. Filtrar a los que no tienen teléfono habría
+  borrado del selector al comercio **más reseñado** del rubro en CABA — por eso se
+  muestran, con "ver en Maps".
+
+> **Lo que todavía NO está calibrado: ninguna ciudad chica del interior.** Las tres
+> zonas medidas son un partido del conurbano, CABA y una capital de provincia; o sea
+> tres centros urbanos, que es exactamente el alcance declarado del producto. La ciudad
+> chica es **la puerta manual pendiente** (ver el plan de pruebas): hasta que alguien
+> corra el script ahí, "anda en las tres" dice lo que dice y nada más, y no alcanza
+> para dar ese paso por cumplido.
+
 Vive en código y no en la base por la misma razón que `config/rubros.js` lo
 explica para los rubros activos: `quodom.sqlite` se commitea y corre en modo WAL,
 así que **un cambio de datos no se revisa en el diff ni sobrevive con seguridad a
@@ -297,8 +361,19 @@ término: cuando se activen, se mide el suyo antes de encenderlos.
 
 ### Un proveedor sin teléfono
 
-**Medido:** Google no tiene número para una parte de los comercios (JB Artículos
-de Limpieza, Santi Estevez, Vinotecas). A ésos no se les puede mandar WhatsApp
+**Medido, y hay dos casos distintos:**
+
+**a) Sin teléfono.** Google no tiene número para una parte de los comercios (JB
+Artículos de Limpieza, Santi Estevez, Vinotecas, y en CABA hasta Librería Teorema,
+que tiene 3.794 reseñas).
+
+**b) Con un teléfono que no recibe WhatsApp.** Rex, en Córdoba, publica
+`0800-777-7739`. Es un número válido y el comercio es bueno —453 reseñas—, pero un
+0800 no recibe WhatsApp. Se muestra con el botón de **llamar**, sin el de WhatsApp:
+ofrecerlo sería mandar al usuario a un chat que no abre, y eso se lee como que el
+comercio no tiene WhatsApp cuando el problema es el tipo de número.
+
+Para el caso (a): A ésos no se les puede mandar WhatsApp
 **ni llamarlos**, que eran las dos salidas previstas.
 
 No se filtran: siguen en la lista, con su nombre, su puntuación y su distancia,
@@ -373,7 +448,7 @@ Archivos nuevos:
 src/helpers/places.js              dueño del fetch a Google. Nadie más sabe que existe.
 src/helpers/rankearProveedores.js  puro: lista + punto → orden. Sin HTTP.
 src/helpers/telefonoWhatsapp.js    normaliza a internacional y clasifica celular/fijo.
-src/config/rubrosPlaces.js         los 8 rubros → tipos de Places o consulta de texto.
+src/config/rubrosPlaces.js         un término de texto por rubro activo (los tipos de Places se midieron y perdieron).
 src/config/provinciasGoogle.js     las 24 provincias → id de nuestra tabla.
 src/controllers/lugares.controller.js
 src/controllers/proveedores.controller.js
@@ -517,3 +592,11 @@ visitas. De ahí el tope diario por usuario.
 - Elegir el radio o la cantidad de proveedores desde la UI. Son constantes de
   configuración hasta que haya datos de uso que justifiquen exponerlas.
 - Direcciones fuera de Argentina.
+- **Pueblos chicos.** El producto apunta a **centros urbanos**: CABA, AMBA y
+  ciudades. Los términos de búsqueda se calibran y se validan ahí, y no se
+  garantiza que funcionen en una localidad de pocos miles de habitantes, donde
+  puede no haber ningún comercio que se llame "papelera" —palabra que además
+  significa cesto de basura— y la búsqueda devolvería nada o cualquier cosa.
+  Medido el 2026-10-15 en Villa Ballester, CABA y Córdoba —los tres, centros
+  urbanos—: en las tres anda. **Ninguna ciudad chica se midió todavía**, así que
+  esto es el alcance declarado y no un resultado: es la puerta manual pendiente.

@@ -232,6 +232,7 @@ components:
         lat: { type: number, nullable: true }
         lng: { type: number, nullable: true }
         coords_actualizado: { type: string, format: date-time, nullable: true }
+        punto_manual: { type: boolean, nullable: true }
     DireccionInput:
       type: object
       properties:
@@ -256,6 +257,10 @@ components:
         placeid: { type: string, nullable: true }
         lat: { type: number, nullable: true }
         lng: { type: number, nullable: true }
+        # El usuario puso el pin en el mapa con la mano: el tercer caso de
+        # precision. Se borra junto con las coordenadas y por lo mismo, si
+        # despues edita la calle el pin ya no describe esa direccion.
+        punto_manual: { type: boolean, nullable: true }
 
     SugerenciaLugar:
       type: object
@@ -277,6 +282,37 @@ components:
         lat: { type: number }
         lng: { type: number }
         direccion: { type: string }
+    Proveedor:
+      type: object
+      required: [placeid, nombre, distanciakm, sintelefono, sinwhatsapp, sindatos]
+      properties:
+        placeid: { type: string }
+        nombre: { type: string }
+        rating: { type: number, nullable: true }
+        resenas: { type: integer }
+        # Null en un renglón `sindatos`: de ese lugar sólo se guarda el
+        # place_id, así que no vino de Google en esta búsqueda y no hay desde
+        # dónde medirlo. Un número ahí sería una distancia medida desde otra
+        # parte, que es justo lo que la pantalla no puede mostrar.
+        distanciakm: { type: number, nullable: true }
+        telefono: { type: string, nullable: true }
+        telefonovisible: { type: string, nullable: true }
+        sintelefono: { type: boolean }
+        sinwhatsapp: { type: boolean }
+        direccion: { type: string }
+        # Para centrar el mapa del comercio sin pagar otra consulta: el servidor
+        # ya las tiene (mide la distancia con ellas). Viajan y se descartan,
+        # como el nombre: de Places solo se archiva el place_id. Null en un
+        # renglon `sindatos`, que no vino de Google en esta busqueda.
+        lat: { type: number, nullable: true }
+        lng: { type: number, nullable: true }
+        contactadoen: { type: string, format: date-time, nullable: true }
+        # Un contactado que la búsqueda de hoy no devolvió. De Google sólo se
+        # puede archivar el place_id, así que de él se sabe eso y la fecha: el
+        # renglón va sin nombre, sin distancia y sin teléfono, con el link a
+        # Maps. Nunca se cae de la respuesta, porque el historial existe para
+        # contestar "a quién le mandé".
+        sindatos: { type: boolean }
 
     Notificacion:
       type: object
@@ -466,6 +502,34 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/SugerenciaLugar' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '503': { $ref: '#/components/responses/ServicioExterno' }
+  /lugares/punto:
+    get:
+      summary: La direccion que hay en un punto del mapa (geocodificacion inversa)
+      description: >
+        Para el pin arrastrable: el usuario mueve el punto y la pantalla le
+        muestra la direccion en vez de las coordenadas. `lat` y `lng` vuelven
+        tal como se pidieron y no como Google los emparejo: el punto que vale es
+        el que marco el usuario, y la direccion es la confirmacion de que marco
+        donde queria.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: lat, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+      responses:
+        '200':
+          description: La direccion en ese punto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DireccionDeLugar' }
+        '400':
+          description: Coordenadas que faltan o estan fuera de rango
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Google no conoce ninguna direccion en ese punto (mar, campo)
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '429': { $ref: '#/components/responses/TooMany' }
         '503': { $ref: '#/components/responses/ServicioExterno' }
   /lugares/{placeid}:
@@ -801,8 +865,15 @@ paths:
     get:
       tags: [quodom]
       summary: Arma el link wa.me y pasa el Quodom a ENVIADO
+      description: >-
+        Sin `proveedor` y `tel` el link no lleva destinatario, que es la salida
+        cuando no hay proveedores en la zona, cuando Google falla, y para
+        mandarle a un proveedor propio que no está en la lista.
       security: [{ cookieAuth: [] }, { bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      parameters:
+        - { $ref: '#/components/parameters/QuodomId' }
+        - { name: proveedor, in: query, required: false, schema: { type: string }, description: 'place_id del proveedor elegido' }
+        - { name: tel, in: query, required: false, schema: { type: string }, description: 'Teléfono del proveedor; el servidor lo valida y rechaza el que no recibe WhatsApp' }
       responses:
         '200':
           description: OK
@@ -835,6 +906,70 @@ paths:
                 properties:
                   res: { type: boolean }
                   data: { type: array, items: { $ref: '#/components/schemas/VQuodom' } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom/proveedores/{id}:
+    get:
+      tags: [quodom]
+      summary: Proveedores del rubro cerca de la dirección del Quodom
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: >-
+            Hasta 5 proveedores de la búsqueda de hoy, más los que el comprador
+            ya contactó aunque hoy no hayan vuelto a salir (ésos llegan con
+            `sindatos: true`). Lista vacía si no hay ninguno en la zona.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [proveedores, preciso, desde, atribucion]
+                properties:
+                  proveedores:
+                    type: array
+                    items: { $ref: '#/components/schemas/Proveedor' }
+                  preciso: { type: boolean }
+                  desde: { type: string }
+                  atribucion: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: No se puede ubicar la dirección ni por su localidad
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '503': { $ref: '#/components/responses/ServicioExterno' }
+  # Es POST .../no-enviado y no DELETE .../contactado porque lleva cuerpo: un
+  # DELETE con cuerpo es legal pero el validador y varios clientes lo tratan
+  # distinto, y acá el `motivo` es el que alimenta el aprendizaje.
+  /quodom/proveedores/{id}/no-enviado:
+    post:
+      tags: [quodom]
+      summary: Deshacer el contacto con un proveedor
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [placeid]
+              properties:
+                placeid: { type: string }
+                motivo: { type: string, enum: [sin_whatsapp, otro] }
+      responses:
+        '200':
+          description: Desmarcado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res]
+                properties:
+                  res: { type: boolean }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /quodom/create:

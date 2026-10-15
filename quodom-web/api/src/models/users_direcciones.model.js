@@ -26,6 +26,15 @@ function model(sequelize) {
         lat: { type: DataTypes.FLOAT, allowNull: true },
         lng: { type: DataTypes.FLOAT, allowNull: true },
         coords_actualizado: { type: DataTypes.DATE, allowNull: true },
+        // El usuario puso el pin en el mapa con la mano. Distingue el tercer
+        // caso de precisión: antes `preciso` salía sólo del `placeid`, y un
+        // punto elegido a mano no tiene placeid pero es exacto — sin esta
+        // columna, marcar tu casa en el mapa seguía mostrando "tu dirección no
+        // está ubicada con precisión".
+        //
+        // Es **dato nuestro y no de Google**, así que no cae en la caché de 30
+        // días: ver `puntoDelQuodom`.
+        punto_manual: { type: DataTypes.BOOLEAN, allowNull: true },
     };
 
     const options = {

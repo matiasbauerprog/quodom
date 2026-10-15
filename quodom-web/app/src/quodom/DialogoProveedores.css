@@ -1,0 +1,52 @@
+.dp-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(30, 30, 42, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--sp-4);
+}
+.dp {
+  background: var(--color-tarjeta);
+  max-width: 480px; width: 100%;
+  padding: var(--sp-4);
+  max-height: 90vh; overflow-y: auto;
+}
+.dp-titulo { font-size: var(--fs-h2); margin: 0 0 var(--sp-2) 0; color: var(--color-acento); }
+
+/* El aviso del punto aproximado va arriba y no al pie: una distancia que el
+   comprador lee como "desde mi puerta" cuando es desde el centro del pueblo es
+   justamente la falla que este selector existe para no cometer. */
+.dp-lista {
+  list-style: none; margin: 0 0 var(--sp-3) 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--sp-2);
+}
+/* El renglón de cada proveedor vive en FilaProveedor.css: lo comparte con la
+   sección de proveedores del Quodom ya enviado. */
+
+.dp-vacio, .dp-error { margin: 0 0 var(--sp-3) 0; font-size: var(--fs-small); line-height: 1.35; }
+.dp-error { color: var(--color-acento); font-weight: 600; }
+
+/* El pie está en los tres estados —con lista, vacía y con la búsqueda caída—:
+   una falla de Google no puede dejar al comprador sin poder enviar. */
+.dp-pie { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+.dp-cerrar {
+  background: none; border: none; padding: var(--sp-1);
+  font: inherit; font-size: var(--fs-small); color: #5C5C5C; cursor: pointer;
+}
+.dp-cerrar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.dp-atribucion {
+  margin: var(--sp-3) 0 0 0;
+  text-align: center;
+  font-size: var(--fs-tiny);
+  color: #8A8A8A;
+}
+
+/* El esqueleto dibuja tantos bloques como renglones reales y del mismo alto. */
+.dp-prov-esqueleto { gap: var(--sp-2); }
+.dp-linea { display: block; height: 14px; width: 100%; border-radius: 4px; }
+.dp-linea-corta { width: 55%; }
+.dp-boton-esqueleto { display: block; height: 44px; width: 100%; border-radius: 4px; }
+
+@media (min-width: 601px) {
+  .dp { max-width: 520px; }
+}

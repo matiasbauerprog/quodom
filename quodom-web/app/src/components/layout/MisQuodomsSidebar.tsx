@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
-import { quodom as quodomApi } from '../../api/quodom';
-import { ApiError } from '../../api/client';
-import { openWhatsappLink } from '../../utils/whatsapp';
 import type { Quodom } from '../../api/types';
 import { LineasQuodomSidebar } from './LineasQuodomSidebar';
 import { ArbolQuodoms, cuentaProductos } from './ArbolQuodoms';
@@ -16,6 +13,7 @@ import { bloqueoDeEnvio, conFaltaConcreta, type FaltaAtributo } from '../../quod
 import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import { useArrastreActivo } from '../../quodom/useArrastreActivo';
+import { DialogoProveedores } from '../../quodom/DialogoProveedores';
 import './MisQuodomsSidebar.css';
 
 export function MisQuodomsSidebar() {
@@ -23,8 +21,11 @@ export function MisQuodomsSidebar() {
   const navigate = useNavigate();
   const tieneDireccion = useTieneDireccion(!!user);
   const [invitado, setInvitado] = useState<ResumenInvitado[]>(resumenCarritosInvitado);
-  const [enviando, setEnviando] = useState<string | null>(null);
-  const [errEnviar, setErrEnviar] = useState<string | null>(null);
+  // De qué Quodom está abierto el selector de proveedores. Vive acá y no en la
+  // tarjeta porque el envío lo pasa a ENVIADO y lo saca del árbol: dibujado
+  // adentro, el diálogo se desmontaría justo cuando el comprador va por el
+  // segundo proveedor.
+  const [proveedoresDe, setProveedoresDe] = useState<string | null>(null);
   // Qué línea frena el envío de cada Quodom, para nombrarla en el motivo. La
   // reportan las listas abiertas, que son las únicas que tienen las líneas.
   const [faltas, setFaltas] = useState<Record<string, FaltaAtributo | null>>({});
@@ -57,19 +58,18 @@ export function MisQuodomsSidebar() {
 
   const hayInvitado = invitado.length > 0;
 
-  async function enviar(q: Quodom) {
-    if (enviando) return;
-    setEnviando(q.id); setErrEnviar(null);
-    try {
-      const r = await quodomApi.whatsapp(q.id);
-      openWhatsappLink(r.link);
-      // El estado lo cambia el backend al dar el link: este aviso hace que el
-      // árbol y la barra inferior lo suelten, en vez de seguir mostrándolo activo.
-      window.dispatchEvent(new Event('quodom:changed'));
-      refresh();
-    } catch (e) {
-      setErrEnviar(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo enviar.');
-    } finally { setEnviando(null); }
+  // Cotizar ya no manda el Quodom: abre el selector de proveedores, que es el
+  // que envía. Hasta que el comprador elija (o use "enviar sin elegir"), el
+  // Quodom sigue en CREADO.
+  function enviar(q: Quodom) {
+    setProveedoresDe(q.id);
+  }
+
+  // El estado lo cambia el backend al dar el link: este aviso hace que el árbol
+  // y la barra inferior lo suelten, en vez de seguir mostrándolo activo.
+  function avisarEnviado() {
+    window.dispatchEvent(new Event('quodom:changed'));
+    refresh();
   }
 
   // Sin sesión ya se ven los carritos de invitado, así que "ingresá para ver
@@ -163,10 +163,10 @@ export function MisQuodomsSidebar() {
                   <button
                     type="button"
                     className="btn btn-block btn-whatsapp"
-                    disabled={enviando === q.id || !!bloqueo}
+                    disabled={!!bloqueo}
                     onClick={() => { if (!bloqueo) enviar(q); }}
                   >
-                    {enviando === q.id ? 'Cotizando…' : 'Cotizar por WhatsApp'}
+                    Cotizar por WhatsApp
                   </button>
                 </div>
               </>
@@ -175,9 +175,16 @@ export function MisQuodomsSidebar() {
         />
       )}
 
-      {errEnviar && <p className="mq-sidebar-err" role="alert">{errEnviar}</p>}
-
       {!user && hayInvitado && <AvisoSinGuardar />}
+
+      {proveedoresDe && (
+        <DialogoProveedores
+          idquodom={proveedoresDe}
+          onCerrar={() => setProveedoresDe(null)}
+          onEnviado={avisarEnviado}
+          onEnviadoSinProveedor={() => setProveedoresDe(null)}
+        />
+      )}
     </aside>
   );
 }

@@ -79,6 +79,46 @@ describe('rateLimit middleware', () => {
     expect(b.nextCalled).toBe(true);
   });
 
+  // El cupo diario tiene balde propio: si compartiera el del minuto, el primer
+  // request del día gastaría los dos y los topes no serían dos topes.
+  it('el cupo diario no comparte balde con el del minuto', () => {
+    const porMinuto = rateLimit.perUserPerMinute(1, 'proveedores', 'minuto');
+    const porDia = rateLimit.perUserPerDay(1, 'proveedores', 'dia');
+
+    const a = fakeReqRes(1);
+    porMinuto(a.req, a.res, () => { a.nextCalled = true; });
+    const b = fakeReqRes(1);
+    porDia(b.req, b.res, () => { b.nextCalled = true; });
+
+    expect(a.nextCalled).toBe(true);
+    expect(b.nextCalled).toBe(true);
+  });
+
+  // Lo que hace que un tope diario sea un tope: una hora después de la primera
+  // consulta la cuenta del día tiene que seguir ahí. El barrido descartaba las
+  // claves cuya última marca pasaba la hora, así que un balde diario se
+  // reiniciaba solo y el tope no existía.
+  it('el cupo diario sobrevive a las horas y corta igual', () => {
+    Date.now = jest.fn(() => 1_000_000);
+    const mw = rateLimit.perUserPerDay(1, 'proveedores', 'dia');
+    const a = fakeReqRes(1);
+    mw(a.req, a.res, () => { a.nextCalled = true; });
+    expect(a.nextCalled).toBe(true);
+
+    Date.now = jest.fn(() => 1_000_000 + 5 * 60 * 60_000);
+    const b = fakeReqRes(1);
+    mw(b.req, b.res, () => { b.nextCalled = true; });
+    expect(b.nextCalled).toBe(false);
+    expect(b.res._status).toBe(429);
+    expect(b.res._body.message).toBe('dia');
+
+    // Pasado el día, vuelve a dejar pasar.
+    Date.now = jest.fn(() => 1_000_000 + 25 * 60 * 60_000);
+    const c = fakeReqRes(1);
+    mw(c.req, c.res, () => { c.nextCalled = true; });
+    expect(c.nextCalled).toBe(true);
+  });
+
   it('forgets timestamps older than the window', () => {
     Date.now = jest.fn(() => 1_000_000);
     const mw = rateLimit.perUserPerMinute(1);
