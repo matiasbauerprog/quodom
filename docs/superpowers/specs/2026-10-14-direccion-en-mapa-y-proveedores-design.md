@@ -88,34 +88,48 @@ proveedor, se prefiere `sublocality` cuando existe.
 
 ### Una sola consulta por envío
 
-Esta es la decisión que ordena todo lo demás, y vale la pena el detalle porque define
-el costo y la complejidad del feature.
+Esta es la decisión que ordena todo lo demás, y vale la pena el detalle porque
+define el costo y la complejidad del feature.
 
-La búsqueda de lugares cercanos (`places:searchNearby`) acepta:
+La búsqueda es **`places:searchText`** (ver "Cómo se busca cada rubro": el tipo de
+Places se midió y se descartó). Acepta:
 
-- `locationRestriction` circular de hasta **50.000 metros**,
-- `rankPreference: DISTANCE`, que ordena ascendente por distancia,
+- `locationBias` circular de hasta **50.000 metros**,
 - `maxResultCount` de hasta **20**,
-- y una máscara de campos que, pedida en el nivel Enterprise, devuelve en **la misma
-  respuesta** `displayName`, `location`, `id`, `rating`, `userRatingCount` **y
-  `nationalPhoneNumber`** de los 20.
+- y una máscara de campos que, pedida en el nivel Enterprise, devuelve en **la
+  misma respuesta** `displayName`, `location`, `id`, `rating`, `userRatingCount`
+  **y `nationalPhoneNumber`** de los 20.
 
 De ahí salen tres simplificaciones:
 
-**No hay escalado de radio.** La intención — buscar cerca y ampliar hasta juntar tres,
-mostrando la distancia de cada uno — se obtiene con **una** consulta a 50 km ordenada
-por distancia: en una ciudad los 20 más cercanos están a pocas cuadras; en un pueblo
-están desparramados, que es exactamente el comportamiento deseado. El escalado 5 → 15
-→ 50 km que se consideró primero costaba tres consultas para el mismo resultado.
+**No hay segunda consulta para el teléfono.** Google cobra por el campo más caro
+de la máscara. `rating` y `nationalPhoneNumber` están **en el mismo nivel**, así
+que pedir el teléfono de los 20 no cuesta más que pedir la puntuación. La
+optimización de "pedirlo sólo del elegido" era más caro, no más barato: agregaba
+una consulta.
 
-**No hay segunda consulta para el teléfono.** Google cobra por el campo más caro de la
-máscara. `rating` y `nationalPhoneNumber` están **en el mismo nivel**, así que pedir
-el teléfono de los 20 no cuesta más que pedir la puntuación. La optimización de
-"pedirlo sólo del elegido" era más caro, no más barato: agregaba una consulta.
+**No hay escalado de radio.** Una sola consulta con bias de 50 km trae lo que haya
+en el área; en una ciudad los resultados caen a pocas cuadras y en un pueblo
+quedan desparramados, que es el comportamiento deseado. El escalado 5 → 15 → 50 km
+que se consideró primero costaba tres consultas para el mismo resultado.
 
 **No hay caché de proveedores.** No hay nada que reusar: la consulta se hace en el
-momento en que se muestra el resultado. (La caché de 30 días que aparece más abajo es
-de **la dirección del comprador**, no de los comercios. Son dos cosas distintas.)
+momento en que se muestra el resultado. (La caché de 30 días que aparece más abajo
+es de **la dirección del comprador**, no de los comercios. Son dos cosas distintas.)
+
+> **Lo que se pierde al buscar por texto, y por qué se acepta.** `searchNearby`
+> tiene `rankPreference: DISTANCE`, que garantiza "los 20 más cercanos".
+> `searchText` ordena por relevancia y el `locationBias` es una preferencia, no un
+> límite: en el sondeo del 2026-10-15 aparecieron resultados a 4,9 y 5,7 km
+> mezclados con los de 300 metros. O sea que **no hay garantía de traer al más
+> cercano** si hay muchos candidatos relevantes lejos.
+>
+> Se acepta porque la alternativa medida es peor: `searchNearby` por tipo devuelve
+> kioscos para Librería y no existe para Pinturería. Un orden imperfecto sobre
+> proveedores correctos le gana a un orden perfecto sobre resultados equivocados.
+> Y el riesgo está acotado: la distancia la calculamos nosotros, así que lo que
+> llegue se reordena por cercanía antes de mostrarlo, y si la lista final queda
+> con todos lejos, se ve — cada uno muestra su distancia.
 
 ### Lo que se guarda y lo que no
 
@@ -199,10 +213,16 @@ de Google. Separada, se prueba con una tabla de comercios inventados.
 
 Punto de partida, explícitamente provisorio:
 
-- Se descartan los que tienen **menos de 5 reseñas**. Una puntuación de 5,0 con una
+- Se descartan los que tienen **menos de 3 reseñas**. Una puntuación de 5,0 con una
   sola reseña no es información. **Pero si tras descartar quedan menos de 3**, se
   reincorporan los descartados por orden de cercanía hasta llegar a 3: mostrar pocos
   es peor que mostrar uno con poca reputación y su distancia a la vista.
+
+  > El umbral arrancaba en 5 y se bajó a 3 con el sondeo del 2026-10-15: en
+  > Librería sobra (las del barrio tienen 230, 732, 771, 946 reseñas), pero en
+  > **Limpieza los comercios de barrio tienen 3, 6, 7, 9, 10**, y con 5 se perdía
+  > JB Artículos de Limpieza, que está a 400 metros. El umbral tiene que dejar
+  > pasar al comercio de barrio, que es justo el que el comprador quiere.
 - Un comercio sin `rating` (no tiene ninguna reseña) se trata como descartado por la
   misma regla, no como puntuación 0.
 - `puntaje = 0.6 * (rating / 5) + 0.4 * (1 - min(distanciaKm, 50) / 50)`
@@ -216,15 +236,76 @@ Punto de partida, explícitamente provisorio:
 La distancia la calculamos nosotros: Google no la devuelve, y tampoco deja filtrar por
 puntuación mínima. Haversine desde las coordenadas de la dirección.
 
-### Los 8 rubros contra las categorías de Google
+### Cómo se busca cada rubro: por texto, no por tipo
 
-`config/rubrosPlaces.js` mapea cada rubro a `includedPrimaryTypes` de Places y, cuando
-no hay un tipo que sirva, a una consulta de texto. Pinturería tiene `paint_store`,
-Librería tiene `book_store`; Papelera y Limpieza no tienen un tipo propio y van por
-texto.
+**Esta sección se reescribió el 2026-10-15 con mediciones reales** (sondeo sobre
+Villa Ballester, los cinco rubros activos). La versión anterior estaba invertida
+en todo lo que afirmaba.
 
-**Esta tabla es donde se decide si el feature sirve o devuelve basura**, y no se puede
-validar con tests (ver Testing). Se afina a mano con el script de verificación.
+**Se busca por TEXTO, para los cinco rubros.** Los tipos de Places se descartan:
+
+| | medido |
+|---|---|
+| `paint_store` | **no existe**. Google responde `400 Unsupported types: paint_store`. Estaba nombrado en esta spec como el tipo de Pinturería; me lo inventé. |
+| `book_store` | devuelve kioscos: "KIOSCO CYL", "Casa de karol sevilla real", "G & L". Por texto, "librería" devuelve Santa Inés (946 reseñas), Koky (771), El Chalet (732). |
+| `liquor_store` | mayormente bien, pero con ruido: "404NOTFOUNDMARKET", "Casa del Perrito Marrón". |
+
+Y la predicción de la versión anterior estaba al revés: **Papelera y Limpieza,
+las dos que figuraban como "sin tipo propio, van a traer cualquier cosa", son las
+que mejor funcionan** — Witpel (761 reseñas), Papelera Buenos Aires, Papelera
+Italia; Ángel, La Jabonería de Ballester, Fusión Química, todas a menos de 1,5 km.
+
+Las pinturerías reales que Google sí encuentra por texto están catalogadas como
+`building_materials_store` y `hardware_store`, o sea que ni siquiera comparten un
+tipo entre ellas. El tipo no es el eje por el que estos comercios están
+organizados en Google; el nombre sí.
+
+**Consecuencia técnica:** la búsqueda es `places:searchText` con `locationBias`
+circular, y no `places:searchNearby` con `includedPrimaryTypes`. `searchText`
+ordena por relevancia y el `locationBias` es una preferencia, no un límite — se
+vieron resultados a 5,7 km con bias de 50 km. No importa: **la distancia la
+calculamos nosotros igual**, así que el filtro por cercanía es nuestro y el de
+Google es sólo para traer candidatos del área.
+
+### Los términos de búsqueda son la perilla, y se calibran
+
+`config/rubrosPlaces.js` tiene **un término por rubro** y es el único lugar donde
+se tocan. Punto de partida medido:
+
+| rubro | término | resultado del sondeo |
+|---|---|---|
+| 1 Limpieza | `artículos de limpieza` | 6 comercios reales a menos de 1,5 km |
+| 2 Librería | `librería` | las grandes del barrio, 230–946 reseñas |
+| 3 Papelera | `papelera artículos de papelería` | Witpel, Papelera Buenos Aires, Italia, Chaco |
+| 5 Pintura | `pinturería` | Le Bleu, San Andrés, Devoto, Balcarce |
+| 7 Bebidas | `distribuidora de bebidas` | BMG, SCR, Fullescabio |
+
+Vive en código y no en la base por la misma razón que `config/rubros.js` lo
+explica para los rubros activos: `quodom.sqlite` se commitea y corre en modo WAL,
+así que **un cambio de datos no se revisa en el diff ni sobrevive con seguridad a
+un reseed; un cambio de código sí**.
+
+**El ciclo de calibración es: editar el término → correr
+`node scripts/verificar-proveedores.js "<localidad>"` → mirar.** El script lee
+este mismo archivo, así que lo que se prueba es lo que va a correr en producción.
+Toma la localidad por parámetro, porque un término que funciona en el Gran Buenos
+Aires puede no funcionar en una ciudad del interior, y eso hay que poder probarlo
+sin tocar código.
+
+Los rubros apagados (Construcción, Sanitarios, Seguridad Industrial) no tienen
+término: cuando se activen, se mide el suyo antes de encenderlos.
+
+### Un proveedor sin teléfono
+
+**Medido:** Google no tiene número para una parte de los comercios (JB Artículos
+de Limpieza, Santi Estevez, Vinotecas). A ésos no se les puede mandar WhatsApp
+**ni llamarlos**, que eran las dos salidas previstas.
+
+No se filtran: siguen en la lista, con su nombre, su puntuación y su distancia,
+pero en vez de los botones de WhatsApp y llamar muestran **sólo "ver en Maps"**,
+y un renglón que dice *"Google no tiene el teléfono de este comercio"*. Esconderlos
+sería esconder un proveedor que al comprador puede servirle —está a tres cuadras y
+tiene 4,8— por un dato que él puede conseguir solo.
 
 ### El teléfono y el agujero de WhatsApp
 
@@ -380,9 +461,19 @@ visitas. De ahí el tope diario por usuario.
   descartado. Alguien tiene que cargarlo y mantenerlo, y hasta tener volumen el
   selector muestra poco o nada en la mayoría de las zonas. Places da cobertura
   nacional el día uno.
-- **Escalado de radio en tres consultas**: descartado al descubrir
-  `rankPreference: DISTANCE` con 20 resultados a 50 km. Mismo resultado, un tercio del
-  costo.
+- **Escalado de radio en tres consultas**: descartado. Una sola consulta con bias
+  de 50 km trae lo que haya en el área; el escalado costaba tres para lo mismo.
+- **Buscar por tipo de Places** (`includedPrimaryTypes`, con texto sólo para los
+  rubros sin tipo): descartado el 2026-10-15 **con mediciones**, y era el diseño
+  original de esta spec. `paint_store` no existe (Google devuelve 400),
+  `book_store` devuelve kioscos y `liquor_store` trae ruido. El texto gana en los
+  cinco rubros activos.
+- **Filtrar los proveedores sin teléfono**: descartado. Esconder un comercio a tres
+  cuadras con 4,8 estrellas, porque Google no tiene su número, le saca al comprador
+  una opción que podía resolver solo. Se muestra con "ver en Maps" y se dice que no
+  hay teléfono.
+- **Umbral de 5 reseñas**: bajado a 3. Con 5 se perdían los comercios de barrio de
+  Limpieza, que tienen entre 3 y 10 reseñas y están a 400 metros.
 - **Pedir el teléfono aparte, sólo del elegido**: descartado. Está en el mismo nivel de
   precio que la puntuación, así que la consulta extra era gasto puro.
 - **Caché de 30 días de nombre, puntuación y teléfono**: descartado. Los términos sólo
@@ -403,8 +494,12 @@ visitas. De ahí el tope diario por usuario.
 
 1. **La geocodificación silenciosa.** El riesgo central, y por eso A va primero y se
    verifica a mano en producción con direcciones reales.
-2. **La calidad del mapeo de rubros.** Papelera y Limpieza van por texto y pueden traer
-   cualquier cosa. Mitigación: el script de verificación, antes de dar B por terminado.
+2. **La calidad de los términos de búsqueda.** Medida para Villa Ballester el
+   2026-10-15 y buena en los cinco rubros, pero **una sola zona no es el país**: un
+   término que anda en el Gran Buenos Aires puede fallar en una ciudad chica del
+   interior, donde no hay un comercio que se llame "papelera". Mitigación: el script
+   toma la localidad por parámetro, así que se mide en varias zonas antes de dar B
+   por terminado, y el término es un renglón de configuración.
 3. **El número que no tiene WhatsApp.** Inevitable. Mitigado por el aviso en fijos, el
    botón de llamar, y el aprendizaje por `placeid`.
 4. **El costo si las consultas se disparan desde el navegador o al navegar.** Mitigado
