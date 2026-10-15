@@ -32,6 +32,14 @@ async function create(params, userId) {
         params.provincia = Provincia.provincia;
     }
 
+
+    // La fecha de las coordenadas la pone el servidor y no el cliente: es la
+    // que decide cuando vencen los 30 dias de cache que permite Google, y un
+    // reloj de cliente atrasado dejaria coordenadas viejas pareciendo frescas.
+    if (params.lat != null && params.lng != null) {
+        params.coords_actualizado = new Date();
+    }
+
     await db.user_direcciones.create(params);
 }
 
@@ -44,6 +52,14 @@ async function update(id, params, userId) {
     const Provincia = await db.provincia.findByPk(params.idprovincia);
     if (Provincia) {
         params.provincia = Provincia.provincia;
+    }
+
+
+    // La fecha de las coordenadas la pone el servidor y no el cliente: es la
+    // que decide cuando vencen los 30 dias de cache que permite Google, y un
+    // reloj de cliente atrasado dejaria coordenadas viejas pareciendo frescas.
+    if (params.lat != null && params.lng != null) {
+        params.coords_actualizado = new Date();
     }
 
     Object.assign(direcciones, params);

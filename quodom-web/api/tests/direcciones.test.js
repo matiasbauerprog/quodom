@@ -77,6 +77,55 @@ describe('direcciones', () => {
     expect(dirs.body[0].provincia).toBe('Buenos Aires');
   });
 
+  it('guarda placeid y coordenadas, y les pone la fecha el servidor', async () => {
+    const res = await request(app).post('/user_direcciones/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({
+        alias: 'Obra', calle: 'Mitre', numero: '450', cp: 'B1642',
+        localidad: 'San Isidro', idprovincia: 1,
+        placeid: 'ChIJ-obra', lat: -34.4707, lng: -58.5075
+      });
+    expect(res.status).toBe(200);
+
+    const dirs = await request(app).get('/users/dire/').set('Authorization', 'Bearer ' + token);
+    const obra = dirs.body.find(d => d.alias === 'Obra');
+    expect(obra.placeid).toBe('ChIJ-obra');
+    expect(obra.lat).toBeCloseTo(-34.4707, 4);
+    expect(obra.lng).toBeCloseTo(-58.5075, 4);
+
+    // La fecha la pone el servidor: si viniera del cliente, un reloj atrasado
+    // dejaria coordenadas vencidas pareciendo frescas.
+    const fila = await db.user_direcciones.findByPk(obra.id);
+    expect(fila.coords_actualizado).toBeInstanceOf(Date);
+  });
+
+  it('una direccion cargada a mano, sin mapa, sigue guardandose', async () => {
+    const res = await request(app).post('/user_direcciones/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ alias: 'Mano', calle: 'Rivadavia', numero: '100', idprovincia: 1 });
+    expect(res.status).toBe(200);
+
+    const dirs = await request(app).get('/users/dire/').set('Authorization', 'Bearer ' + token);
+    const mano = dirs.body.find(d => d.alias === 'Mano');
+    expect(mano.placeid == null).toBe(true);
+    expect(mano.lat == null).toBe(true);
+  });
+
+  it('actualizar solo las coordenadas refresca la fecha', async () => {
+    const dirs = await request(app).get('/users/dire/').set('Authorization', 'Bearer ' + token);
+    const obra = dirs.body.find(d => d.alias === 'Obra');
+    const antes = (await db.user_direcciones.findByPk(obra.id)).coords_actualizado;
+
+    await new Promise(r => setTimeout(r, 5));
+    const res = await request(app).put('/user_direcciones/' + obra.id)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ calle: 'Mitre', numero: '450', idprovincia: 1, placeid: 'ChIJ-obra2', lat: -34.5, lng: -58.5 });
+    expect(res.status).toBe(200);
+
+    const despues = (await db.user_direcciones.findByPk(obra.id)).coords_actualizado;
+    expect(despues.getTime()).toBeGreaterThan(antes.getTime());
+  });
+
   it('DELETE /user_direcciones/:id removes the address', async () => {
     const res = await request(app).delete('/user_direcciones/' + iddireccion)
       .set('Authorization', 'Bearer ' + token);

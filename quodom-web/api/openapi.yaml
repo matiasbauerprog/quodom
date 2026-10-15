@@ -228,6 +228,10 @@ components:
         idprovincia: { type: string, nullable: true }
         idpartido: { type: string, nullable: true }
         observaciones: { type: string, nullable: true }
+        placeid: { type: string, nullable: true }
+        lat: { type: number, nullable: true }
+        lng: { type: number, nullable: true }
+        coords_actualizado: { type: string, format: date-time, nullable: true }
     DireccionInput:
       type: object
       properties:
@@ -241,6 +245,11 @@ components:
         observaciones: { type: string }
         idprovincia: { type: integer }
         default: { type: boolean }
+        # Datos del mapa. Sin declararlos aca el validador los descarta y la
+        # direccion se guarda sin coordenadas, en silencio.
+        placeid: { type: string }
+        lat: { type: number }
+        lng: { type: number }
 
     SugerenciaLugar:
       type: object

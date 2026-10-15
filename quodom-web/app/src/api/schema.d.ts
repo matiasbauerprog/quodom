@@ -386,6 +386,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lugares/sugerencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sugerencias de direccion mientras se tipea (Google Places) */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                    sesion: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Las sugerencias. Lista vacia si la consulta es muy corta. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            sugerencias: components["schemas"]["SugerenciaLugar"][];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                429: components["responses"]["TooMany"];
+                503: components["responses"]["ServicioExterno"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lugares/{placeid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La direccion elegida, desarmada en nuestros campos */
+        get: {
+            parameters: {
+                query?: {
+                    sesion?: string;
+                };
+                header?: never;
+                path: {
+                    placeid: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description La direccion */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DireccionDeLugar"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description El lugar no tiene coordenadas y no sirve para buscar proveedores */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                429: components["responses"]["TooMany"];
+                503: components["responses"]["ServicioExterno"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -2435,6 +2531,11 @@ export interface components {
             idprovincia?: string | null;
             idpartido?: string | null;
             observaciones?: string | null;
+            placeid?: string | null;
+            lat?: number | null;
+            lng?: number | null;
+            /** Format: date-time */
+            coords_actualizado?: string | null;
         };
         DireccionInput: {
             alias?: string;
@@ -2447,6 +2548,25 @@ export interface components {
             observaciones?: string;
             idprovincia?: number;
             default?: boolean;
+            placeid?: string;
+            lat?: number;
+            lng?: number;
+        };
+        SugerenciaLugar: {
+            placeid: string;
+            texto: string;
+        };
+        DireccionDeLugar: {
+            placeid: string;
+            calle: string;
+            numero: string;
+            localidad: string;
+            partido: string;
+            idprovincia?: number | null;
+            cp: string;
+            lat: number;
+            lng: number;
+            direccion: string;
         };
         Notificacion: {
             id: number;
@@ -2546,6 +2666,15 @@ export interface components {
         };
         /** @description Al Quodom le falta algo que el proveedor necesita para cotizar, así que no se envía y queda en CREADO (falta_direccion / falta_atributo). */
         EnvioBloqueado: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Un servicio de afuera (Google Places) no esta disponible, o falta su clave. No es un error del pedido: reintentar mas tarde puede andar. */
+        ServicioExterno: {
             headers: {
                 [name: string]: unknown;
             };
