@@ -247,7 +247,38 @@ describe('GET /quodom/proveedores/:id', () => {
       expect(res.body.message).toMatch(/proveedores/i);
       expect(res.body.message).not.toMatch(/mensajes/i);
     } finally {
-      process.env.PROVEEDORES_RATE_LIMIT_PER_MINUTE = antes;
+      // `delete` y no asignar `antes` cuando no estaba seteada: asignar
+      // `undefined` guarda el string 'undefined', y el `Number()` de la ruta
+      // lo lee como NaN, así que el default dejaría de aplicarse para el resto
+      // de la corrida.
+      if (antes === undefined) delete process.env.PROVEEDORES_RATE_LIMIT_PER_MINUTE;
+      else process.env.PROVEEDORES_RATE_LIMIT_PER_MINUTE = antes;
+    }
+  });
+
+  // Un tope por minuto acota el **ritmo**, no el **total**: una cuenta
+  // sostenida en 10/min son 14.400 búsquedas pagas por día, unos US$500
+  // diarios, sin que nada lo note. El cupo diario es el que la spec nombra dos
+  // veces y el que de verdad acota la factura.
+  it('el tope diario corta y habla del día, no de minutos', async () => {
+    const antes = process.env.PROVEEDORES_RATE_LIMIT_PER_DAY;
+    process.env.PROVEEDORES_RATE_LIMIT_PER_DAY = '1';
+    places.buscarProveedores.mockResolvedValue([UNO]);
+
+    try {
+      const primera = await auth(request(app).get('/quodom/proveedores/' + idquodom));
+      expect(primera.status).toBe(200);
+
+      const res = await auth(request(app).get('/quodom/proveedores/' + idquodom));
+
+      expect(res.status).toBe(429);
+      expect(res.body.error).toBe('rate_limit');
+      expect(res.body.message).toMatch(/hoy/i);
+      // Y nombra la salida: el comprador igual tiene que poder enviar.
+      expect(res.body.message).toMatch(/sin elegir proveedor/i);
+    } finally {
+      if (antes === undefined) delete process.env.PROVEEDORES_RATE_LIMIT_PER_DAY;
+      else process.env.PROVEEDORES_RATE_LIMIT_PER_DAY = antes;
     }
   });
 

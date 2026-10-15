@@ -24,8 +24,29 @@
  * haría que la pantalla mienta sobre desde dónde midió.
  */
 const db = require('./db');
-const { puntoDeLocalidad } = require('./places');
+const { puntoDeLocalidad, detalleDireccion } = require('./places');
 const { resolverDireccion } = require('./direccionDelQuodom');
+
+// Los términos de Google dejan archivar el `place_id` sin límite y las
+// coordenadas hasta 30 días corridos. Esto es el LECTOR de esa caché:
+// `coords_actualizado` se escribe en cuatro lugares y hasta acá no se leía en
+// ninguno, así que las coordenadas se conservaban para siempre. No es una
+// preferencia nuestra, es una afirmación sobre sus términos — y de paso una
+// dirección cuyo punto cambió deja de arrastrar el viejo.
+const DIAS_CACHE = 30;
+
+/**
+ * Una fila **sin fecha** y con coordenadas es de antes de que la columna
+ * existiera: no hay nada que pruebe que venció, y tratarla como vencida pagaría
+ * una consulta por cada dirección vieja. Hoy el servidor sella la fecha en cada
+ * escritura (`user_direcciones.controller`), así que el caso no se vuelve a
+ * crear.
+ */
+function coordsVencidas(dir) {
+    if (!dir.coords_actualizado) return false;
+    const edad = Date.now() - new Date(dir.coords_actualizado).getTime();
+    return edad > DIAS_CACHE * 24 * 60 * 60 * 1000;
+}
 
 async function puntoDelQuodom(quodom, userId) {
     // Sin ninguna dirección cargada no hay punto, y acá eso es `null` y no el 409
@@ -40,11 +61,34 @@ async function puntoDelQuodom(quodom, userId) {
 
     const calle = [dir.calle, dir.numero].filter(Boolean).join(' ').trim();
 
-    if (dir.placeid && dir.lat != null && dir.lng != null) {
+    const vencidas = coordsVencidas(dir);
+
+    if (dir.placeid && dir.lat != null && dir.lng != null && !vencidas) {
         return { lat: dir.lat, lng: dir.lng, preciso: true, desde: calle || dir.localidad || '' };
     }
 
-    if (dir.lat != null && dir.lng != null) {
+    // Una dirección elegida del mapa con la caché vencida se vuelve a pedir
+    // **por su place_id**, que sí es permanente, y no cae al centro de la
+    // localidad: sería precisa y la pantalla diría que no, y encima la
+    // invariante "con placeid, coordenadas exactas o ninguna" impide guardar
+    // ese punto, así que cada envío pagaría la consulta de nuevo. Un error de
+    // Google sube, igual que el de la localidad: lo traduce quien atiende el
+    // pedido, que además deja enviar sin elegir proveedor.
+    if (dir.placeid && vencidas) {
+        const lugar = await detalleDireccion({ placeid: dir.placeid });
+        const loc = lugar && lugar.location;
+        if (loc) {
+            dir.lat = loc.latitude;
+            dir.lng = loc.longitude;
+            dir.coords_actualizado = new Date();
+            await dir.save();
+            return { lat: dir.lat, lng: dir.lng, preciso: true, desde: calle || dir.localidad || '' };
+        }
+        // El place_id ya no resuelve (el lugar se dio de baja): se sigue por la
+        // localidad, que es el escalón de abajo.
+    }
+
+    if (dir.lat != null && dir.lng != null && !vencidas) {
         return { lat: dir.lat, lng: dir.lng, preciso: false, desde: dir.localidad || '' };
     }
 
