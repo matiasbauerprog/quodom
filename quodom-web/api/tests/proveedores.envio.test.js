@@ -50,6 +50,22 @@ beforeAll(async () => {
 
 const auth = req => req.set('Authorization', 'Bearer ' + token);
 
+// Un Quodom recién armado y con una línea, que ningún test anterior tocó. Hace
+// falta uno propio para afirmar que un envío rechazado NO movió el estado: el
+// `idquodom` compartido ya está en ENVIADO después del primer test, y contra ése
+// la afirmación pasaría sola. La línea tampoco es decorado: sin ella el endpoint
+// cortaría antes por "no tiene productos" y el test pasaría por otro motivo.
+async function quodomNuevoConLinea() {
+  const q = await request(app).post('/quodom/create').set('Authorization', 'Bearer ' + token)
+    .send({ descripcion: 'Obra nueva', idrubro: 5 });
+  const [producto] = await db.Products.findAll({ limit: 1 });
+  await db.Quodom_Lines.create({
+    idquodom: q.body.idquodom, idproducto: producto.id,
+    nombreProducto: producto.nombreproducto, cantidad: 1
+  });
+  return q.body.idquodom;
+}
+
 describe('elegir un proveedor', () => {
   it('arma el link al número del proveedor y lo marca contactado', async () => {
     const res = await auth(request(app)
@@ -70,12 +86,33 @@ describe('elegir un proveedor', () => {
 
   // La tabla no tiene unique sobre (idquodom, placeid): si el segundo contacto
   // creara otra fila, el popup mostraría el mismo proveedor dos veces.
-  it('contactar dos veces al mismo proveedor no duplica la fila', async () => {
-    await auth(request(app)
+  it('contactar dos veces al mismo proveedor refresca la marca y no duplica la fila', async () => {
+    // La fila de partida la pone este test (`findOrCreate`, no `update`): si
+    // dependiera de la que dejó el test anterior, correr este solo con `-t` la
+    // encontraría vacía y pasaría sin comprobar nada. La marca se atrasa a mano
+    // porque dos requests seguidos pueden caer en el mismo milisegundo, y
+    // entonces "avanzó" no sería comprobable. Fecha relativa, nunca absoluta.
+    const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000);
+    const [previa] = await db.quodom_proveedores.findOrCreate({
+      where: { idquodom, placeid: 'ChIJ-lebleu' },
+      defaults: { idquodom, placeid: 'ChIJ-lebleu' }
+    });
+    previa.contactado_en = haceUnaHora;
+    await previa.save();
+
+    const res = await auth(request(app)
       .get('/quodom/whatsapp/' + idquodom + '?proveedor=ChIJ-lebleu&tel=%2B541166687854'));
+
+    // Sin esto el test pasa igual si un día se rechaza re-contactar un Quodom
+    // ya enviado: la fila seguiría siendo una y el count no se enteraría.
+    expect(res.status).toBe(200);
+    expect(res.body.link).toContain('wa.me/541166687854');
 
     const filas = await db.quodom_proveedores.count({ where: { idquodom, placeid: 'ChIJ-lebleu' } });
     expect(filas).toBe(1);
+
+    const fila = await db.quodom_proveedores.findOne({ where: { idquodom, placeid: 'ChIJ-lebleu' } });
+    expect(fila.contactado_en.getTime()).toBeGreaterThan(haceUnaHora.getTime());
   });
 
   // El camino de hoy sigue vivo: es la salida cuando no hay proveedores, cuando
@@ -103,6 +140,51 @@ describe('elegir un proveedor', () => {
 
     const fila = await db.quodom_proveedores.findOne({ where: { idquodom, placeid: 'ChIJ-rex' } });
     expect(fila).toBeNull();
+  });
+
+  // Lo que de verdad protege al comprador de un teléfono que no sirve: el
+  // Quodom tiene que seguir en CREADO. Si el número se revisara después de la
+  // transición, el 400 llegaría con el pedido ya en ENVIADO y con una
+  // notificación de "Quodom enviado" por un mensaje que nadie recibió, y el
+  // comprador no podría volver a mandarlo.
+  it('un teléfono rechazado deja el Quodom en CREADO y sin notificación', async () => {
+    const otro = await quodomNuevoConLinea();
+
+    const res = await auth(request(app)
+      .get('/quodom/whatsapp/' + otro + '?proveedor=ChIJ-rex&tel=0800-777-7739'));
+    expect(res.status).toBe(400);
+
+    const q = await db.Quodom.findByPk(otro);
+    expect(q.estado).toBe('CREADO');
+    expect(q.fechaenvio).toBeNull();
+    expect(await db.oper_notificaciones.count({ where: { idquodom: otro } })).toBe(0);
+  });
+
+  // Medio par es siempre un bug del cliente, y es alcanzable de verdad: un
+  // proveedor puede venir con `telefono: null` (un 0800, o un local sin
+  // teléfono), y un front que siempre agrega el parámetro manda `tel=`. Tratarlo
+  // como "sin proveedor" devolvía 200 con el chat vacío de WhatsApp, el Quodom
+  // ya en ENVIADO y el popup mostrando al proveedor como nunca contactado.
+  it('el proveedor con el teléfono vacío se rechaza y no mueve el estado', async () => {
+    const otro = await quodomNuevoConLinea();
+
+    const res = await auth(request(app)
+      .get('/quodom/whatsapp/' + otro + '?proveedor=ChIJ-rex&tel='));
+    expect(res.status).toBe(400);
+
+    const q = await db.Quodom.findByPk(otro);
+    expect(q.estado).toBe('CREADO');
+  });
+
+  it('el teléfono sin el proveedor también se rechaza', async () => {
+    const otro = await quodomNuevoConLinea();
+
+    const res = await auth(request(app)
+      .get('/quodom/whatsapp/' + otro + '?tel=%2B541166687854'));
+    expect(res.status).toBe(400);
+
+    const q = await db.Quodom.findByPk(otro);
+    expect(q.estado).toBe('CREADO');
   });
 });
 

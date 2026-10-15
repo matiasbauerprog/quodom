@@ -132,13 +132,27 @@ async function whatsappLink(id, userId, proveedor, tel) {
         throw 'El Id Quodom no pertenece a el usuario.';
     }
 
+    // El proveedor y su teléfono van juntos o no va ninguno. El camino sin
+    // destinatario —la salida cuando no hay proveedores cerca, cuando Google
+    // falla, o para un proveedor propio— no manda ninguno de los dos, así que
+    // medio par es siempre un bug del cliente y tiene que ser ruidoso. Y es
+    // alcanzable de verdad: un proveedor de la lista puede venir con
+    // `telefono: null` (un 0800, o un local sin teléfono). Tomarlo como "sin
+    // proveedor" devolvía 200 con un link sin destinatario y el Quodom ya en
+    // ENVIADO: el comprador caía en el selector de contactos vacío de WhatsApp,
+    // el popup seguía mostrando al proveedor como no contactado, y el pedido ya
+    // no se podía volver a mandar.
+    if (!!proveedor !== !!tel) {
+        throw 'Para mandarle a un proveedor hacen falta su identificador y su teléfono.';
+    }
+
     // El número se revisa antes de tocar nada, para que un teléfono que no
     // sirve deje el Quodom en CREADO y no a medio enviar. Se rechaza también el
     // que es válido pero no recibe WhatsApp (un 0800): armarle el link igual
     // manda al comprador a un chat que nunca abre, y eso se lee como que el
     // comercio no tiene WhatsApp. La app ya esconde el botón; esto es la red.
     let destino = null;
-    if (proveedor && tel) {
+    if (proveedor) {
         const n = analizarTelefono(tel);
         if (!n || !n.sirveWhatsapp) {
             throw 'El teléfono del proveedor no es válido.';
