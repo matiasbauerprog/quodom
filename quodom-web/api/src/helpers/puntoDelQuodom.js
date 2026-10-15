@@ -9,7 +9,8 @@
  *    cargan a mano. Sin este escalón el feature no existiría para ellos.
  *
  * El punto de la localidad se **guarda** en la dirección: se paga una vez por
- * dirección y no una por envío.
+ * dirección y no una por envío. Con una excepción, abajo: en una dirección con
+ * placeid no se guarda, porque la dejaría pareciendo exacta.
  *
  * `preciso` sale de que haya `placeid` —o sea, de que el usuario haya elegido la
  * dirección del mapa— y no de que haya coordenadas: una dirección cuyas
@@ -40,10 +41,20 @@ async function puntoDelQuodom(userId) {
     const p = await puntoDeLocalidad(texto);
     if (!p) return null;
 
-    dir.lat = p.lat;
-    dir.lng = p.lng;
-    dir.coords_actualizado = new Date();
-    await dir.save();
+    // El punto se guarda sólo si la dirección NO tiene placeid. Guardarlo en una
+    // que lo tiene la dejaría con centro de localidad Y placeid, y la llamada
+    // siguiente —que deduce `preciso` del placeid— la reportaría como exacta: la
+    // pantalla mostraría una distancia medida desde el pueblo diciendo que la
+    // midió desde la puerta. La invariante que se protege es "una fila con
+    // placeid tiene coordenadas exactas, o ninguna". Esa fila es rara (el
+    // placeid está pero la caché de coordenadas no), así que el costo es una
+    // consulta barata por envío: centavos contra una fila corrupta para siempre.
+    if (!dir.placeid) {
+        dir.lat = p.lat;
+        dir.lng = p.lng;
+        dir.coords_actualizado = new Date();
+        await dir.save();
+    }
 
     return { lat: p.lat, lng: p.lng, preciso: false, desde: dir.localidad || p.nombre };
 }

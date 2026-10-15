@@ -79,4 +79,21 @@ describe('puntoDelQuodom', () => {
     const p = await puntoDelQuodom('u-6');
     expect(p.preciso).toBe(false);
   });
+
+  // Guardar el punto de la localidad en una fila que ya tiene placeid la deja
+  // con centro de pueblo Y placeid: la llamada siguiente la reporta como
+  // exacta, que es justo la mentira que la pantalla no puede mostrar.
+  it('no guarda el punto de la localidad en una direccion con placeid', async () => {
+    const d = await direccion({ userid: 'u-7', calle: 'Idolo', numero: '3720', localidad: 'Villa Ballester', provincia: 'Buenos Aires', placeid: 'p-7' });
+    places.puntoDeLocalidad.mockResolvedValue({ lat: -34.5492, lng: -58.5588, nombre: 'Villa Ballester' });
+
+    const p1 = await puntoDelQuodom('u-7');
+    const guardada = await db.user_direcciones.findByPk(d.id);
+    const p2 = await puntoDelQuodom('u-7');
+
+    expect(p1.preciso).toBe(false);
+    expect(guardada.lat).toBeNull();
+    expect(p2.preciso).toBe(false);
+    expect(p2.lat).toBeCloseTo(-34.5492, 4);
+  });
 });
