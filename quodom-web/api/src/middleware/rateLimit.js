@@ -16,11 +16,18 @@ function take(key, limit, windowMs) {
   return true;
 }
 
+// El texto del chat de IA, que es de donde salió este middleware. Sigue siendo
+// el default para no tocar `ia.route.js`, pero una ruta que no manda mensajes
+// tiene que pasar el suyo: el scope separa el balde y el mensaje separa la
+// explicación, y con uno solo de los dos el usuario igual termina buscando el
+// problema donde no está.
+const MENSAJE_POR_DEFECTO = 'Muchos mensajes muy rápido. Esperá un momento y probá de nuevo.';
+
 // `scope` separa el cupo de cada feature. Sin él, todas las rutas que usan
 // este middleware comparten un balde por usuario: buscar direcciones gastaba
 // el cupo del chat de IA, y el usuario recibía "Muchos mensajes muy rápido"
 // sin haber mandado ningún mensaje. Es obligatorio en rutas nuevas.
-function perUserPerMinute(limit, scope = '') {
+function perUserPerMinute(limit, scope = '', mensaje = MENSAJE_POR_DEFECTO) {
   return function rateLimitMiddleware(req, res, next) {
     const userId = req.user && req.user.id;
     if (!userId) return next();
@@ -29,7 +36,7 @@ function perUserPerMinute(limit, scope = '') {
       return res.status(429).json({
         res: false,
         error: 'rate_limit',
-        message: 'Muchos mensajes muy rápido. Esperá un momento y probá de nuevo.'
+        message: mensaje
       });
     }
     return next();

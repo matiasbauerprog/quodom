@@ -61,11 +61,24 @@ describe('GET /quodom/proveedores/:id', () => {
     expect(res.body.proveedores).toHaveLength(1);
     const p = res.body.proveedores[0];
     expect(p.nombre).toBe('Pinturerías Le Bleu');
-    expect(p.distanciakm).toBeGreaterThan(0);
     expect(p.telefono).toBe('+541166687854');
     expect(p.esfijo).toBe(true);
-    // Buscó con el término medido del rubro 5.
-    expect(places.buscarProveedores).toHaveBeenCalledWith(expect.objectContaining({ texto: 'pinturería' }));
+
+    // La promesa del feature es que la distancia que se muestra está medida
+    // desde la dirección que el proveedor va a recibir, así que las tres cosas
+    // que lo atan se afirman con el número exacto y no con "mayor que cero":
+    // con `> 0` y un `objectContaining` que ignora el punto, buscar desde el
+    // Obelisco —a 20 km— pasaba los nueve tests.
+    //
+    // 1. Se buscó con el término medido del rubro 5 y desde el punto de la
+    //    dirección, no desde cualquier otro.
+    expect(places.buscarProveedores).toHaveBeenCalledWith(
+      expect.objectContaining({ texto: 'pinturería', lat: -34.5492, lng: -58.5588 }));
+    // 2. La distancia es la real entre ChIJ-casa y ChIJ-lebleu (~0,41 km).
+    expect(p.distanciakm).toBeCloseTo(0.4, 1);
+    // 3. `desde` nombra esa misma dirección, que es lo que ata el punto a la
+    //    fila que resolvió `direccionDelQuodom` y no a otra del usuario.
+    expect(res.body.desde).toBe('Almte Brown 3185');
   });
 
   it('deja anotado a quiénes se le ofreció', async () => {
@@ -138,6 +151,11 @@ describe('GET /quodom/proveedores/:id', () => {
     expect(res.body.error).toBe('google_error');
     const q = await db.Quodom.findByPk(idquodom);
     expect(q.estado).toBe('CREADO');
+    // No queda anotado nadie: hoy se cumple sólo porque `anotarOfrecidos` corre
+    // después de la búsqueda, que es justo el orden que un refactor mueve sin
+    // darse cuenta. Con filas escritas, el Quodom diría que se le ofreció a
+    // comercios que nunca se le mostraron.
+    expect(await db.quodom_proveedores.count({ where: { idquodom } })).toBe(0);
   });
 
   it('el Quodom de otro usuario no se puede consultar', async () => {
@@ -151,6 +169,29 @@ describe('GET /quodom/proveedores/:id', () => {
       .set('Authorization', 'Bearer ' + sessionToken(login2));
 
     expect(res.status).toBe(400);
+  });
+
+  // El tope se alcanza en uso honesto: cada apertura del popup es una consulta
+  // a Google y no hay caché, así que comparar unos cuantos Quodoms pasa de 10 en
+  // un minuto. El cupo ya está separado del chat por el scope; el texto también
+  // tiene que estarlo, porque "muchos mensajes" a quien no mandó ninguno no
+  // explica nada y manda a buscar el problema donde no está.
+  it('el 429 habla de buscar proveedores y no de mensajes', async () => {
+    const antes = process.env.PROVEEDORES_RATE_LIMIT_PER_MINUTE;
+    process.env.PROVEEDORES_RATE_LIMIT_PER_MINUTE = '1';
+    places.buscarProveedores.mockResolvedValue([UNO]);
+
+    try {
+      await auth(request(app).get('/quodom/proveedores/' + idquodom));
+      const res = await auth(request(app).get('/quodom/proveedores/' + idquodom));
+
+      expect(res.status).toBe(429);
+      expect(res.body.error).toBe('rate_limit');
+      expect(res.body.message).toMatch(/proveedores/i);
+      expect(res.body.message).not.toMatch(/mensajes/i);
+    } finally {
+      process.env.PROVEEDORES_RATE_LIMIT_PER_MINUTE = antes;
+    }
   });
 
   it('exige sesión', async () => {
