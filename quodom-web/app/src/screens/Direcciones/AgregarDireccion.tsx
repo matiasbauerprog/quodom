@@ -7,6 +7,7 @@ import type { Provincia, Localidad } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { AppBarBack } from '../../components/layout/AppBarBack';
 import { CampoDireccionMapa } from '../../components/CampoDireccionMapa';
+import { LinkMapa } from '../../components/LinkMapa';
 import type { DireccionDeLugar } from '../../api/types';
 import './AgregarDireccion.css';
 
@@ -89,6 +90,7 @@ export function AgregarDireccion() {
       <section className="container dir-form">
         <form onSubmit={onSubmit}>
           <CampoDireccionMapa onElegir={aplicarDelMapa} />
+          <LinkMapa lat={f.lat} lng={f.lng} />
           <label className="field"><span>Alias (ej: casa, obra)</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
           <div className="grid-2">
             <label className="field"><span>Calle</span><input className="input" value={f.calle ?? ''} onChange={set('calle')} required /></label>

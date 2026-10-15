@@ -1,0 +1,22 @@
+.link-mapa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: var(--fs-small);
+  color: var(--color-acento);
+  text-decoration: none;
+  /* Objetivo táctil cómodo sin agrandar el texto: esto convive con campos de
+     formulario y no tiene que competir con ellos. */
+  min-height: 32px;
+}
+
+.link-mapa::before {
+  content: '📍';
+  font-size: 13px;
+}
+
+.link-mapa:hover,
+.link-mapa:focus-visible {
+  text-decoration: underline;
+}

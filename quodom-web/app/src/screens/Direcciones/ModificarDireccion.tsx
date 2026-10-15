@@ -8,6 +8,7 @@ import { ApiError } from '../../api/client';
 import { AppBarBack } from '../../components/layout/AppBarBack';
 import { Loader } from '../../components/Loader';
 import { CampoDireccionMapa } from '../../components/CampoDireccionMapa';
+import { LinkMapa } from '../../components/LinkMapa';
 import type { DireccionDeLugar } from '../../api/types';
 import './AgregarDireccion.css';
 
@@ -29,6 +30,12 @@ export function ModificarDireccion() {
           alias: d.alias ?? '', calle: d.calle ?? '', numero: d.numero ?? '', piso: d.piso ?? '',
           cp: d.cp ?? '', localidad: d.localidad ?? '', observaciones: d.observaciones ?? '',
           idprovincia: d.idprovincia ? Number(d.idprovincia) : undefined,
+          // Sin esto el link al mapa nunca aparece en una direccion ya
+          // guardada, y el PUT viaja sin los datos del mapa: Object.assign
+          // deja los de la base y el formulario miente sobre lo que guarda.
+          placeid: d.placeid ?? undefined,
+          lat: d.lat ?? undefined,
+          lng: d.lng ?? undefined,
           default: !!d.default
         });
       })
@@ -103,6 +110,7 @@ export function ModificarDireccion() {
         {f && (
           <form onSubmit={onSubmit}>
             <CampoDireccionMapa onElegir={aplicarDelMapa} />
+            <LinkMapa lat={f.lat} lng={f.lng} />
             <label className="field"><span>Alias</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
             <div className="grid-2">
               <label className="field"><span>Calle</span><input className="input" value={f.calle ?? ''} onChange={set('calle')} required /></label>

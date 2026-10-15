@@ -5,6 +5,7 @@ import { userDirecciones } from '../../api/user_direcciones';
 import type { Direccion } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
+import { LinkMapa } from '../../components/LinkMapa';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
 import './ListaDirecciones.css';
@@ -54,6 +55,7 @@ export function ListaDirecciones() {
                 <div className="dirs-alias">{d.alias || d.calle}</div>
                 <div className="dirs-line">{d.calle} {d.numero}{d.piso ? ' · ' + d.piso : ''}</div>
                 <div className="dirs-line dirs-muted">{d.localidad}, {d.provincia} {d.cp && '(' + d.cp + ')'}</div>
+                <LinkMapa lat={d.lat} lng={d.lng} />
               </div>
               <div className="dirs-actions">
                 {(d.default ? true : false)

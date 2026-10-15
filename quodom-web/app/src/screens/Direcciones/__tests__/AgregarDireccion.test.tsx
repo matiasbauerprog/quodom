@@ -98,6 +98,22 @@ describe('AgregarDireccion con el mapa', () => {
     expect(body.lng).toBeNull();
   });
 
+  // El link es la unica forma que tiene el usuario de confirmar que el punto es
+  // el suyo. Y su ausencia tambien informa: si editar la calle invalido las
+  // coordenadas, el link se va, y eso avisa que esa direccion ya no sirve para
+  // buscar proveedores cerca.
+  it('ofrece ver en el mapa al elegir del mapa, y lo saca si se edita la calle', async () => {
+    montar();
+    await elegirDelMapa();
+
+    const link = screen.getByRole('link', { name: /ver en el mapa/i });
+    expect(link).toHaveAttribute('href', 'https://www.google.com/maps?q=-34.4707,-58.5075');
+
+    fireEvent.change(screen.getByLabelText(/^Calle$/i), { target: { value: 'Rivadavia' } });
+
+    expect(screen.queryByRole('link', { name: /ver en el mapa/i })).toBeNull();
+  });
+
   // MEDIDO con un usuario real el 2026-10-15: eligio su casa del mapa y corrigio
   // la localidad, porque Google devuelve el partido ("San Martin") donde el
   // usuario dice el pueblo ("Villa Ballester"). La regla vieja le borro las
