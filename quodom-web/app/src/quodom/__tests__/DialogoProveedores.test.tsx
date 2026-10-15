@@ -14,13 +14,13 @@ vi.mock('../../utils/whatsapp', () => ({ openWhatsappLink: abrir }));
 const LE_BLEU = {
   placeid: 'p1', nombre: 'Pinturerías Le Bleu', rating: 4.9, resenas: 190,
   distanciakm: 0.4, telefono: '+541166687854', telefonovisible: '011 6668-7854',
-  sintelefono: false, esfijo: true, sinwhatsapp: false, sindatos: false, direccion: 'Almte Brown 3185',
+  sintelefono: false, sinwhatsapp: false, sindatos: false, direccion: 'Almte Brown 3185',
   contactadoen: null
 };
 const SIN_TEL = {
   placeid: 'p2', nombre: 'JB Artículos de Limpieza', rating: 4.3, resenas: 3,
   distanciakm: 0.4, telefono: null, telefonovisible: null,
-  sintelefono: true, esfijo: false, sinwhatsapp: false, sindatos: false, direccion: 'Pacífico Rodríguez 5369',
+  sintelefono: true, sinwhatsapp: false, sindatos: false, direccion: 'Pacífico Rodríguez 5369',
   contactadoen: null
 };
 // Medido contra la API de Google: un 0800 es un número real y válido que no
@@ -30,7 +30,7 @@ const SIN_TEL = {
 const REX_0800 = {
   placeid: 'p3', nombre: 'Rex', rating: 4.5, resenas: 453,
   distanciakm: 1.2, telefono: null, telefonovisible: '0800-777-7739',
-  sintelefono: false, esfijo: false, sinwhatsapp: false, sindatos: false, direccion: 'Córdoba 1234',
+  sintelefono: false, sinwhatsapp: false, sindatos: false, direccion: 'Córdoba 1234',
   contactadoen: null
 };
 
@@ -137,13 +137,19 @@ describe('DialogoProveedores', () => {
     expect(screen.getByRole('link', { name: /maps/i })).toBeInTheDocument();
   });
 
-  it('avisa que un fijo puede no tener WhatsApp, sin bloquearlo', async () => {
+  // MEDIDO el 2026-10-15 en Villa Ballester: de los 25 comercios que Google
+  // devolvio en los cinco rubros, 22 venian con el telefono sin el 15, que es
+  // como la mayoria publica su celular. La biblioteca los clasificaba
+  // FIXED_LINE a todos, asi que el aviso salia en 22 de 25 renglones y el
+  // comprador leia que ningun proveedor servia. No se puede distinguir fijo de
+  // celular en un numero argentino sin el 15, asi que no se afirma.
+  it('no dice que un telefono puede no tener WhatsApp: no se puede saber', async () => {
     vi.mocked(proveedores.delQuodom).mockResolvedValue(respuesta());
 
     montar();
 
-    expect(await screen.findByText(/puede no tener whatsapp/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /whatsapp/i })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: /whatsapp/i })).toBeEnabled();
+    expect(screen.queryByText(/es un teléfono fijo/i)).toBeNull();
   });
 
   it('cuando el punto es aproximado lo dice y linkea a direcciones', async () => {

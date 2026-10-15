@@ -279,7 +279,7 @@ components:
         direccion: { type: string }
     Proveedor:
       type: object
-      required: [placeid, nombre, distanciakm, sintelefono, esfijo, sinwhatsapp, sindatos]
+      required: [placeid, nombre, distanciakm, sintelefono, sinwhatsapp, sindatos]
       properties:
         placeid: { type: string }
         nombre: { type: string }
@@ -293,7 +293,6 @@ components:
         telefono: { type: string, nullable: true }
         telefonovisible: { type: string, nullable: true }
         sintelefono: { type: boolean }
-        esfijo: { type: boolean }
         sinwhatsapp: { type: boolean }
         direccion: { type: string }
         contactadoen: { type: string, format: date-time, nullable: true }

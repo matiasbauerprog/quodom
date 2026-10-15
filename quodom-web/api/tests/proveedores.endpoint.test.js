@@ -62,7 +62,6 @@ describe('GET /quodom/proveedores/:id', () => {
     const p = res.body.proveedores[0];
     expect(p.nombre).toBe('Pinturerías Le Bleu');
     expect(p.telefono).toBe('+541166687854');
-    expect(p.esfijo).toBe(true);
 
     // La promesa del feature es que la distancia que se muestra está medida
     // desde la dirección que el proveedor va a recibir, así que las tres cosas

@@ -2691,7 +2691,6 @@ export interface components {
             telefono?: string | null;
             telefonovisible?: string | null;
             sintelefono: boolean;
-            esfijo: boolean;
             sinwhatsapp: boolean;
             direccion?: string;
             /** Format: date-time */

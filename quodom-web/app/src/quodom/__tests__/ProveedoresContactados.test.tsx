@@ -12,7 +12,7 @@ vi.mock('../../utils/whatsapp', () => ({ openWhatsappLink: vi.fn() }));
 const LE_BLEU = {
   placeid: 'p1', nombre: 'Pinturerías Le Bleu', rating: 4.9, resenas: 190,
   distanciakm: 0.4, telefono: '+541166687854', telefonovisible: '011 6668-7854',
-  sintelefono: false, esfijo: true, sinwhatsapp: false, sindatos: false,
+  sintelefono: false, sinwhatsapp: false, sindatos: false,
   direccion: 'Almte Brown 3185', contactadoen: null
 };
 
@@ -21,7 +21,7 @@ const LE_BLEU = {
 const OLVIDADO = {
   placeid: 'p-devoto', nombre: '', rating: null, resenas: 0,
   distanciakm: null, telefono: null, telefonovisible: null,
-  sintelefono: false, esfijo: false, sinwhatsapp: false, sindatos: true,
+  sintelefono: false, sinwhatsapp: false, sindatos: true,
   direccion: '', contactadoen: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
 };
 

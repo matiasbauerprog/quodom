@@ -10,12 +10,20 @@
  * códigos de área de 2 a 4 dígitos, y hay que saber dónde termina el área para
  * saber si el `15` que sigue es parte del número o la marca de celular.
  *
- * `esFijo` sirve para avisar que puede no tener WhatsApp. Es un aviso y no un
- * bloqueo: un fijo puede tener WhatsApp Business.
+ * **No se afirma si el número es fijo o celular, porque no se puede saber.**
+ * Medido el 2026-10-15 sobre los 21 teléfonos que Google devolvió en Villa
+ * Ballester: libphonenumber clasifica `FIXED_LINE` a todos los que vienen sin
+ * el `15`, y los 21 son `MOBILE` válidos si se les agrega — incluidos los
+ * prefijos 4767 y 4720, que parecen fijo clásico. En un número argentino sin
+ * el `15`, `FIXED_LINE` es el supuesto por defecto de la biblioteca y no un
+ * dato. Como la mayoría de los comercios publica su celular sin el `15`, el
+ * aviso "puede no tener WhatsApp" salía en 22 de 25 renglones: un aviso que no
+ * se puede sostener, puesto en casi todos, se lee como "ningún proveedor
+ * sirve". Lo que sí se distingue —y se sigue marcando— es el 0800.
  *
  * Se importa `libphonenumber-js/max` y no el paquete base: el base trae metadata
- * mínima y `getType()` devuelve `undefined` para todo, con lo que ni el fijo ni
- * el 0800 se distinguirían de un celular (medido).
+ * mínima y `getType()` devuelve `undefined` para todo, con lo que el 0800
+ * tampoco se distinguiría de un celular (medido).
  */
 const { parsePhoneNumberFromString } = require('libphonenumber-js/max');
 
@@ -37,7 +45,6 @@ function analizarTelefono(nacional) {
 
   return {
     e164: n.number,
-    esFijo: tipo === 'FIXED_LINE',
     sirveWhatsapp: !noRecibe.includes(tipo),
     original
   };
@@ -65,7 +72,6 @@ function candidatosConTelefono(lugares, sinWhatsapp) {
       ...c,
       telefono: tel && tel.sirveWhatsapp ? tel.e164 : null,
       telefonoVisible: tel ? tel.original : null,
-      esFijo: tel ? tel.esFijo : false,
       sinWhatsapp: reportados.has(c.placeid)
     };
   });

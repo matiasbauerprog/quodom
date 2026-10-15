@@ -35,7 +35,7 @@ const delQuodom = proveedores.delQuodom as unknown as ReturnType<typeof vi.fn>;
 const LE_BLEU = {
   placeid: 'p1', nombre: 'Pinturerías Le Bleu', rating: 4.9, resenas: 190,
   distanciakm: 0.4, telefono: '+541166687854', telefonovisible: '011 6668-7854',
-  sintelefono: false, esfijo: false, sinwhatsapp: false, sindatos: false, direccion: 'Almte Brown 3185',
+  sintelefono: false, sinwhatsapp: false, sindatos: false, direccion: 'Almte Brown 3185',
   contactadoen: null
 };
 const PROVEEDORES = {

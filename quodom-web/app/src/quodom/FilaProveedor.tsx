@@ -67,7 +67,6 @@ function cuando(iso: string): string {
  *   comprador a un chat que nunca abre, y lo lee como que el comercio no tiene.
  * - `sintelefono` es que Google no tiene ningún número: ni WhatsApp ni Llamar,
  *   sólo el mapa, y el renglón lo dice.
- * - `esfijo` es un aviso y nunca un bloqueo: un fijo puede tener WhatsApp Business.
  */
 export function FilaProveedor({
   proveedor: p, ocupado, preguntandoMotivo, permiteDeshacer = true,
@@ -110,9 +109,6 @@ export function FilaProveedor({
 
       {!sinDatos && p.sintelefono && (
         <p className="dp-nota">Google no tiene el teléfono de este comercio.</p>
-      )}
-      {!sinDatos && !p.sintelefono && p.esfijo && (
-        <p className="dp-nota">Es un teléfono fijo, puede no tener WhatsApp.</p>
       )}
       {/* El 0800: tiene teléfono, pero no uno que reciba WhatsApp.
           Sin decirlo, la falta del botón se lee como un error nuestro. */}

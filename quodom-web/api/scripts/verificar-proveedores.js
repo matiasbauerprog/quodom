@@ -56,7 +56,7 @@ function puntuacion(p) {
 // Las tres situaciones de teléfono que están medidas, en el mismo orden en que
 // las decide `telefonoWhatsapp.js`: WhatsApp, sólo llamar, y nada.
 function telefono(p) {
-  if (p.telefono) return 'wa ' + p.telefono + (p.esFijo ? '  (fijo: puede no tener WhatsApp)' : '');
+  if (p.telefono) return 'wa ' + p.telefono;
   if (p.telefonoVisible) return 'LLAMAR ' + p.telefonoVisible + '  <-- no recibe WhatsApp (0800 o tarifa especial)';
   return 'SIN TELÉFONO';
 }

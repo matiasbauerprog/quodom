@@ -29,13 +29,13 @@ const USUARIO = { id: 'u1', username: 'ana', email: 'ana@test.com', nombre: 'Ana
 const LE_BLEU = {
   placeid: 'p1', nombre: 'Pinturerías Le Bleu', rating: 4.9, resenas: 190,
   distanciakm: 0.4, telefono: '+541166687854', telefonovisible: '011 6668-7854',
-  sintelefono: false, esfijo: false, sinwhatsapp: false, sindatos: false, direccion: 'Almte Brown 3185',
+  sintelefono: false, sinwhatsapp: false, sindatos: false, direccion: 'Almte Brown 3185',
   contactadoen: null
 };
 const OTRO = {
   placeid: 'p2', nombre: 'Pinturería Del Barrio', rating: 4.1, resenas: 22,
   distanciakm: 1.1, telefono: '+541155550000', telefonovisible: '011 5555-0000',
-  sintelefono: false, esfijo: false, sinwhatsapp: false, sindatos: false, direccion: 'Mitre 100',
+  sintelefono: false, sinwhatsapp: false, sindatos: false, direccion: 'Mitre 100',
   contactadoen: null
 };
 

@@ -105,7 +105,7 @@ describe('rankear', () => {
   it('un proveedor sin teléfono queda en la lista, marcado', () => {
     const out = rankear([
       cand('sin-tel', CENTRO.lat, CENTRO.lng, 4.8, 30, { telefono: null }),
-      cand('con-tel', CENTRO.lat + 0.01, CENTRO.lng, 4.0, 30, { telefono: '+5491154812951', esFijo: false })
+      cand('con-tel', CENTRO.lat + 0.01, CENTRO.lng, 4.0, 30, { telefono: '+5491154812951' })
     ], CENTRO);
     const sinTel = out.find(p => p.nombre === 'sin-tel');
     expect(sinTel).toBeDefined();

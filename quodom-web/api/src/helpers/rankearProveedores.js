@@ -56,7 +56,6 @@ function rankear(candidatos, centro, opciones = {}) {
     distanciaKm: distanciaKm(centro, { lat: c.lat, lng: c.lng }),
     telefono: c.telefono || null,
     telefonoVisible: c.telefonoVisible || null,
-    esFijo: !!c.esFijo,
     // Un 0800 es un teléfono real que no recibe WhatsApp: el llamador pasa
     // `telefono: null` pero sí `telefonoVisible`. Marcarlo "sin teléfono" sería
     // falso y escondería el botón Llamar, la única vía que ese comercio ofrece.
