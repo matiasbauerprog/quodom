@@ -247,9 +247,15 @@ components:
         default: { type: boolean }
         # Datos del mapa. Sin declararlos aca el validador los descarta y la
         # direccion se guarda sin coordenadas, en silencio.
-        placeid: { type: string }
-        lat: { type: number }
-        lng: { type: number }
+        #
+        # nullable porque hay que poder BORRARLAS: si el usuario elige del mapa
+        # y despues edita la calle a mano, las coordenadas dejan de describir
+        # esa direccion y mandar null es la unica forma de decirlo. Sin esto
+        # quedaba una fila cuyo texto dice una cosa y cuyo punto esta en otra,
+        # que es el riesgo central de la spec, sin arreglo posible por la API.
+        placeid: { type: string, nullable: true }
+        lat: { type: number, nullable: true }
+        lng: { type: number, nullable: true }
 
     SugerenciaLugar:
       type: object

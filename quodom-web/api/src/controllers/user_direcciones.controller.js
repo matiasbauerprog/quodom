@@ -38,6 +38,11 @@ async function create(params, userId) {
     // reloj de cliente atrasado dejaria coordenadas viejas pareciendo frescas.
     if (params.lat != null && params.lng != null) {
         params.coords_actualizado = new Date();
+    } else if (params.lat === null || params.lng === null) {
+        // Coordenadas borradas a proposito (el usuario edito la direccion a
+        // mano): la fecha tambien se va. Dejarla sellada diria que hay
+        // coordenadas frescas cuando no hay ninguna.
+        params.coords_actualizado = null;
     }
 
     await db.user_direcciones.create(params);
@@ -60,6 +65,11 @@ async function update(id, params, userId) {
     // reloj de cliente atrasado dejaria coordenadas viejas pareciendo frescas.
     if (params.lat != null && params.lng != null) {
         params.coords_actualizado = new Date();
+    } else if (params.lat === null || params.lng === null) {
+        // Coordenadas borradas a proposito (el usuario edito la direccion a
+        // mano): la fecha tambien se va. Dejarla sellada diria que hay
+        // coordenadas frescas cuando no hay ninguna.
+        params.coords_actualizado = null;
     }
 
     Object.assign(direcciones, params);

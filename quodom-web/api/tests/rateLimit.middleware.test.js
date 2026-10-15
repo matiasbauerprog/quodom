@@ -27,6 +27,34 @@ describe('rateLimit middleware', () => {
     }
   });
 
+  // Dos features distintas no comparten el balde. Sin el scope, buscar
+  // direcciones gastaba el cupo del chat de IA y el usuario recibia
+  // "Muchos mensajes muy rapido" sin haber mandado ningun mensaje.
+  it('no mezcla el cupo de dos scopes distintos para el mismo usuario', () => {
+    const lugares = rateLimit.perUserPerMinute(1, 'lugares');
+    const ia = rateLimit.perUserPerMinute(1, 'ia');
+
+    const a = fakeReqRes(1);
+    lugares(a.req, a.res, () => { a.nextCalled = true; });
+    const b = fakeReqRes(1);
+    ia(b.req, b.res, () => { b.nextCalled = true; });
+
+    expect(a.nextCalled).toBe(true);
+    expect(b.nextCalled).toBe(true);
+  });
+
+  it('dentro del mismo scope si cuenta el cupo', () => {
+    const lugares = rateLimit.perUserPerMinute(1, 'lugares');
+
+    const a = fakeReqRes(1);
+    lugares(a.req, a.res, () => { a.nextCalled = true; });
+    const b = fakeReqRes(1);
+    lugares(b.req, b.res, () => { b.nextCalled = true; });
+
+    expect(a.nextCalled).toBe(true);
+    expect(b.nextCalled).toBe(false);
+  });
+
   it('blocks the request that exceeds the limit within the window', () => {
     const mw = rateLimit.perUserPerMinute(2);
     for (let i = 0; i < 2; i++) {

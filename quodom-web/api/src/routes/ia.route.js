@@ -15,14 +15,14 @@ const MAX_RPM = () => parseInt(process.env.IA_RATE_LIMIT_PER_MINUTE || '10', 10)
 router.post(
   '/chat',
   auth.verifyToken(),
-  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM())(req, res, next),
+  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM(), 'ia')(req, res, next),
   chat
 );
 
 router.post(
   '/lista',
   auth.verifyToken(),
-  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM())(req, res, next),
+  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM(), 'ia')(req, res, next),
   lista
 );
 

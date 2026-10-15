@@ -16,12 +16,16 @@ function take(key, limit, windowMs) {
   return true;
 }
 
-function perUserPerMinute(limit) {
+// `scope` separa el cupo de cada feature. Sin él, todas las rutas que usan
+// este middleware comparten un balde por usuario: buscar direcciones gastaba
+// el cupo del chat de IA, y el usuario recibía "Muchos mensajes muy rápido"
+// sin haber mandado ningún mensaje. Es obligatorio en rutas nuevas.
+function perUserPerMinute(limit, scope = '') {
   return function rateLimitMiddleware(req, res, next) {
     const userId = req.user && req.user.id;
     if (!userId) return next();
 
-    if (!take(userId, limit, WINDOW_MS)) {
+    if (!take(scope + ':' + userId, limit, WINDOW_MS)) {
       return res.status(429).json({
         res: false,
         error: 'rate_limit',

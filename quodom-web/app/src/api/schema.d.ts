@@ -2548,9 +2548,9 @@ export interface components {
             observaciones?: string;
             idprovincia?: number;
             default?: boolean;
-            placeid?: string;
-            lat?: number;
-            lng?: number;
+            placeid?: string | null;
+            lat?: number | null;
+            lng?: number | null;
         };
         SugerenciaLugar: {
             placeid: string;

@@ -36,6 +36,29 @@ describe('CampoDireccionMapa', () => {
     await waitFor(() => expect(onElegir).toHaveBeenCalledWith(MITRE));
   });
 
+  // Elegir pone el texto completo en el campo, y eso volvia a disparar el
+  // efecto: una consulta paga de mas por cada eleccion, con un token de sesion
+  // ya rotado que ningun detalle va a cerrar (o sea que se cobra sola), y la
+  // lista de sugerencias reabriendose encima del formulario justo despues de
+  // que el usuario eligio.
+  it('elegir no dispara otra consulta ni reabre la lista', async () => {
+    vi.mocked(lugares.sugerencias).mockResolvedValue({
+      sugerencias: [{ placeid: 'ChIJ-1', texto: 'Mitre 450, San Isidro' }]
+    });
+    vi.mocked(lugares.direccion).mockResolvedValue(MITRE);
+
+    render(<CampoDireccionMapa onElegir={vi.fn()} />);
+    fireEvent.change(campo(), { target: { value: 'mitre 450' } });
+    fireEvent.click(await screen.findByRole('option', { name: /Mitre 450, San Isidro/ }));
+
+    await waitFor(() => expect(campo()).toHaveValue('Mitre 450, San Isidro'));
+    // Mas que el debounce, para que si fuera a dispararse ya lo hubiera hecho.
+    await new Promise(r => setTimeout(r, 500));
+
+    expect(lugares.sugerencias).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('option')).toBeNull();
+  });
+
   // Review Focus 2, del lado del cliente: el debounce es lo que evita una
   // consulta paga por tecla.
   it('no consulta con menos de 3 caracteres', async () => {

@@ -126,6 +126,30 @@ describe('direcciones', () => {
     expect(despues.getTime()).toBeGreaterThan(antes.getTime());
   });
 
+  // El riesgo central de la spec: una direccion cuyo texto dice una cosa y
+  // cuyo punto esta en otra. Pasa si el usuario elige del mapa y despues edita
+  // la calle a mano. Las coordenadas dejan de describir esa direccion, asi que
+  // hay que poder borrarlas — y antes no se podia ni mandando null.
+  it('mandar las coordenadas en null las borra junto con la fecha', async () => {
+    const dirs0 = await request(app).get('/users/dire/').set('Authorization', 'Bearer ' + token);
+    const obra = dirs0.body.find(d => d.alias === 'Obra');
+    expect(obra.placeid).toBe('ChIJ-obra2');
+
+    const res = await request(app).put('/user_direcciones/' + obra.id)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ calle: 'Rivadavia', numero: '900', localidad: 'Tandil', idprovincia: 1,
+              placeid: null, lat: null, lng: null });
+    expect(res.status).toBe(200);
+
+    const fila = await db.user_direcciones.findByPk(obra.id);
+    expect(fila.calle).toBe('Rivadavia');
+    expect(fila.placeid).toBeNull();
+    expect(fila.lat).toBeNull();
+    expect(fila.lng).toBeNull();
+    // La fecha tambien: dejarla sellada diria que hay coordenadas frescas.
+    expect(fila.coords_actualizado).toBeNull();
+  });
+
   it('DELETE /user_direcciones/:id removes the address', async () => {
     const res = await request(app).delete('/user_direcciones/' + iddireccion)
       .set('Authorization', 'Bearer ' + token);

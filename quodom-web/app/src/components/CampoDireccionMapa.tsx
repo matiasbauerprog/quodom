@@ -23,10 +23,18 @@ export function CampoDireccionMapa({ onElegir }: { onElegir: (d: DireccionDeLuga
   const [error, setError] = useState(false);
   const [buscando, setBuscando] = useState(false);
   const sesion = useRef(nuevaSesion());
+  const yaAplicado = useRef<string | null>(null);
 
   useEffect(() => {
     const q = texto.trim();
     if (q.length < MINIMO) { setOpciones([]); setError(false); return; }
+
+    // Elegir escribe la dirección completa en el campo, lo que vuelve a
+    // disparar este efecto. Sin este corte, cada elección cuesta una consulta
+    // paga de más —y con el token de sesión ya rotado, así que se cobra sola en
+    // vez de ir dentro de la tanda— y la lista se reabre encima del formulario
+    // justo después de que el usuario eligió.
+    if (q === yaAplicado.current) return;
 
     let vivo = true;
     const timer = setTimeout(() => {
@@ -45,6 +53,7 @@ export function CampoDireccionMapa({ onElegir }: { onElegir: (d: DireccionDeLuga
       const d = await lugares.direccion(s.placeid, sesion.current);
       // La tanda terminó: la próxima búsqueda empieza una sesión nueva.
       sesion.current = nuevaSesion();
+      yaAplicado.current = s.texto.trim();
       setOpciones([]);
       setTexto(s.texto);
       onElegir(d);

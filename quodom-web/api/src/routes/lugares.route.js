@@ -11,9 +11,9 @@ const Controler = require('../controllers/lugares.controller');
 const MAX_RPM = () => Number(process.env.LUGARES_RATE_LIMIT_PER_MINUTE) || 40;
 
 router.get('/sugerencias', auth.verifyToken(),
-  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM())(req, res, next), getSugerencias);
+  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM(), 'lugares')(req, res, next), getSugerencias);
 router.get('/:placeid', auth.verifyToken(),
-  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM())(req, res, next), getDireccion);
+  (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM(), 'lugares')(req, res, next), getDireccion);
 
 module.exports = router;
 
@@ -38,6 +38,10 @@ function getDireccion(req, res, next) {
 // enumerable, así que la respuesta saldría sin mensaje.
 function mapear(e) {
   if (e && e.name === 'PlacesError') {
+    // Sin esto el único rastro es el `ERROR LOG: [object Object]` del
+    // error-handler, que serializa objetos planos: ni el código ni el mensaje
+    // quedan en el log, y quien mire producción no tiene con qué empezar.
+    console.warn('lugares: places fallo. codigo=' + e.codigo + ' mensaje=' + e.message);
     return httpError(503, e.codigo || 'google_error', e.message);
   }
   return e;

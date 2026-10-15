@@ -52,6 +52,20 @@ describe('GET /lugares/sugerencias', () => {
     expect(res.body.message).toMatch(/GOOGLE_MAPS_API_KEY/);
   });
 
+  // El error-handler serializa objetos planos, asi que un fallo de Google
+  // aparecia en el log como 'ERROR LOG: [object Object]': sin codigo y sin
+  // mensaje. Quien mire los logs de produccion no tiene con que empezar.
+  it('loguea el fallo de Google con su codigo y su mensaje', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    places.sugerencias.mockRejectedValue(new PlacesError('timeout', 'places: timeout'));
+
+    await auth(request(app).get('/lugares/sugerencias?q=corrientes&sesion=s1'));
+
+    const linea = warn.mock.calls.map(c => c.join(' ')).join(' | ');
+    expect(linea).toMatch(/timeout/);
+    warn.mockRestore();
+  });
+
   // Review Focus 4.
   it('un timeout de Google responde 503 y no 500', async () => {
     places.sugerencias.mockRejectedValue(new PlacesError('timeout', 'places: timeout'));
@@ -95,6 +109,27 @@ describe('GET /lugares/:placeid', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error).toBe('lugar_sin_coordenadas');
+  });
+
+  // La spec pide que la provincia que no matchea se loguee. Es la falla
+  // silenciosa por diseno: la direccion se guarda igual, asi que si un dia
+  // deja de matchear (un cambio de nombre en Google, una renumeracion del
+  // seed) nadie se enteraria. Sin el log no hay con que diagnosticarlo.
+  it('loguea la provincia que no matcheo, con el texto y el placeid', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    places.detalleDireccion.mockResolvedValue({
+      id: 'ChIJ-br',
+      formattedAddress: 'Av. Paulista 1000, Sao Paulo',
+      location: { latitude: -23.56, longitude: -46.65 },
+      addressComponents: [{ longText: 'Sao Paulo', types: ['administrative_area_level_1'] }]
+    });
+
+    await auth(request(app).get('/lugares/ChIJ-br?sesion=s1'));
+
+    const linea = warn.mock.calls.map(c => c.join(' ')).join(' | ');
+    expect(linea).toMatch(/Sao Paulo/);
+    expect(linea).toMatch(/ChIJ-br/);
+    warn.mockRestore();
   });
 
   // Review Focus 5: fuera de Argentina no hay provincia nuestra, pero la
