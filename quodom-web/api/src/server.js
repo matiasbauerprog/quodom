@@ -63,6 +63,7 @@ app.use('/hist_busquedas', require('./routes/hist_busquedas.route'));
 app.use('/quodom', require('./routes/quodom.route'));
 app.use('/quodom_lines', require('./routes/quodom_lines.route'));
 app.use('/user_direcciones', require('./routes/user_direcciones.route'));
+app.use('/lugares', require('./routes/lugares.route'));
 app.use('/provincias', require('./routes/provincias.route'));
 app.use('/localidades', require('./routes/localidades.route'));
 app.use('/oper_notificaciones', require('./routes/oper_notificaciones.route'));

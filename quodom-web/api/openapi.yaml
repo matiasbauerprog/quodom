@@ -51,6 +51,12 @@ components:
         no se envía y queda en CREADO (falta_direccion / falta_atributo).
       content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
 
+    ServicioExterno:
+      description: >
+        Un servicio de afuera (Google Places) no esta disponible, o falta su
+        clave. No es un error del pedido: reintentar mas tarde puede andar.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
   parameters:
     IntId:
       name: id
@@ -236,6 +242,27 @@ components:
         idprovincia: { type: integer }
         default: { type: boolean }
 
+    SugerenciaLugar:
+      type: object
+      required: [placeid, texto]
+      properties:
+        placeid: { type: string }
+        texto: { type: string }
+    DireccionDeLugar:
+      type: object
+      required: [placeid, calle, numero, localidad, partido, cp, direccion, lat, lng]
+      properties:
+        placeid: { type: string }
+        calle: { type: string }
+        numero: { type: string }
+        localidad: { type: string }
+        partido: { type: string }
+        idprovincia: { type: integer, nullable: true }
+        cp: { type: string }
+        lat: { type: number }
+        lng: { type: number }
+        direccion: { type: string }
+
     Notificacion:
       type: object
       required: [id, titulo, texto, createdAt]
@@ -404,6 +431,47 @@ paths:
           description: OK
           content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Localidad' } } } }
 
+  /lugares/sugerencias:
+    get:
+      summary: Sugerencias de direccion mientras se tipea (Google Places)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+        - { name: sesion, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Las sugerencias. Lista vacia si la consulta es muy corta.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sugerencias]
+                properties:
+                  sugerencias:
+                    type: array
+                    items: { $ref: '#/components/schemas/SugerenciaLugar' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '503': { $ref: '#/components/responses/ServicioExterno' }
+  /lugares/{placeid}:
+    get:
+      summary: La direccion elegida, desarmada en nuestros campos
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: placeid, in: path, required: true, schema: { type: string } }
+        - { name: sesion, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: La direccion
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DireccionDeLugar' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422':
+          description: El lugar no tiene coordenadas y no sirve para buscar proveedores
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '503': { $ref: '#/components/responses/ServicioExterno' }
   /users:
     get:
       tags: [users]
