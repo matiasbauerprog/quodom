@@ -9,8 +9,18 @@ type Props = {
   /** Dónde arranca el pin. Sin punto, el mapa abre sobre el AMBA. */
   lat?: number | null;
   lng?: number | null;
-  onElegir: (d: DireccionDeLugar) => void;
+  onElegir?: (d: DireccionDeLugar) => void;
   onCerrar: () => void;
+  /**
+   * Mirar un lugar, no elegir uno: el pin no se arrastra, el mapa no escucha
+   * clics y **no se consulta ninguna direccion**, porque de un comercio ya
+   * sabemos como se llama y donde esta. Es un mapa sin una sola consulta paga
+   * de mas: lo unico que se paga es la carga del mapa.
+   */
+  soloLectura?: boolean;
+  titulo?: string;
+  /** Lo que se muestra debajo en modo lectura (el nombre y la direccion). */
+  subtitulo?: string;
 };
 
 // El centro por defecto cuando la dirección todavía no tiene punto. El producto
@@ -39,7 +49,7 @@ const ZOOM_SIN_PUNTO = 11;
  * - **La dirección que se muestra es texto y no un dato más del formulario
  *   hasta que el usuario confirma.** Mover el pin y cerrar no cambia nada.
  */
-export function DialogoMapa({ lat, lng, onElegir, onCerrar }: Props) {
+export function DialogoMapa({ lat, lng, onElegir, onCerrar, soloLectura, titulo, subtitulo }: Props) {
   const divMapa = useRef<HTMLDivElement | null>(null);
   const marcador = useRef<MarcadorGoogle | null>(null);
   const [errMapa, setErrMapa] = useState<string | null>(null);
@@ -77,9 +87,13 @@ export function DialogoMapa({ lat, lng, onElegir, onCerrar }: Props) {
         const m: MarcadorGoogle = new maps.Marker({
           position: inicial,
           map: lat != null && lng != null ? mapa : null,
-          draggable: true
+          draggable: !soloLectura
         });
         marcador.current = m;
+
+        // En modo lectura no se escucha nada ni se consulta nada: el pin esta
+        // donde esta el comercio y no hay nada que elegir.
+        if (soloLectura) return;
 
         // Sólo al soltar: durante el arrastre serían decenas de consultas pagas.
         listeners.push(m.addListener('dragend', () => {
@@ -119,6 +133,18 @@ export function DialogoMapa({ lat, lng, onElegir, onCerrar }: Props) {
   }, []);
 
   async function mover(p: { lat: number; lng: number }) {
+    // MEDIDO con un usuario: la consulta salia como
+    // `?lat=undefined&lng=undefined` y el servidor la rechazaba con el mensaje
+    // de su validador ("Faltan datos o hay datos invalidos: lat, lng"), que es
+    // diagnostico y no esta escrito para una persona. Y encadenaba el segundo
+    // sintoma: sin direccion leida, confirmar aplicaba el camino de respaldo
+    // con los campos vacios, asi que los del formulario no se llenaban solos.
+    //
+    // De donde salga la coordenada rota es secundario — lo que no puede pasar
+    // es gastar una consulta paga con algo que no es un punto, ni mover el pin
+    // a ninguna parte.
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) return;
+
     setPunto(p);
     setDireccion(null);
     setErrDir(null);
@@ -143,7 +169,7 @@ export function DialogoMapa({ lat, lng, onElegir, onCerrar }: Props) {
   }, [onCerrar]);
 
   function confirmar() {
-    if (!punto) return;
+    if (!punto || !onElegir) return;
     // Sin dirección legible se confirma igual, con los campos de texto vacíos:
     // quien edita a mano ya los tiene puestos, y el punto es lo que faltaba.
     onElegir(direccion
@@ -160,17 +186,21 @@ export function DialogoMapa({ lat, lng, onElegir, onCerrar }: Props) {
         aria-labelledby="dmapa-titulo"
         onClick={e => e.stopPropagation()}
       >
-        <h2 id="dmapa-titulo" className="dmapa-titulo">Ajustá el punto en el mapa</h2>
-        <p className="dmapa-ayuda">
-          Arrastrá el pin o tocá el mapa donde está la dirección. Es el punto desde el que se miden los proveedores cerca.
-        </p>
+        <h2 id="dmapa-titulo" className="dmapa-titulo">{titulo || 'Ajustá el punto en el mapa'}</h2>
+        {soloLectura
+          ? (subtitulo ? <p className="dmapa-ayuda">{subtitulo}</p> : null)
+          : (
+            <p className="dmapa-ayuda">
+              Arrastrá el pin o tocá el mapa donde está la dirección. Es el punto desde el que se miden los proveedores cerca.
+            </p>
+          )}
 
         {errMapa
           ? <p className="dmapa-err" role="alert">{errMapa}</p>
           : <div className={'dmapa-lienzo' + (cargando ? ' esqueleto' : '')} ref={divMapa} />}
 
         <div className="dmapa-lectura" aria-live="polite">
-          {!punto && !errMapa && <p className="dmapa-nada">Tocá el mapa para poner el pin.</p>}
+          {!soloLectura && !punto && !errMapa && <p className="dmapa-nada">Tocá el mapa para poner el pin.</p>}
           {punto && buscando && <p className="dmapa-nada">Buscando la dirección…</p>}
           {punto && !buscando && direccion && (
             <p className="dmapa-direccion">{direccion.direccion || [direccion.calle, direccion.numero].filter(Boolean).join(' ')}</p>
@@ -179,10 +209,14 @@ export function DialogoMapa({ lat, lng, onElegir, onCerrar }: Props) {
         </div>
 
         <footer className="dmapa-pie">
-          <button type="button" className="btn" disabled={!punto} onClick={confirmar}>
-            Usar esta ubicación
+          {!soloLectura && (
+            <button type="button" className="btn" disabled={!punto} onClick={confirmar}>
+              Usar esta ubicación
+            </button>
+          )}
+          <button type="button" className="btn btn-ghost" onClick={onCerrar}>
+            {soloLectura ? 'Cerrar' : 'Cancelar'}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onCerrar}>Cancelar</button>
         </footer>
       </section>
     </div>

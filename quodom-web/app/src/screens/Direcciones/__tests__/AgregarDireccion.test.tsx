@@ -102,16 +102,28 @@ describe('AgregarDireccion con el mapa', () => {
   // el suyo. Y su ausencia tambien informa: si editar la calle invalido las
   // coordenadas, el link se va, y eso avisa que esa direccion ya no sirve para
   // buscar proveedores cerca.
-  it('ofrece ver en el mapa al elegir del mapa, y lo saca si se edita la calle', async () => {
+  // El link que sólo abría Google Maps en otra pestaña ya no está: era la mitad
+  // inútil de la misma acción. Mirar el punto no alcanza —una geocodificación
+  // equivocada no da error, da una dirección perfecta y un punto en otro lado—,
+  // así que queda el botón que lo abre acá y deja corregirlo.
+  it('no manda a Google Maps: ofrece ajustar el punto acá', async () => {
     montar();
     await elegirDelMapa();
 
-    const link = screen.getByRole('link', { name: /ver en el mapa/i });
-    expect(link).toHaveAttribute('href', 'https://www.google.com/maps?q=-34.4707,-58.5075');
+    expect(screen.queryByRole('link', { name: /ver en el mapa/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /ajustar en el mapa/i })).toBeEnabled();
+  });
+
+  // Editar la calle borra las coordenadas, así que ya no hay punto que ajustar
+  // sino uno que marcar: el botón lo dice.
+  it('editado a mano, el botón pasa a invitar a marcar el punto', async () => {
+    montar();
+    await elegirDelMapa();
 
     fireEvent.change(screen.getByLabelText(/^Calle$/i), { target: { value: 'Rivadavia' } });
 
-    expect(screen.queryByRole('link', { name: /ver en el mapa/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /marcar en el mapa/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /ajustar en el mapa/i })).toBeNull();
   });
 
   // MEDIDO con un usuario real el 2026-10-15: eligio su casa del mapa y corrigio

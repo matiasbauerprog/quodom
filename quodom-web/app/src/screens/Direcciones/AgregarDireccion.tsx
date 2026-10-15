@@ -7,7 +7,6 @@ import type { Provincia, Localidad } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { AppBarBack } from '../../components/layout/AppBarBack';
 import { CampoDireccionMapa } from '../../components/CampoDireccionMapa';
-import { LinkMapa } from '../../components/LinkMapa';
 import { DialogoMapa } from '../../components/DialogoMapa';
 import type { DireccionDeLugar } from '../../api/types';
 import './AgregarDireccion.css';
@@ -121,12 +120,14 @@ export function AgregarDireccion() {
       <AppBarBack title="Nueva dirección" />
       <section className="container dir-form">
         <form onSubmit={onSubmit}>
+          <label className="field"><span>Alias (ej: casa, obra)</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
           <CampoDireccionMapa onElegir={aplicarDelMapa} />
           <div className="dir-mapa-acciones">
-            <LinkMapa lat={f.lat} lng={f.lng} />
-            {/* Mirar el punto no alcanza: la geocodificación equivocada no da
+            {/* Mirar el punto no alcanza: una geocodificación equivocada no da
                 error, da una dirección que se ve perfecta y un punto en otro
-                lado. Acá se arregla donde se ve. */}
+                lado. Acá se arregla donde se ve, y por eso el link que sólo
+                abría Google Maps en otra pestaña ya no está: era la mitad
+                inútil de la misma acción. */}
             <button type="button" className="btn btn-ghost dir-mapa-ajustar" onClick={() => setMapaAbierto(true)}>
               {f.lat != null && f.lng != null ? 'Ajustar en el mapa' : 'Marcar en el mapa'}
             </button>
@@ -139,7 +140,6 @@ export function AgregarDireccion() {
               onCerrar={() => setMapaAbierto(false)}
             />
           )}
-          <label className="field"><span>Alias (ej: casa, obra)</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
           <div className="grid-2">
             <label className="field"><span>Calle</span><input className="input" value={f.calle ?? ''} onChange={set('calle')} required /></label>
             <label className="field"><span>Número</span><input className="input" value={f.numero ?? ''} onChange={set('numero')} required /></label>

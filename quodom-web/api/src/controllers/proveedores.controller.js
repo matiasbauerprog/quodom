@@ -92,6 +92,8 @@ async function listar(idquodom, userId) {
             sintelefono: false,
             sinwhatsapp: sinWhatsapp.has(f.placeid),
             direccion: '',
+            lat: null,
+            lng: null,
             contactadoen: f.contactado_en,
             sindatos: true
         }));
@@ -108,6 +110,8 @@ async function listar(idquodom, userId) {
             sintelefono: p.sinTelefono,
             sinwhatsapp: p.sinWhatsapp,
             direccion: p.direccion,
+            lat: p.lat,
+            lng: p.lng,
             contactadoen: porPlace.get(p.placeid) || null,
             sindatos: false
         })).concat(olvidados),

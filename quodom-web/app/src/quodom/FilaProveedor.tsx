@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { DialogoMapa } from '../components/DialogoMapa';
 import type { Proveedor } from '../api/types';
 import './FilaProveedor.css';
 
@@ -72,6 +74,7 @@ export function FilaProveedor({
   proveedor: p, ocupado, preguntandoMotivo, permiteDeshacer = true,
   onEnviar, onPreguntarMotivo, onCancelarMotivo, onDeshacer
 }: Props) {
+  const [mapaAbierto, setMapaAbierto] = useState(false);
   const contactado = !!p.contactadoen;
   const fecha = p.contactadoen ? cuando(p.contactadoen) : '';
   /**
@@ -144,9 +147,30 @@ export function FilaProveedor({
             Llamar {p.telefonovisible || telLlamar}
           </a>
         )}
-        <a className="dp-link" href={linkMaps(p)} target="_blank" rel="noopener noreferrer">
-          Ver en Maps
-        </a>
+        {/* El mapa se abre ACÁ y no en otra pestaña: irse a Google Maps en
+            medio de elegir proveedor pierde el diálogo y el Quodom a medio
+            mandar. Sin coordenadas no hay nada que dibujar — es el renglón
+            `sindatos`, del que sólo se archivó el place_id — y ahí queda el
+            link, que es la única forma de ver quién es. */}
+        {p.lat != null && p.lng != null ? (
+          <button type="button" className="dp-link dp-link-boton" onClick={() => setMapaAbierto(true)}>
+            Ver en el mapa
+          </button>
+        ) : (
+          <a className="dp-link" href={linkMaps(p)} target="_blank" rel="noopener noreferrer">
+            Ver en Maps
+          </a>
+        )}
+        {mapaAbierto && (
+          <DialogoMapa
+            soloLectura
+            lat={p.lat}
+            lng={p.lng}
+            titulo={p.nombre || 'El comercio en el mapa'}
+            subtitulo={p.direccion || undefined}
+            onCerrar={() => setMapaAbierto(false)}
+          />
+        )}
         {/* No en un renglón `sindatos`: ese es un contacto de hace días, no "toqué
             el botón recién y WhatsApp no abrió", y el botón escribe un dato
             global y permanente sobre el comercio (ver `permiteDeshacer`). */}

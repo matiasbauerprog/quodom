@@ -300,6 +300,12 @@ components:
         sintelefono: { type: boolean }
         sinwhatsapp: { type: boolean }
         direccion: { type: string }
+        # Para centrar el mapa del comercio sin pagar otra consulta: el servidor
+        # ya las tiene (mide la distancia con ellas). Viajan y se descartan,
+        # como el nombre: de Places solo se archiva el place_id. Null en un
+        # renglon `sindatos`, que no vino de Google en esta busqueda.
+        lat: { type: number, nullable: true }
+        lng: { type: number, nullable: true }
         contactadoen: { type: string, format: date-time, nullable: true }
         # Un contactado que la búsqueda de hoy no devolvió. De Google sólo se
         # puede archivar el place_id, así que de él se sabe eso y la fecha: el

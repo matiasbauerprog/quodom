@@ -141,6 +141,7 @@ export function ModificarDireccion() {
         {err && <p className="auth-error">{err}</p>}
         {f && (
           <form onSubmit={onSubmit}>
+            <label className="field"><span>Alias</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
             <CampoDireccionMapa onElegir={aplicarDelMapa} />
             <div className="dir-mapa-acciones">
             <LinkMapa lat={f.lat} lng={f.lng} />
@@ -159,7 +160,6 @@ export function ModificarDireccion() {
               onCerrar={() => setMapaAbierto(false)}
             />
           )}
-            <label className="field"><span>Alias</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
             <div className="grid-2">
               <label className="field"><span>Calle</span><input className="input" value={f.calle ?? ''} onChange={set('calle')} required /></label>
               <label className="field"><span>Número</span><input className="input" value={f.numero ?? ''} onChange={set('numero')} required /></label>

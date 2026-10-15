@@ -57,3 +57,14 @@
 @media (min-width: 601px) {
   .dp-wa { flex: 0 0 auto; }
 }
+
+/* "Ver en el mapa" es un boton y no un ancla porque abre una ventana en vez de
+   navegar. Se lee igual que los demas links de la fila: lo que cambia es adonde
+   lleva, no como se ve. */
+.dp-link-boton {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}

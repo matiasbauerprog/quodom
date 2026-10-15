@@ -47,6 +47,9 @@ function sdkFalso() {
     arrastrarA(p: { lat: number; lng: number }) { pos = p; handlers['m:dragend']?.(); },
     clicEn(p: { lat: number; lng: number }) {
       handlers['map:click']?.({ latLng: { lat: () => p.lat, lng: () => p.lng } });
+    },
+    clicRoto() {
+      handlers['map:click']?.({ latLng: { lat: () => undefined, lng: () => undefined } });
     }
   };
 }
@@ -159,6 +162,29 @@ describe('DialogoMapa', () => {
     fireEvent.click(screen.getByRole('button', { name: /usar esta ubicaci/i }));
 
     expect(onElegir).toHaveBeenCalledWith(expect.objectContaining({ lat: -34.5, lng: -58.5, calle: '' }));
+  });
+
+
+  // MEDIDO con el usuario: la consulta salia como
+  // `/lugares/punto?lat=undefined&lng=undefined` y el servidor la rechazaba con
+  // "Faltan datos o hay datos invalidos: lat, lng". Eso encadenaba el segundo
+  // sintoma: sin direccion leida, confirmar aplicaba el camino de respaldo con
+  // los campos vacios, y los campos del formulario no se llenaban solos.
+  //
+  // Una coordenada que no es un numero finito no puede gastar una consulta
+  // paga ni mostrarle al comprador el error de un validador.
+  it('no consulta cuando la coordenada no es un numero', async () => {
+    const sdk = sdkFalso();
+    vi.mocked(cargarMapa).mockResolvedValue(sdk.api);
+
+    render(<DialogoMapa onElegir={vi.fn()} onCerrar={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /usar esta ubicaci/i })).toBeDisabled());
+
+    sdk.clicRoto();
+
+    await waitFor(() => expect(punto).not.toHaveBeenCalled());
+    // Y el pin no queda puesto: no hay punto que confirmar.
+    expect(screen.getByRole('button', { name: /usar esta ubicaci/i })).toBeDisabled();
   });
 
   it('cierra con Escape y con Cancelar', async () => {

@@ -2758,6 +2758,8 @@ export interface components {
             sintelefono: boolean;
             sinwhatsapp: boolean;
             direccion?: string;
+            lat?: number | null;
+            lng?: number | null;
             /** Format: date-time */
             contactadoen?: string | null;
             sindatos: boolean;

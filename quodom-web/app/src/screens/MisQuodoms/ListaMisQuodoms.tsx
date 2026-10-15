@@ -6,7 +6,6 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
-import { abrirQuodom } from '../../quodom/quodomAbierto';
 import { DialogoPedido } from './DialogoPedido';
 import { QuodomCard } from '../../components/QuodomCard';
 import { RUBROS, nombreRubro } from '../../quodom/rubros';
@@ -19,11 +18,9 @@ export function ListaMisQuodoms() {
   const [nonce, setNonce] = useState(0);
   const [eligiendoRubro, setEligiendoRubro] = useState(false);
   const [creando, setCreando] = useState(false);
-  const [repitiendo, setRepitiendo] = useState<string | null>(null);
   // Id del Quodom recién creado al repetir: el acuse de que algo pasó, porque
   // el nuevo aparece en el árbol del panel derecho y no acá.
   const [agregado, setAgregado] = useState<string | null>(null);
-  const [errRepetir, setErrRepetir] = useState<string | null>(null);
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
   useEffect(() => {
@@ -57,24 +54,7 @@ export function ListaMisQuodoms() {
   // para evitar.
   const [pedido, setPedido] = useState<Quodom | null>(null);
 
-  const terminados = (list ?? []).filter(q => q.estado === 'ENVIADO').slice(0, 5);
 
-  async function repetirQuodom(q: Quodom) {
-    if (repitiendo) return;
-    setRepitiendo(q.id); setErrRepetir(null);
-    try {
-      const creado = await quodomApi.repetir(q.id);
-      // Igual que "Volver a armado" de la ventana: el nuevo queda abierto en el
-      // árbol de su rubro. Los dos caminos tienen que dejar lo mismo, o repetir
-      // desde acá y desde la ventana darían resultados distintos.
-      abrirQuodom(q.idrubro, creado.idquodom);
-      window.dispatchEvent(new Event('quodom:changed'));
-      refresh();
-      setAgregado(creado.idquodom);
-    } catch (e) {
-      setErrRepetir(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el Quodom.');
-    } finally { setRepitiendo(null); }
-  }
 
   function cerrarPicker() {
     if (creando) return;
@@ -156,31 +136,6 @@ export function ListaMisQuodoms() {
           <p className="mq-agregado" role="status">
             Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregado)}>ver Quodom</Link>
           </p>
-        )}
-        {errRepetir && <p className="mq-repetir-err" role="alert">{errRepetir}</p>}
-        {terminados.length > 0 && (
-          <section className="mq-repetir">
-            <h2 className="mq-repetir-titulo">Repetí un pedido</h2>
-            <ul className="mq-list">
-              {terminados.map(q => (
-                <li key={q.id} className="mq-terminado hoja">
-                  <span className="mq-terminado-datos">
-                    <strong className="mq-terminado-rubro">{q.nombrerubro || nombreRubro(q.idrubro)}</strong>
-                    <span className="mq-terminado-desc">{q.descripcion}</span>
-                    <span className="mq-terminado-meta">{q.nro} · {q.cantproductos ?? 0} productos</span>
-                  </span>
-                  <button
-                    type="button"
-                    className="btn mq-terminado-repetir"
-                    disabled={repitiendo !== null}
-                    onClick={() => repetirQuodom(q)}
-                  >
-                    {repitiendo === q.id ? 'Repitiendo…' : 'Repetir'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
         )}
         {list && list.length > 0 && (
           <ul className="mq-list">
