@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { Quodom } from '../api/types';
-import type { BloqueoEnvio } from '../quodom/bloqueosEnvio';
 import { quodom as quodomApi } from '../api/quodom';
 import { ApiError } from '../api/client';
-import { DialogoProveedores } from '../quodom/DialogoProveedores';
 import './QuodomCard.css';
 
 type Variant = 'sidebar' | 'page';
@@ -36,7 +34,18 @@ function ZigZag() {
   );
 }
 
-export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, enviable, bloqueo }: {
+/**
+ * La tarjeta **no envía**. Tuvo un `enviable` que abría el selector de
+ * proveedores acá adentro, y lo pasaba únicamente su test: ningún padre de
+ * producción lo pasaba, así que el botón y el diálogo no se renderizaban nunca.
+ * Se borró en vez de cablearlo porque ese montaje ponía el diálogo **dentro**
+ * de la tarjeta, que es lo que `MisQuodomsSidebar` se reestructuró para evitar:
+ * en Mis Quodoms, el `onChange` de después de un envío mueve la tarjeta de la
+ * lista de armado a la de enviados, así que la tarjeta se desmonta y el diálogo
+ * se cierra a mitad del flujo. Los dos caminos que envían son el pie del árbol
+ * (`MisQuodomsSidebar`) y el detalle (`DetalleQuodom`).
+ */
+export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle }: {
   quodom: Quodom;
   variant?: Variant;
   rubroLabel?: string;
@@ -45,14 +54,6 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   // de navegar. La variante `page` no lo pasa y sigue navegando como siempre.
   expandido?: boolean;
   onToggle?: () => void;
-  // Sin `enviable` la tarjeta no ofrece enviar: los carritos de invitado
-  // necesitan login y migración antes, y eso vive en el detalle. Enviar es
-  // elegir a quién, así que el botón abre el selector de proveedores acá
-  // mismo; antes avisaba al padre para que él llamara al endpoint.
-  enviable?: boolean;
-  // Lo que impide enviar, si algo lo impide. Lo calcula quien tiene los datos
-  // (`bloqueoDeEnvio`): la tarjeta no sabe si el usuario cargó una dirección.
-  bloqueo?: BloqueoEnvio | null;
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,7 +61,6 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   const [nombreNuevo, setNombreNuevo] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [selector, setSelector] = useState(false);
   const info = estadoInfo(quodom);
   const fechaDisplay = quodom.estado === 'ENVIADO' ? formatDate(quodom.fechaenvio) : formatDate(quodom.createdAt);
   const nombre = quodom.descripcion || quodom.nro;
@@ -196,44 +196,11 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
             <div className="qc-detail">{info.detail}</div>
             <div className="qc-acciones">
               <button className="qc-action" onClick={e => { e.stopPropagation(); seguirEnElRubro(); }}>Continuar</button>
-              {enviable && (
-                <button
-                  className="qc-action qc-action-enviar"
-                  disabled={!!bloqueo}
-                  onClick={e => { e.stopPropagation(); if (!bloqueo) setSelector(true); }}
-                >Cotizar por WhatsApp</button>
-              )}
             </div>
-            {enviable && bloqueo && (
-              <p className="qc-bloqueo">
-                {bloqueo.texto}{' '}
-                {bloqueo.motivo === 'direccion' ? (
-                  <Link to="/direcciones/nuevo" onClick={e => e.stopPropagation()}>{bloqueo.accion}</Link>
-                ) : (
-                  <span className="qc-bloqueo-accion">{bloqueo.accion}</span>
-                )}
-              </p>
-            )}
           </>
         )}
         {err && <div className="qc-err">{err}</div>}
       </div>
-
-      {selector && (
-        // La tarjeta entera es un botón, así que el diálogo va envuelto en algo
-        // que corta la propagación: sin eso, cerrarlo o tocar cualquier cosa
-        // adentro abría además el detalle del Quodom.
-        <div onClick={e => e.stopPropagation()}>
-          <DialogoProveedores
-            idquodom={quodom.id}
-            onCerrar={() => setSelector(false)}
-            // El envío pasa el Quodom a ENVIADO: sin el aviso, el árbol y la
-            // barra inferior lo siguen mostrando en armado.
-            onEnviado={() => { window.dispatchEvent(new Event('quodom:changed')); onChange?.(); }}
-            onEnviadoSinProveedor={() => setSelector(false)}
-          />
-        </div>
-      )}
     </article>
   );
 }

@@ -95,16 +95,6 @@
 }
 .qc-acciones { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .qc-action:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
-/* Enviar es la acción que cierra el flujo: va en verde lleno, no delineada. */
-/* El verde de WhatsApp, no el de "éxito": el botón lleva la marca de a dónde va. */
-.qc-action-enviar {
-  background: var(--color-whatsapp);
-  border-color: var(--color-whatsapp);
-  color: #fff;
-}
-.qc-action-enviar:hover:not(:disabled) { background: var(--color-whatsapp); filter: brightness(1.08); }
-.qc-page .qc-action-enviar { color: #fff; }
-
 .qc-rename { margin: 0; }
 .qc-rename-input {
   width: 100%;
@@ -134,14 +124,3 @@
 .qc-page .qc-action:hover:not(:disabled) { background: rgba(112,111,154,.08); }
 .qc-page .qc-err { color: var(--color-error); }
 
-/* El motivo por el que el envío está trabado. El sidebar es panel oscuro, así
-   que el aviso va en claro; en la variante de página se invierte. */
-.qc-bloqueo {
-  font-size: var(--fs-tiny);
-  line-height: 1.35;
-  margin-top: var(--sp-2);
-  color: #FFD9A0;
-}
-.qc-bloqueo a { color: inherit; text-decoration: underline; }
-.qc-bloqueo-accion { opacity: 0.85; }
-.qc-page .qc-bloqueo { color: #8A5A00; }
