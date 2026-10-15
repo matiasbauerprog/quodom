@@ -384,7 +384,7 @@ Archivos nuevos:
 src/helpers/places.js              dueño del fetch a Google. Nadie más sabe que existe.
 src/helpers/rankearProveedores.js  puro: lista + punto → orden. Sin HTTP.
 src/helpers/telefonoWhatsapp.js    normaliza a internacional y clasifica celular/fijo.
-src/config/rubrosPlaces.js         los 8 rubros → tipos de Places o consulta de texto.
+src/config/rubrosPlaces.js         un término de texto por rubro activo (los tipos de Places se midieron y perdieron).
 src/config/provinciasGoogle.js     las 24 provincias → id de nuestra tabla.
 src/controllers/lugares.controller.js
 src/controllers/proveedores.controller.js

@@ -33,11 +33,13 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-      # Google Places: el autocompletado de direcciones y (en la mitad B) la
-      # busqueda de proveedores cercanos. Sin esto el buscador de direcciones
-      # responde 503 'sin_clave' y el formulario queda en carga a mano, que
-      # sigue funcionando. Se cobra por consulta, asi que el valor va a mano en
-      # el dashboard del servicio y nunca aca: este archivo se commitea.
+      # Google Places: el autocompletado de direcciones y la busqueda de
+      # proveedores cercanos al enviar. Sin esto el buscador de direcciones
+      # responde 503 'sin_clave' y el formulario queda en carga a mano, y el
+      # selector de proveedores avisa y deja enviar sin elegir proveedor: los
+      # dos caminos siguen funcionando. Se cobra por consulta, asi que el valor
+      # va a mano en el dashboard del servicio y nunca aca: este archivo se
+      # commitea.
       - key: GOOGLE_MAPS_API_KEY
         sync: false
 
