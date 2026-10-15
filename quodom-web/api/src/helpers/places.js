@@ -4,10 +4,11 @@
  * Misma forma que `gemini.js`, que es el precedente de un HTTP externo y pago
  * en este repo: dueño del `fetch`, timeout propio, clave desde el entorno.
  *
- * Maneja dos máscaras de campos, y la máscara decide el precio de toda la consulta:
- * la barata para direcciones (sin ningún campo caro) y la cara para proveedores,
- * donde puntuación, reseñas y teléfono viajan juntos en la misma consulta porque
- * el campo más caro de la máscara fija el precio de la llamada entera.
+ * Maneja tres máscaras de campos, y la máscara decide el precio de toda la
+ * consulta: la de direcciones (sin ningún campo caro), la de proveedores —la
+ * cara, donde puntuación, reseñas y teléfono viajan juntos porque el campo más
+ * caro de la máscara fija el precio de la llamada entera— y la de un punto
+ * (sólo ubicación), que es la que ubica una localidad.
  */
 const BASE = 'https://places.googleapis.com/v1';
 const TIMEOUT_POR_DEFECTO = 8000;

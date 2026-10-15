@@ -20,7 +20,14 @@ function model(sequelize) {
         contactado_en: { type: DataTypes.DATE, allowNull: true }
     };
 
+    // `freezeTableName` como en `lugares_sinwhatsapp`: sin él el nombre de la
+    // tabla sale del pluralizador de Sequelize, que hoy devuelve el mismo
+    // nombre por casualidad (`proveedores` ya es plural). Esta tabla es la
+    // memoria del feature y vive en una base **trackeada en git**: si una
+    // versión del pluralizador la renombrara, el server arrancaría creando una
+    // tabla vacía al lado y todo el historial de contactos quedaría invisible.
     return sequelize.define('quodom_proveedores', attributes, {
+        freezeTableName: true,
         indexes: [{ fields: ['idquodom'] }]
     });
 }

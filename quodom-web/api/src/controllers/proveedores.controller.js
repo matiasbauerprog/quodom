@@ -2,7 +2,7 @@ const db = require('../helpers/db');
 const places = require('../helpers/places');
 const { rankear } = require('../helpers/rankearProveedores');
 const { terminoDeRubro } = require('../config/rubrosPlaces');
-const { analizarTelefono } = require('../helpers/telefonoWhatsapp');
+const { candidatosConTelefono } = require('../helpers/telefonoWhatsapp');
 const { puntoDelQuodom } = require('../helpers/puntoDelQuodom');
 const { httpError } = require('../helpers/http-error');
 
@@ -20,7 +20,11 @@ async function listar(idquodom, userId) {
         // Un rubro activo sin término es un olvido de configuración, no un caso
         // del usuario: se avisa en el log y se devuelve vacío en vez de romper.
         console.warn('proveedores: rubro sin término de búsqueda. idrubro=' + quodom.idrubro);
-        return { proveedores: [], preciso: false, desde: '', atribucion: ATRIBUCION };
+        // `preciso: true` y no `false`: acá no se miró la dirección. Con
+        // `false`, el diálogo dice "Tu dirección no está ubicada con precisión"
+        // sobre una dirección perfecta y manda al comprador a revisar un dato
+        // que está bien, cuando lo que falta es el término del rubro.
+        return { proveedores: [], preciso: true, desde: '', atribucion: ATRIBUCION };
     }
 
     // El Quodom va como argumento porque la dirección la resuelve el mismo
@@ -51,19 +55,12 @@ async function listar(idquodom, userId) {
     });
     const sinWhatsapp = new Set(reportados.map(r => r.placeid));
 
-    const conTelefono = ubicables.map(c => {
-        const tel = analizarTelefono(c.telefono);
-        return {
-            ...c,
-            // Un número que no puede recibir WhatsApp (un 0800) viaja como
-            // teléfono para "llamar", pero sin número de WhatsApp: el renglón
-            // muestra el botón de llamar y no el de WhatsApp.
-            telefono: tel && tel.sirveWhatsapp ? tel.e164 : null,
-            telefonoVisible: tel ? tel.original : null,
-            esFijo: tel ? tel.esFijo : false,
-            sinWhatsapp: sinWhatsapp.has(c.placeid)
-        };
-    });
+    // El mapeo vive en el helper porque lo comparte con
+    // `scripts/verificar-proveedores.js`: ese script calibra los términos de
+    // búsqueda y afirma que prueba lo que corre en producción, así que no puede
+    // tener su propia copia. Un número que no recibe WhatsApp (un 0800) sale
+    // como teléfono para "llamar" y sin número de WhatsApp.
+    const conTelefono = candidatosConTelefono(ubicables, sinWhatsapp);
 
     const elegidos = rankear(conTelefono, punto);
     await anotarOfrecidos(idquodom, elegidos, filas);

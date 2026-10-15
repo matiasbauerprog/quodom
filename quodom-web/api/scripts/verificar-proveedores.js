@@ -15,6 +15,11 @@
  *
  *   cd quodom-web/api && node scripts/verificar-proveedores.js "Villa Ballester, Buenos Aires"
  *
+ * Conviene apuntar `DB_STORAGE` a una **copia** de la base antes de correrlo:
+ * abre la base configurada y le corre `sync()`, así que con el valor por
+ * defecto eso pasa sobre `quodom.sqlite`, que es la que se commitea y se
+ * despliega (ver §6 de `claude.md` en la raíz, y el modo WAL).
+ *
  * La localidad va **por parámetro** porque un término que anda en el conurbano
  * puede no andar en una ciudad del interior, y eso hay que poder probarlo sin
  * tocar código. Y lee `src/config/rubros.js` y `src/config/rubrosPlaces.js`, así
@@ -32,7 +37,7 @@ require('dotenv').config();
 const { RUBROS_ACTIVOS } = require('../src/config/rubros');
 const { terminoDeRubro } = require('../src/config/rubrosPlaces');
 const { buscarProveedores, puntoDeLocalidad } = require('../src/helpers/places');
-const { analizarTelefono } = require('../src/helpers/telefonoWhatsapp');
+const { candidatosConTelefono } = require('../src/helpers/telefonoWhatsapp');
 const { rankear, distanciaKm } = require('../src/helpers/rankearProveedores');
 const db = require('../src/helpers/db');
 
@@ -130,16 +135,11 @@ async function main() {
         continue;
       }
 
-      const conTelefono = ubicables.map(c => {
-        const tel = analizarTelefono(c.telefono);
-        return {
-          ...c,
-          telefono: tel && tel.sirveWhatsapp ? tel.e164 : null,
-          telefonoVisible: tel ? tel.original : null,
-          esFijo: tel ? tel.esFijo : false,
-          sinWhatsapp: sinWhatsapp.has(c.placeid)
-        };
-      });
+      // El MISMO mapeo que corre en el endpoint (está en el helper, no copiado
+      // acá): si fuera una copia, el día que una cambie este chequeo mostraría
+      // una lista que no es la que ve el comprador, y es lo único que decide si
+      // un término sirve.
+      const conTelefono = candidatosConTelefono(ubicables, sinWhatsapp);
 
       const elegidos = rankear(conTelefono, centro);
       const enLista = new Set(elegidos.map(p => p.placeid));

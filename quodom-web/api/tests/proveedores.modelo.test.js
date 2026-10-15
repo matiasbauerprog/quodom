@@ -22,6 +22,23 @@ describe('tablas de proveedores', () => {
     expect(fila.reportes).toBe(1);
   });
 
+  // La única garantía automática de "de Google sólo se guarda el place_id". Es
+  // una aserción NEGATIVA a propósito: el nombre, la puntuación, las reseñas y
+  // el teléfono no se pueden archivar (sus términos los dan para mostrar en el
+  // momento), así que la prueba no es que haya un campo sino que no lo haya.
+  // Agregar una de esas columnas "para no volver a consultar" es exactamente el
+  // cambio que nadie revisaría dos veces.
+  it('ninguna de las dos tablas guarda datos de Places más allá del place_id', async () => {
+    const prohibidas = ['nombre', 'rating', 'puntuacion', 'resenas', 'userratingcount',
+      'telefono', 'phone', 'direccion', 'address', 'lat', 'lng', 'location'];
+
+    for (const tabla of ['quodom_proveedores', 'lugares_sinwhatsapp']) {
+      const [cols] = await db.sequelize.query('PRAGMA table_info(' + tabla + ')');
+      const nombres = cols.map(c => c.name.toLowerCase());
+      expect(nombres.filter(n => prohibidas.includes(n))).toEqual([]);
+    }
+  });
+
   it('las dos tablas existen en la base', async () => {
     const [t] = await db.sequelize.query(
       "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('quodom_proveedores','lugares_sinwhatsapp')");

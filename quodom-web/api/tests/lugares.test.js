@@ -5,6 +5,7 @@ const app = require('../src/server');
 const db = require('../src/helpers/db');
 const { sessionToken } = require('./helpers/session');
 const places = require('../src/helpers/places');
+const rateLimit = require('../src/middleware/rateLimit');
 const { PlacesError } = jest.requireActual('../src/helpers/places');
 
 let token;
@@ -20,7 +21,10 @@ beforeAll(async () => {
   token = sessionToken(login);
 });
 
-beforeEach(() => jest.resetAllMocks());
+beforeEach(() => {
+  jest.resetAllMocks();
+  rateLimit._reset();
+});
 
 const auth = req => req.set('Authorization', 'Bearer ' + token);
 
@@ -38,6 +42,28 @@ describe('GET /lugares/sugerencias', () => {
   it('exige sesión', async () => {
     const res = await request(app).get('/lugares/sugerencias?q=corrientes&sesion=s1');
     expect(res.status).toBe(401);
+  });
+
+  // El tope es control de gasto y se alcanza tipeando: el aviso tiene que
+  // nombrar lo que el usuario estaba haciendo. Con el mensaje por defecto del
+  // middleware —el del chat de IA— quien sólo escribió una dirección leía
+  // "Muchos mensajes muy rápido" y se iba a buscar el problema a sus mensajes.
+  it('el 429 habla de buscar direcciones y no de mensajes', async () => {
+    const antes = process.env.LUGARES_RATE_LIMIT_PER_MINUTE;
+    process.env.LUGARES_RATE_LIMIT_PER_MINUTE = '1';
+    places.sugerencias.mockResolvedValue([]);
+
+    try {
+      await auth(request(app).get('/lugares/sugerencias?q=corrientes&sesion=s1'));
+      const res = await auth(request(app).get('/lugares/sugerencias?q=corrientes&sesion=s1'));
+
+      expect(res.status).toBe(429);
+      expect(res.body.message).toMatch(/direcciones/i);
+      expect(res.body.message).not.toMatch(/mensajes/i);
+    } finally {
+      if (antes === undefined) delete process.env.LUGARES_RATE_LIMIT_PER_MINUTE;
+      else process.env.LUGARES_RATE_LIMIT_PER_MINUTE = antes;
+    }
   });
 
   // Review Focus 3: el error tiene que nombrar lo que falta, no ser un 500 mudo.

@@ -43,4 +43,32 @@ function analizarTelefono(nacional) {
   };
 }
 
-module.exports = { analizarTelefono };
+/**
+ * Un lugar crudo de Places, con su teléfono ya resuelto y su marca de reportado.
+ *
+ * Vive acá y no en el controlador porque lo llaman los dos: el endpoint y
+ * `scripts/verificar-proveedores.js`, que es el chequeo manual de los términos
+ * de búsqueda. Ese script afirma en su encabezado que "lo que se prueba es lo
+ * que corre en producción", y tenía su propia copia de este mapeo: con dos
+ * copias, el día que una cambie el script seguiría mostrando la lista vieja y
+ * la calibración se haría contra algo que no es lo que ve el comprador.
+ *
+ * `telefono` es el número con el que se abre WhatsApp y `telefonoVisible` el
+ * que se muestra y se llama: un 0800 es válido y no recibe WhatsApp, así que
+ * viaja sin el primero y con el segundo.
+ */
+function candidatosConTelefono(lugares, sinWhatsapp) {
+  const reportados = sinWhatsapp || new Set();
+  return (lugares || []).map(c => {
+    const tel = analizarTelefono(c.telefono);
+    return {
+      ...c,
+      telefono: tel && tel.sirveWhatsapp ? tel.e164 : null,
+      telefonoVisible: tel ? tel.original : null,
+      esFijo: tel ? tel.esFijo : false,
+      sinWhatsapp: reportados.has(c.placeid)
+    };
+  });
+}
+
+module.exports = { analizarTelefono, candidatosConTelefono };

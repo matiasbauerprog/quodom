@@ -198,6 +198,52 @@ describe('GET /quodom/proveedores/:id', () => {
     expect(res.body.proveedores).toEqual([]);
   });
 
+  // Un rubro activo sin término es un olvido de configuración: devuelve lista
+  // vacía y no rompe. Pero `preciso: false` ahí hace que el diálogo diga "Tu
+  // dirección no está ubicada con precisión" sobre una dirección perfecta, y
+  // encima manda al comprador a revisar un dato que está bien. Hoy es
+  // inalcanzable (todo rubro activo tiene término, y hay un test que lo exige);
+  // se estrena el día que alguien active un rubro y olvide medirlo.
+  it('un rubro sin término no afirma que la dirección sea imprecisa', async () => {
+    const sinTermino = await db.Quodom.create({
+      descripcion: 'Rubro sin término', idrubro: 4, estado: 'CREADO', createdBy: userId, nro: 'QD-ST'
+    });
+
+    const res = await auth(request(app).get('/quodom/proveedores/' + sinTermino.id));
+
+    expect(res.status).toBe(200);
+    expect(res.body.proveedores).toEqual([]);
+    expect(res.body.preciso).toBe(true);
+    // Y no se le pagó nada a Google por un rubro que no tiene qué buscar.
+    expect(places.buscarProveedores).not.toHaveBeenCalled();
+  });
+
+  // La salida de emergencia en su caso más duro: el servidor no puede ubicar la
+  // dirección ni por su localidad. Es el 409 que el diálogo traduce a "no
+  // pudimos consultar el mapa" con el botón de enviar sin elegir proveedor
+  // debajo, y no tenía cobertura en el servidor.
+  it('sin forma de ubicar la dirección responde 409 sin tocar el Quodom', async () => {
+    places.puntoDeLocalidad.mockResolvedValue(null);
+    // Una dirección sin coordenadas ni placeid: el único camino es la localidad.
+    const dir = await db.user_direcciones.create({
+      userid: userId, alias: 'Campo', calle: 'Ninguna', numero: '1',
+      localidad: 'Qwertyuiop', idprovincia: '1', default: false
+    });
+    const q = await db.Quodom.create({
+      descripcion: 'Sin ubicación', idrubro: 5, estado: 'CREADO', createdBy: userId,
+      nro: 'QD-SU', iddireccion: String(dir.id)
+    });
+
+    const res = await auth(request(app).get('/quodom/proveedores/' + q.id));
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('sin_ubicacion');
+    expect(res.body.message).toMatch(/localidad/i);
+    expect((await db.Quodom.findByPk(q.id)).estado).toBe('CREADO');
+    expect(places.buscarProveedores).not.toHaveBeenCalled();
+    expect(await db.quodom_proveedores.count({ where: { idquodom: q.id } })).toBe(0);
+  });
+
   // Review Focus 5: que el buscador falle NO puede impedir mandar el pedido.
   it('si Google falla responde 503 con su código, sin tocar el Quodom', async () => {
     places.buscarProveedores.mockRejectedValue(new PlacesError('google_error', 'places: HTTP 503'));
