@@ -277,6 +277,22 @@ components:
         lat: { type: number }
         lng: { type: number }
         direccion: { type: string }
+    Proveedor:
+      type: object
+      required: [placeid, nombre, distanciakm, sintelefono, esfijo, sinwhatsapp]
+      properties:
+        placeid: { type: string }
+        nombre: { type: string }
+        rating: { type: number, nullable: true }
+        resenas: { type: integer }
+        distanciakm: { type: number }
+        telefono: { type: string, nullable: true }
+        telefonovisible: { type: string, nullable: true }
+        sintelefono: { type: boolean }
+        esfijo: { type: boolean }
+        sinwhatsapp: { type: boolean }
+        direccion: { type: string }
+        contactadoen: { type: string, format: date-time, nullable: true }
 
     Notificacion:
       type: object
@@ -837,6 +853,35 @@ paths:
                   data: { type: array, items: { $ref: '#/components/schemas/VQuodom' } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /quodom/proveedores/{id}:
+    get:
+      tags: [quodom]
+      summary: Proveedores del rubro cerca de la dirección del Quodom
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Hasta 5 proveedores. Lista vacía si no hay ninguno en la zona.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [proveedores, preciso, desde, atribucion]
+                properties:
+                  proveedores:
+                    type: array
+                    items: { $ref: '#/components/schemas/Proveedor' }
+                  preciso: { type: boolean }
+                  desde: { type: string }
+                  atribucion: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: No se puede ubicar la dirección ni por su localidad
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '503': { $ref: '#/components/responses/ServicioExterno' }
   /quodom/create:
     post:
       tags: [quodom]

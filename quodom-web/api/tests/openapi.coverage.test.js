@@ -27,6 +27,6 @@ describe('openapi.yaml covers the API', () => {
     // Guards listRoutes itself: if it silently returned nothing, the two tests
     // above would pass on an empty API.
     expect(enCodigo).toEqual(expect.arrayContaining(['GET /', 'GET /categorias', 'POST /users/signin', 'POST /api/ia/chat']));
-    expect(enCodigo.length).toBe(59);
+    expect(enCodigo.length).toBe(60);
   });
 });
