@@ -98,6 +98,28 @@ describe('AgregarDireccion con el mapa', () => {
     expect(body.lng).toBeNull();
   });
 
+  // MEDIDO con un usuario real el 2026-10-15: eligio su casa del mapa y corrigio
+  // la localidad, porque Google devuelve el partido ("San Martin") donde el
+  // usuario dice el pueblo ("Villa Ballester"). La regla vieja le borro las
+  // coordenadas por corregir un NOMBRE, sin haber movido nada — y en silencio,
+  // que es justo lo que queriamos evitar. Corregir como se llama el lugar no es
+  // mudarse: solo calle y numero ubican el punto dentro del pueblo.
+  it('corregir la localidad, el CP o la provincia NO borra las coordenadas', async () => {
+    montar();
+    await elegirDelMapa();
+
+    fireEvent.change(screen.getByLabelText(/^Localidad$/i), { target: { value: 'Villa Ballester' } });
+    fireEvent.change(screen.getByLabelText(/^CP$/i), { target: { value: '1653' } });
+    fireEvent.submit(screen.getByRole('button', { name: /guardar/i }).closest('form')!);
+
+    await waitFor(() => expect(userDirecciones.create).toHaveBeenCalled());
+    const body = vi.mocked(userDirecciones.create).mock.calls[0][0];
+    expect(body.localidad).toBe('Villa Ballester');
+    expect(body.cp).toBe('1653');
+    expect(body.placeid).toBe('ChIJ-1');
+    expect(body.lat).toBe(-34.4707);
+  });
+
   // Cambiar el alias o el piso no mueve la dirección, así que las coordenadas
   // siguen siendo válidas. Borrarlas ahí sería perder el dato por nada.
   it('editar el alias o el piso no borra las coordenadas', async () => {

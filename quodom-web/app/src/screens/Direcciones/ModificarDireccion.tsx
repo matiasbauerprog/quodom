@@ -60,14 +60,21 @@ export function ModificarDireccion() {
     }) : prev);
   };
 
-  // Los campos que definen DÓNDE queda la dirección. Si el usuario edita uno a
+  // Los campos que ubican el punto DENTRO del pueblo. Si el usuario edita uno a
   // mano, las coordenadas que trajo el mapa dejan de describir esa dirección,
   // así que se borran: quedarse con ellas produce una fila cuyo texto dice una
   // cosa y cuyo punto está en otra, y eso más adelante no se ve como un error
   // — se ve como una lista de proveedores perfectamente ordenada alrededor del
   // lugar equivocado. Alias, piso y observaciones no mueven nada, así que no
   // invalidan nada.
-  const CAMPOS_DE_UBICACION: (keyof DireccionInput)[] = ['calle', 'numero', 'localidad', 'cp', 'idprovincia'];
+  //
+  // Localidad, CP y provincia NO están acá, y eso se midió con un usuario real
+  // el 2026-10-15: eligió su casa del mapa y corrigió la localidad, porque
+  // Google devuelve el partido ("San Martín") donde el usuario dice el pueblo
+  // ("Villa Ballester"). Con esos campos en la lista, corregir un NOMBRE le
+  // borraba el punto, en silencio — el mismo mal que esta regla venía a evitar.
+  // Corregir cómo se llama el lugar no es mudarse.
+  const CAMPOS_DE_UBICACION: (keyof DireccionInput)[] = ['calle', 'numero'];
 
   // Igual que en Nueva dirección: el mapa rellena los campos y los deja
   // editables. Acá el estado puede ser null mientras carga, así que se
