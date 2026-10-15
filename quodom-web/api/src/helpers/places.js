@@ -11,6 +11,10 @@
  * (sólo ubicación), que es la que ubica una localidad.
  */
 const BASE = 'https://places.googleapis.com/v1';
+// La geocodificación inversa (punto -> dirección) es **otro producto**: la
+// Geocoding API, que se habilita aparte en la consola de Google. Vive en este
+// archivo igual, porque la regla es que un solo archivo hable con Google.
+const BASE_GEOCODE = 'https://maps.googleapis.com/maps/api/geocode/json';
 const TIMEOUT_POR_DEFECTO = 8000;
 const MIN_CARACTERES = 3;
 
@@ -184,4 +188,42 @@ async function puntoDeLocalidad(texto) {
   return { lat: p.location.latitude, lng: p.location.longitude, nombre: p.formattedAddress || q };
 }
 
-module.exports = { sugerencias, detalleDireccion, buscarProveedores, puntoDeLocalidad, PlacesError };
+/**
+ * La dirección que hay en un punto. Es lo que convierte el pin arrastrable en
+ * algo legible: el usuario mueve el punto y ve "Ídolo 3720", no coordenadas.
+ *
+ * **Devuelve los resultados crudos de Google.** Quien los interpreta es
+ * `lugarDeGeocoding` + `direccionDeGoogle`, separados del HTTP a propósito:
+ * las reglas de mapeo son las que hay que ajustar mirando direcciones reales, y
+ * pegadas al `fetch` cada ajuste necesitaría simular una respuesta.
+ *
+ * `null` cuando Google no conoce nada ahí (mar, campo): es un caso del usuario
+ * —movió el pin a la nada— y no una falla, así que no es una excepción.
+ */
+async function direccionDePunto({ lat, lng }) {
+  const key = clave();
+  const url = BASE_GEOCODE
+    + '?latlng=' + encodeURIComponent(lat + ',' + lng)
+    + '&language=es&region=ar'
+    + '&key=' + encodeURIComponent(key);
+
+  const data = await pedir(url, { method: 'GET' });
+
+  // **La Geocoding API contesta HTTP 200 incluso cuando falla**, y el problema
+  // viene en `status`. Sin esto, un `REQUEST_DENIED` —el que da una clave sin
+  // la API habilitada, medido el 2026-10-15— pasaría por respuesta buena y se
+  // vería como "ese punto no tiene dirección", que manda a diagnosticar el
+  // lugar equivocado. `pedir` no puede atajarlo: para él la respuesta está bien.
+  const estado = data && data.status;
+
+  if (estado === 'ZERO_RESULTS') return null;
+
+  if (estado !== 'OK') {
+    const detalle = (data && data.error_message) ? ' ' + data.error_message : '';
+    throw new PlacesError('google_error', 'geocode: ' + (estado || 'sin status') + detalle);
+  }
+
+  return data.results || [];
+}
+
+module.exports = { sugerencias, detalleDireccion, buscarProveedores, puntoDeLocalidad, direccionDePunto, PlacesError };

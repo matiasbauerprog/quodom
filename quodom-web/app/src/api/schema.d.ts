@@ -430,6 +430,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lugares/punto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * La direccion que hay en un punto del mapa (geocodificacion inversa)
+         * @description Para el pin arrastrable: el usuario mueve el punto y la pantalla le muestra la direccion en vez de las coordenadas. `lat` y `lng` vuelven tal como se pidieron y no como Google los emparejo: el punto que vale es el que marco el usuario, y la direccion es la confirmacion de que marco donde queria.
+         */
+        get: {
+            parameters: {
+                query: {
+                    lat: number;
+                    lng: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description La direccion en ese punto */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DireccionDeLugar"];
+                    };
+                };
+                /** @description Coordenadas que faltan o estan fuera de rango */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Google no conoce ninguna direccion en ese punto (mar, campo) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                429: components["responses"]["TooMany"];
+                503: components["responses"]["ServicioExterno"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lugares/{placeid}": {
         parameters: {
             query?: never;

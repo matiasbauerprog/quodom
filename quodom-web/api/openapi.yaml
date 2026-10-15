@@ -493,6 +493,34 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/TooMany' }
         '503': { $ref: '#/components/responses/ServicioExterno' }
+  /lugares/punto:
+    get:
+      summary: La direccion que hay en un punto del mapa (geocodificacion inversa)
+      description: >
+        Para el pin arrastrable: el usuario mueve el punto y la pantalla le
+        muestra la direccion en vez de las coordenadas. `lat` y `lng` vuelven
+        tal como se pidieron y no como Google los emparejo: el punto que vale es
+        el que marco el usuario, y la direccion es la confirmacion de que marco
+        donde queria.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: lat, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+      responses:
+        '200':
+          description: La direccion en ese punto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DireccionDeLugar' }
+        '400':
+          description: Coordenadas que faltan o estan fuera de rango
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: Google no conoce ninguna direccion en ese punto (mar, campo)
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '429': { $ref: '#/components/responses/TooMany' }
+        '503': { $ref: '#/components/responses/ServicioExterno' }
   /lugares/{placeid}:
     get:
       summary: La direccion elegida, desarmada en nuestros campos
