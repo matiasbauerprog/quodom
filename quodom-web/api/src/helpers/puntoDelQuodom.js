@@ -12,6 +12,12 @@
  * dirección y no una por envío. Con una excepción, abajo: en una dirección con
  * placeid no se guarda, porque la dejaría pareciendo exacta.
  *
+ * La dirección no se elige acá: la resuelve `direccionDelQuodom`, el mismo helper
+ * que usa el WhatsApp que recibe el proveedor. Así el punto y el domicilio del
+ * mensaje salen de la misma fila **por construcción** y no por coincidencia: si
+ * divergieran, el comprador elegiría un local cerca de una dirección mientras al
+ * proveedor le piden entregar en otra, y ninguno de los dos puede notarlo.
+ *
  * `preciso` sale de que haya `placeid` —o sea, de que el usuario haya elegido la
  * dirección del mapa— y no de que haya coordenadas: una dirección cuyas
  * coordenadas vinieron de la localidad también las tiene, y decir que es precisa
@@ -19,12 +25,17 @@
  */
 const db = require('./db');
 const { puntoDeLocalidad } = require('./places');
+const { resolverDireccion } = require('./direccionDelQuodom');
 
-async function puntoDelQuodom(userId) {
-    const dir = await db.user_direcciones.findOne({
-        where: { userid: userId },
-        order: [['default', 'DESC'], ['id', 'ASC']]
-    });
+async function puntoDelQuodom(quodom, userId) {
+    // Sin ninguna dirección cargada no hay punto, y acá eso es `null` y no el 409
+    // `falta_direccion`: el que frena el envío es el endpoint de WhatsApp, esta
+    // pantalla solamente no tiene desde dónde medir.
+    const tieneAlguna = await db.user_direcciones.findOne({ where: { userid: userId } });
+    if (!tieneAlguna) return null;
+
+    const iddireccion = await resolverDireccion(quodom, userId);
+    const dir = await db.user_direcciones.findByPk(iddireccion);
     if (!dir) return null;
 
     const calle = [dir.calle, dir.numero].filter(Boolean).join(' ').trim();

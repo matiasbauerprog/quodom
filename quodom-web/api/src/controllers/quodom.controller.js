@@ -2,6 +2,7 @@ const db = require('../helpers/db');
 const serie = require('../helpers/series');
 const { httpError } = require('../helpers/http-error');
 const { esRubroActivo } = require('../config/rubros');
+const { resolverDireccion, getDireccionDefault } = require('../helpers/direccionDelQuodom');
 
 module.exports = {
     getById,
@@ -124,30 +125,6 @@ function atributosSinElegir(linea) {
     return faltan;
 }
 
-// La dirección define a qué proveedores les llega el WhatsApp, así que un
-// pedido sin ella no se puede cotizar. No alcanza con mirar `iddireccion`: se
-// copia al crear el Quodom, y quien no tenía ninguna entonces quedaba con null
-// para siempre, incluso después de cargarla. Se resuelve al enviar.
-async function resolverDireccion(quodom, userId) {
-    if (quodom.iddireccion) {
-        const propia = await db.user_direcciones.findOne({
-            where: { id: quodom.iddireccion, userid: userId }
-        });
-        if (propia) return quodom.iddireccion;
-    }
-
-    const direccion = await getDireccionDefault(userId)
-        || await db.user_direcciones.findOne({ where: { userid: userId } });
-    if (!direccion) {
-        throw httpError(409, 'falta_direccion',
-            'Cargá una dirección antes de enviar: define a qué proveedores les llega el pedido.');
-    }
-
-    quodom.iddireccion = direccion.id;
-    await quodom.save();
-    return direccion.id;
-}
-
 async function whatsappLink(id, userId) {
     const quodom = await getQuodom(id);
     if (quodom.createdBy !== userId) {
@@ -268,11 +245,4 @@ async function getQuodom(id) {
     const quodom = await db.Quodom.findByPk(id);
     if (!quodom) throw 'Err. Quodom no encontrado.';
     return quodom;
-}
-
-async function getDireccionDefault(userId) {
-    return await db.user_direcciones.findOne({
-        where: { userid: userId, default: true },
-        attributes: { exclude: ['createdAt', 'updatedAt'] }
-    });
 }
