@@ -63,6 +63,23 @@ describe('rankear', () => {
     expect(out).toHaveLength(3);
   });
 
+  // La regla de la spec, que el código no cumplía: la reincorporación es un
+  // PISO de tres y no un relleno hasta cinco, y los que entran lo hacen por
+  // cercanía. Completar cinco llena la lista de comercios cuya puntuación no
+  // es información; el piso existe nada más para que el comprador tenga entre
+  // qué elegir. Sin esta aserción de nombres y orden, las dos reglas pasan.
+  it('reincorpora hasta tres y por cercanía, no completa cinco', () => {
+    const out = rankear([
+      cand('bueno', CENTRO.lat + 0.03, CENTRO.lng, 4.5, 30),
+      cand('cerca', CENTRO.lat + 0.001, CENTRO.lng, 5, 1),
+      cand('media', CENTRO.lat + 0.002, CENTRO.lng, 4, 2),
+      cand('lejos', CENTRO.lat + 0.02, CENTRO.lng, 4.8, 1),
+      cand('mas-lejos', CENTRO.lat + 0.025, CENTRO.lng, 4.9, 2)
+    ], CENTRO);
+
+    expect(out.map(p => p.nombre)).toEqual(['bueno', 'cerca', 'media']);
+  });
+
   // Mostrar uno es peor que mostrar tres con poca reputación y la distancia
   // a la vista: el usuario decide, pero necesita opciones.
   it('reincorpora los descartados si quedan menos de tres', () => {
@@ -105,6 +122,26 @@ describe('rankear', () => {
     const p = out.find(x => x.nombre === 'con-0800');
     expect(p.sinTelefono).toBe(false);
     expect(p.telefonoVisible).toBe('0800-777-7739');
+  });
+
+  // Con la penalizacion en -1 sobre un puntaje acotado en [0,1], un reportado
+  // queda detras de TODOS los no reportados; cortando en 5, y habiendo mas de
+  // cinco confiables en las tres zonas medidas, no aparece NUNCA. Eso no es
+  // "no encabeza": es una expulsion, deja muerto el aviso que la pantalla sabe
+  // mostrar, y hace desaparecer del historial a uno que el comprador contacto.
+  // Los dos valores pasan el test de dos candidatos: hace falta la lista llena.
+  it('un reportado pierde el primer puesto pero sigue en una lista llena', () => {
+    const normales = [2, 3, 4, 5, 6, 7].map(k =>
+      cand('normal-' + k, CENTRO.lat + k / 100, CENTRO.lng, 4.0, 30));
+
+    const out = rankear([
+      cand('reportado', CENTRO.lat, CENTRO.lng, 5, 100, { sinWhatsapp: true }),
+      ...normales
+    ], CENTRO);
+
+    expect(out).toHaveLength(5);
+    expect(out.map(p => p.nombre)).toContain('reportado');
+    expect(out[0].nombre).not.toBe('reportado');
   });
 
   it('los reportados sin WhatsApp bajan al final', () => {

@@ -27,8 +27,10 @@ type Props = {
 
 /** El link al lugar en Maps: el place_id es lo único que lo identifica sin ambigüedad. */
 function linkMaps(p: Proveedor): string {
+  // El `query` va con el place_id cuando no hay nombre (un renglón `sindatos`):
+  // Maps exige el parámetro, y el que manda para resolver el lugar es el id.
   return 'https://www.google.com/maps/search/?api=1&query=' +
-    encodeURIComponent(p.nombre) + '&query_place_id=' + encodeURIComponent(p.placeid);
+    encodeURIComponent(p.nombre || p.placeid) + '&query_place_id=' + encodeURIComponent(p.placeid);
 }
 
 /** 0.4 → "0,4 km". La coma decimal es la de acá; un "0.4 km" se lee como otro número. */
@@ -73,31 +75,48 @@ export function FilaProveedor({
 }: Props) {
   const contactado = !!p.contactadoen;
   const fecha = p.contactadoen ? cuando(p.contactadoen) : '';
+  /**
+   * Un contactado que la búsqueda de hoy no devolvió. De Google sólo se archiva
+   * el place_id, así que de él se sabe eso y la fecha: ni nombre, ni puntuación,
+   * ni distancia, ni teléfono. El renglón existe igual porque el historial está
+   * para contestar "a quién le mandé", y caerse de la lista hacía que el
+   * comprador le escribiera de nuevo. No muestra número alguno: una distancia
+   * acá sería medida desde otra parte.
+   */
+  const sinDatos = !!p.sindatos;
   // El 0800 que no recibe WhatsApp igual se puede llamar: el número para llamar
   // es el visible cuando no hay uno de WhatsApp.
   const telLlamar = p.telefono || p.telefonovisible || null;
 
   return (
     <article className={'dp-prov' + (contactado ? ' dp-prov-contactado' : '')}>
-      <h3 className="dp-nombre">{p.nombre}</h3>
-      <p className="dp-datos">
-        {p.rating != null && <span className="dp-rating">{puntuacion(p.rating)}</span>}
-        {p.rating != null && p.resenas != null && (
-          <span className="dp-resenas">{p.resenas} {p.resenas === 1 ? 'reseña' : 'reseñas'}</span>
-        )}
-        <span className="dp-km">{km(p.distanciakm)}</span>
-      </p>
-      {p.direccion && <p className="dp-direccion">{p.direccion}</p>}
+      <h3 className="dp-nombre">{sinDatos ? 'Proveedor que ya contactaste' : p.nombre}</h3>
+      {!sinDatos && (
+        <p className="dp-datos">
+          {p.rating != null && <span className="dp-rating">{puntuacion(p.rating)}</span>}
+          {p.rating != null && p.resenas != null && (
+            <span className="dp-resenas">{p.resenas} {p.resenas === 1 ? 'reseña' : 'reseñas'}</span>
+          )}
+          {p.distanciakm != null && <span className="dp-km">{km(p.distanciakm)}</span>}
+        </p>
+      )}
+      {!sinDatos && p.direccion && <p className="dp-direccion">{p.direccion}</p>}
 
-      {p.sintelefono && (
+      {sinDatos && (
+        <p className="dp-nota">
+          No volvió a aparecer en la búsqueda de hoy. Abrilo en Maps para ver quién es.
+        </p>
+      )}
+
+      {!sinDatos && p.sintelefono && (
         <p className="dp-nota">Google no tiene el teléfono de este comercio.</p>
       )}
-      {!p.sintelefono && p.esfijo && (
+      {!sinDatos && !p.sintelefono && p.esfijo && (
         <p className="dp-nota">Es un teléfono fijo, puede no tener WhatsApp.</p>
       )}
       {/* El 0800: tiene teléfono, pero no uno que reciba WhatsApp.
           Sin decirlo, la falta del botón se lee como un error nuestro. */}
-      {!p.sintelefono && !p.telefono && (
+      {!sinDatos && !p.sintelefono && !p.telefono && (
         <p className="dp-nota">Este número no recibe WhatsApp.</p>
       )}
       {p.sinwhatsapp && (
@@ -132,7 +151,10 @@ export function FilaProveedor({
         <a className="dp-link" href={linkMaps(p)} target="_blank" rel="noopener noreferrer">
           Ver en Maps
         </a>
-        {contactado && permiteDeshacer && !preguntandoMotivo && (
+        {/* No en un renglón `sindatos`: ese es un contacto de hace días, no "toqué
+            el botón recién y WhatsApp no abrió", y el botón escribe un dato
+            global y permanente sobre el comercio (ver `permiteDeshacer`). */}
+        {contactado && permiteDeshacer && !sinDatos && !preguntandoMotivo && (
           <button
             type="button"
             className="dp-deshacer"
@@ -144,7 +166,7 @@ export function FilaProveedor({
         )}
       </div>
 
-      {contactado && permiteDeshacer && preguntandoMotivo && (
+      {contactado && permiteDeshacer && !sinDatos && preguntandoMotivo && (
         <div className="dp-motivos" role="group" aria-label="Por qué no se envió">
           <span className="dp-motivos-txt">¿Qué pasó?</span>
           <button

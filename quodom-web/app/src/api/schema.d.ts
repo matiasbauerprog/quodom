@@ -1435,7 +1435,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Hasta 5 proveedores. Lista vacía si no hay ninguno en la zona. */
+                /** @description Hasta 5 proveedores de la búsqueda de hoy, más los que el comprador ya contactó aunque hoy no hayan vuelto a salir (ésos llegan con `sindatos: true`). Lista vacía si no hay ninguno en la zona. */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2687,7 +2687,7 @@ export interface components {
             nombre: string;
             rating?: number | null;
             resenas?: number;
-            distanciakm: number;
+            distanciakm: number | null;
             telefono?: string | null;
             telefonovisible?: string | null;
             sintelefono: boolean;
@@ -2696,6 +2696,7 @@ export interface components {
             direccion?: string;
             /** Format: date-time */
             contactadoen?: string | null;
+            sindatos: boolean;
         };
         Notificacion: {
             id: number;

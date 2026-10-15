@@ -13,13 +13,13 @@ vi.mock('../../utils/whatsapp', () => ({ openWhatsappLink: abrir }));
 const LE_BLEU = {
   placeid: 'p1', nombre: 'Pinturerías Le Bleu', rating: 4.9, resenas: 190,
   distanciakm: 0.4, telefono: '+541166687854', telefonovisible: '011 6668-7854',
-  sintelefono: false, esfijo: true, sinwhatsapp: false, direccion: 'Almte Brown 3185',
+  sintelefono: false, esfijo: true, sinwhatsapp: false, sindatos: false, direccion: 'Almte Brown 3185',
   contactadoen: null
 };
 const SIN_TEL = {
   placeid: 'p2', nombre: 'JB Artículos de Limpieza', rating: 4.3, resenas: 3,
   distanciakm: 0.4, telefono: null, telefonovisible: null,
-  sintelefono: true, esfijo: false, sinwhatsapp: false, direccion: 'Pacífico Rodríguez 5369',
+  sintelefono: true, esfijo: false, sinwhatsapp: false, sindatos: false, direccion: 'Pacífico Rodríguez 5369',
   contactadoen: null
 };
 // Medido contra la API de Google: un 0800 es un número real y válido que no
@@ -29,7 +29,7 @@ const SIN_TEL = {
 const REX_0800 = {
   placeid: 'p3', nombre: 'Rex', rating: 4.5, resenas: 453,
   distanciakm: 1.2, telefono: null, telefonovisible: '0800-777-7739',
-  sintelefono: false, esfijo: false, sinwhatsapp: false, direccion: 'Córdoba 1234',
+  sintelefono: false, esfijo: false, sinwhatsapp: false, sindatos: false, direccion: 'Córdoba 1234',
   contactadoen: null
 };
 

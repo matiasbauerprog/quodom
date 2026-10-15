@@ -11,10 +11,19 @@
  * las dos cosas son nuestras.
  */
 const CUANTOS = 5;
+const PISO = 3;
 const MIN_RESENAS = 3;
 const PESO_PUNTUACION = 0.6;
 const PESO_CERCANIA = 0.4;
 const TOPE_KM = 50;
+// Cuánto pesa que alguien haya reportado que no tiene WhatsApp. Es chico a
+// propósito: el puntaje está acotado en [0, 1], así que con -1 el reportado
+// queda detrás de TODOS los no reportados y, cortando en 5, en una zona con
+// más de cinco confiables —las tres medidas lo son— no aparece nunca. Eso no
+// es "no encabeza", es una expulsión: deja muerto el aviso que la pantalla
+// sabe mostrar y hace desaparecer del historial a un comercio que el comprador
+// contactó. Con -0.15 pierde un empate y no el lugar.
+const PENALIDAD_SIN_WHATSAPP = 0.15;
 
 function distanciaKm(a, b) {
   const R = 6371;
@@ -32,7 +41,7 @@ function puntaje(p) {
   const base = PESO_PUNTUACION * porEstrellas + PESO_CERCANIA * porCerca;
   // Un comercio que ya le falló a alguien por WhatsApp no se esconde, pero no
   // encabeza: es una observación nuestra, acumulada por el uso.
-  return p.sinWhatsapp ? base - 1 : base;
+  return p.sinWhatsapp ? base - PENALIDAD_SIN_WHATSAPP : base;
 }
 
 function rankear(candidatos, centro, opciones = {}) {
@@ -63,12 +72,21 @@ function rankear(candidatos, centro, opciones = {}) {
 
   const ordenar = arr => arr.slice().sort((a, b) => puntaje(b) - puntaje(a));
 
-  if (confiables.length >= 3) return ordenar(confiables).slice(0, cuantos);
+  if (confiables.length >= PISO) return ordenar(confiables).slice(0, cuantos);
 
   // Mostrar uno es peor que mostrar tres con poca reputación y la distancia a
-  // la vista: el usuario decide, pero necesita entre qué elegir.
-  const faltan = ordenar(resto.slice().sort((a, b) => a.distanciaKm - b.distanciaKm));
-  return ordenar(confiables).concat(faltan).slice(0, Math.max(cuantos, 0));
+  // la vista: el usuario decide, pero necesita entre qué elegir. Es un PISO de
+  // tres y no un relleno hasta cinco: completar cinco llena la lista de
+  // comercios cuya puntuación no es información, y el piso existe nada más
+  // para que haya entre qué elegir.
+  //
+  // Entran **por cercanía**, que es lo único comparable entre ellos: un 5,0 con
+  // una reseña y un 4,0 con dos no se pueden ordenar por reputación, y por eso
+  // se descartaron. Antes se ordenaban por distancia y el resultado se volvía a
+  // ordenar por puntaje encima, así que la distancia no decidía nada.
+  const cercanos = resto.slice().sort((a, b) => a.distanciaKm - b.distanciaKm);
+  const faltan = Math.max(PISO - confiables.length, 0);
+  return ordenar(confiables).concat(cercanos.slice(0, faltan)).slice(0, Math.max(cuantos, 0));
 }
 
 module.exports = { rankear, distanciaKm };

@@ -279,13 +279,17 @@ components:
         direccion: { type: string }
     Proveedor:
       type: object
-      required: [placeid, nombre, distanciakm, sintelefono, esfijo, sinwhatsapp]
+      required: [placeid, nombre, distanciakm, sintelefono, esfijo, sinwhatsapp, sindatos]
       properties:
         placeid: { type: string }
         nombre: { type: string }
         rating: { type: number, nullable: true }
         resenas: { type: integer }
-        distanciakm: { type: number }
+        # Null en un renglón `sindatos`: de ese lugar sólo se guarda el
+        # place_id, así que no vino de Google en esta búsqueda y no hay desde
+        # dónde medirlo. Un número ahí sería una distancia medida desde otra
+        # parte, que es justo lo que la pantalla no puede mostrar.
+        distanciakm: { type: number, nullable: true }
         telefono: { type: string, nullable: true }
         telefonovisible: { type: string, nullable: true }
         sintelefono: { type: boolean }
@@ -293,6 +297,12 @@ components:
         sinwhatsapp: { type: boolean }
         direccion: { type: string }
         contactadoen: { type: string, format: date-time, nullable: true }
+        # Un contactado que la búsqueda de hoy no devolvió. De Google sólo se
+        # puede archivar el place_id, así que de él se sabe eso y la fecha: el
+        # renglón va sin nombre, sin distancia y sin teléfono, con el link a
+        # Maps. Nunca se cae de la respuesta, porque el historial existe para
+        # contestar "a quién le mandé".
+        sindatos: { type: boolean }
 
     Notificacion:
       type: object
@@ -869,7 +879,10 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200':
-          description: Hasta 5 proveedores. Lista vacía si no hay ninguno en la zona.
+          description: >-
+            Hasta 5 proveedores de la búsqueda de hoy, más los que el comprador
+            ya contactó aunque hoy no hayan vuelto a salir (ésos llegan con
+            `sindatos: true`). Lista vacía si no hay ninguno en la zona.
           content:
             application/json:
               schema:

@@ -39,9 +39,15 @@ async function listar(idquodom, userId) {
     // diría "a NaN km". Es mejor no ofrecerlo que ofrecerlo sin distancia.
     const ubicables = crudos.filter(c => c.lat != null && c.lng != null);
 
-    // Lo que el feature aprendió de los usuarios anteriores.
+    // Lo que ya pasó con este Quodom. Se lee **después** de la búsqueda y antes
+    // de anotar, para que un fallo de Google no escriba nada (el test lo fija).
+    const filas = await db.quodom_proveedores.findAll({ where: { idquodom } });
+    const contactados = filas.filter(f => f.contactado_en);
+
+    // Lo que el feature aprendió de los usuarios anteriores. Incluye a los
+    // contactados que hoy no vinieron, que igual se muestran.
     const reportados = await db.lugares_sinwhatsapp.findAll({
-        where: { placeid: ubicables.map(c => c.placeid) }
+        where: { placeid: ubicables.map(c => c.placeid).concat(contactados.map(f => f.placeid)) }
     });
     const sinWhatsapp = new Set(reportados.map(r => r.placeid));
 
@@ -60,10 +66,39 @@ async function listar(idquodom, userId) {
     });
 
     const elegidos = rankear(conTelefono, punto);
-    await anotarOfrecidos(idquodom, elegidos);
+    await anotarOfrecidos(idquodom, elegidos, filas);
 
-    const yaContactados = await db.quodom_proveedores.findAll({ where: { idquodom } });
-    const porPlace = new Map(yaContactados.map(f => [f.placeid, f.contactado_en]));
+    const porPlace = new Map(filas.map(f => [f.placeid, f.contactado_en]));
+    const vinieronHoy = new Set(elegidos.map(p => p.placeid));
+
+    // Un contactado que la búsqueda de hoy no devolvió NO se cae de la
+    // respuesta. `searchText` ordena por relevancia y el sesgo de ubicación es
+    // sólo una preferencia, así que el que se contactó el lunes puede no entrar
+    // en los cinco del miércoles. En el selector da igual; en el historial, que
+    // existe para contestar "a quién le mandé", desaparecía: el comprador le
+    // escribía de nuevo, o concluía que nunca le había escrito.
+    //
+    // De Google sólo se archiva el place_id, así que de este renglón se sabe
+    // eso y la fecha: va sin nombre, sin distancia (no hay desde dónde medirlo,
+    // y un número ahí sería medido desde otra parte) y sin teléfono, con el
+    // link a Maps, que el place_id sí alcanza para armar.
+    const olvidados = contactados
+        .filter(f => !vinieronHoy.has(f.placeid))
+        .map(f => ({
+            placeid: f.placeid,
+            nombre: '',
+            rating: null,
+            resenas: 0,
+            distanciakm: null,
+            telefono: null,
+            telefonovisible: null,
+            sintelefono: false,
+            esfijo: false,
+            sinwhatsapp: sinWhatsapp.has(f.placeid),
+            direccion: '',
+            contactadoen: f.contactado_en,
+            sindatos: true
+        }));
 
     return {
         proveedores: elegidos.map(p => ({
@@ -78,8 +113,9 @@ async function listar(idquodom, userId) {
             esfijo: p.esFijo,
             sinwhatsapp: p.sinWhatsapp,
             direccion: p.direccion,
-            contactadoen: porPlace.get(p.placeid) || null
-        })),
+            contactadoen: porPlace.get(p.placeid) || null,
+            sindatos: false
+        })).concat(olvidados),
         preciso: punto.preciso,
         desde: punto.desde,
         atribucion: ATRIBUCION
@@ -139,8 +175,7 @@ async function noEnviado(idquodom, userId, { placeid, motivo }) {
 // volver a abrir el popup y la lista puede venir distinta. La tabla no tiene
 // unique sobre (idquodom, placeid), así que la única defensa contra duplicar una
 // fila en la segunda consulta —que es lo normal— es leer lo que ya está.
-async function anotarOfrecidos(idquodom, elegidos) {
-    const existentes = await db.quodom_proveedores.findAll({ where: { idquodom } });
+async function anotarOfrecidos(idquodom, elegidos, existentes) {
     const conocidos = new Set(existentes.map(f => f.placeid));
 
     for (let i = 0; i < elegidos.length; i++) {

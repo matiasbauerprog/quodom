@@ -131,6 +131,63 @@ describe('GET /quodom/proveedores/:id', () => {
     expect(res.body.proveedores.map(p => p.placeid)).toEqual(['ChIJ-lebleu']);
   });
 
+  // El historial del Quodom enviado existe para contestar "a quién le mandé", y
+  // se arma con esta misma respuesta. `listar` busca de nuevo cada vez y
+  // `searchText` ordena por relevancia —el sesgo de ubicación es una
+  // preferencia, no un filtro—, así que un contactado del lunes puede no venir
+  // en los cinco de hoy. Armando la respuesta sólo con lo que vino, desaparece
+  // de su propio historial: el comprador le escribe de nuevo, o concluye que
+  // nunca le escribió.
+  it('un contactado que hoy no vino en la búsqueda igual aparece, con su fecha', async () => {
+    const haceDosDias = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await db.quodom_proveedores.create({
+      idquodom, placeid: 'ChIJ-devoto', orden: 2, contactado_en: haceDosDias
+    });
+    places.buscarProveedores.mockResolvedValue([UNO]);
+
+    const res = await auth(request(app).get('/quodom/proveedores/' + idquodom));
+
+    const devoto = res.body.proveedores.find(p => p.placeid === 'ChIJ-devoto');
+    expect(devoto).toBeDefined();
+    expect(new Date(devoto.contactadoen).getTime()).toBeCloseTo(haceDosDias.getTime(), -3);
+    // Sin distancia inventada: no vino de Google, así que no hay desde dónde
+    // medirlo, y la pantalla no puede mostrar un número medido desde otra parte.
+    // `sindatos` es lo que le dice al renglón que de este lugar sólo se sabe el
+    // place_id y la fecha — nombre, puntuación y teléfono no se archivan.
+    expect(devoto.distanciakm).toBeNull();
+    expect(devoto.sindatos).toBe(true);
+    expect(devoto.nombre).toBe('');
+  });
+
+  // Lo que NO se arrastra: un lugar que se ofreció y nunca se contactó. Esa
+  // fila es la lista de ayer, no el historial, y arrastrarla mostraría un
+  // renglón sin nombre, sin teléfono y sin nada que hacer con él.
+  it('un ofrecido que no se contactó y hoy no vino no se arrastra', async () => {
+    await db.quodom_proveedores.create({ idquodom, placeid: 'ChIJ-solo-ofrecido', orden: 3 });
+    places.buscarProveedores.mockResolvedValue([UNO]);
+
+    const res = await auth(request(app).get('/quodom/proveedores/' + idquodom));
+
+    expect(res.body.proveedores.map(p => p.placeid)).not.toContain('ChIJ-solo-ofrecido');
+  });
+
+  // El que sí vino de Google no se duplica: su renglón es el de hoy, con
+  // nombre, distancia y teléfono, y además con su fecha de contacto.
+  it('el contactado que hoy sí vino sale una sola vez y con sus datos', async () => {
+    await db.quodom_proveedores.create({
+      idquodom, placeid: 'ChIJ-lebleu', orden: 1, contactado_en: new Date()
+    });
+    places.buscarProveedores.mockResolvedValue([UNO]);
+
+    const res = await auth(request(app).get('/quodom/proveedores/' + idquodom));
+
+    const filas = res.body.proveedores.filter(p => p.placeid === 'ChIJ-lebleu');
+    expect(filas).toHaveLength(1);
+    expect(filas[0].nombre).toBe('Pinturerías Le Bleu');
+    expect(filas[0].sindatos).toBe(false);
+    expect(filas[0].contactadoen).not.toBeNull();
+  });
+
   // Review Focus 1: un rubro sin nada cerca.
   it('sin resultados devuelve la lista vacía y un 200, no un error', async () => {
     places.buscarProveedores.mockResolvedValue([]);
