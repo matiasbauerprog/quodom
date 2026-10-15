@@ -153,7 +153,7 @@ Convierte lo que devuelve Google al formato que abre WhatsApp, y dice si es celu
 
 **Interfaces:**
 - Consumes: `libphonenumber-js`.
-- Produces: `analizarTelefono(nacional: string | null | undefined): { e164: string | null, esFijo: boolean, original: string } | null` — `null` cuando no hay teléfono o no se puede interpretar.
+- Produces: `analizarTelefono(nacional: string | null | undefined): { e164: string | null, esFijo: boolean, sirveWhatsapp: boolean, original: string } | null` — `null` cuando no hay teléfono o no se puede interpretar. `sirveWhatsapp` es `false` para los que no pueden recibirlo (0800 y demás gratuitos), aunque sean números válidos.
 
 - [ ] **Step 1: Install the dependency**
 
@@ -196,6 +196,28 @@ describe('analizarTelefono', () => {
     const r = analizarTelefono('0351 15-555-4444');
     expect(r.e164.startsWith('+549351')).toBe(true);
     expect(r.esFijo).toBe(false);
+  });
+
+  // MEDIDO en Córdoba el 2026-10-15: Rex publica 0800-777-7739, y tiene 453
+  // reseñas, o sea que es un proveedor que el comprador quiere. Un 0800 NO
+  // recibe WhatsApp y tampoco es un fijo común: es un número de atención. Si se
+  // lo trata como teléfono normal, el usuario toca WhatsApp, se va, y no abre —
+  // el mismo modo de falla silencioso que este helper existe para evitar.
+  it('marca un 0800 como no apto para WhatsApp', () => {
+    const r = analizarTelefono('0800-777-7739');
+    expect(r.sirveWhatsapp).toBe(false);
+  });
+
+  it('un celular sí sirve para WhatsApp', () => {
+    expect(analizarTelefono('011 15-5481-2951').sirveWhatsapp).toBe(true);
+  });
+
+  // Un fijo puede tener WhatsApp Business, así que sirve: lo que lleva es el
+  // aviso, no la prohibición.
+  it('un fijo sirve para WhatsApp, con aviso', () => {
+    const r = analizarTelefono('011 4767-0915');
+    expect(r.sirveWhatsapp).toBe(true);
+    expect(r.esFijo).toBe(true);
   });
 
   // Review Focus 2: Google no tiene el teléfono de todos los comercios.
@@ -250,9 +272,18 @@ function analizarTelefono(nacional) {
   if (!n || !n.isValid()) return null;
 
   const tipo = n.getType();
+
+  // Un 0800 es un número válido que NO recibe WhatsApp (medido: Rex, Córdoba,
+  // 0800-777-7739, con 453 reseñas). Lo mismo cualquier número de tarifa
+  // especial. Se devuelven igual, para poder mostrarlos y ofrecer "llamar",
+  // pero marcados: ofrecer WhatsApp ahí es mandar al usuario a un chat que no
+  // abre, y eso se lee como "el comercio no tiene WhatsApp".
+  const noRecibe = ['TOLL_FREE', 'PREMIUM_RATE', 'SHARED_COST', 'VOICEMAIL'];
+
   return {
     e164: n.number,
     esFijo: tipo === 'FIXED_LINE',
+    sirveWhatsapp: !noRecibe.includes(tipo),
     original
   };
 }
@@ -1367,7 +1398,10 @@ async function listar(idquodom, userId) {
         const tel = analizarTelefono(c.telefono);
         return {
             ...c,
-            telefono: tel ? tel.e164 : null,
+            // Un número que no puede recibir WhatsApp (un 0800) viaja como
+            // teléfono para "llamar", pero sin número de WhatsApp: el renglón
+            // muestra el botón de llamar y no el de WhatsApp.
+            telefono: tel && tel.sirveWhatsapp ? tel.e164 : null,
             telefonoVisible: tel ? tel.original : null,
             esFijo: tel ? tel.esFijo : false,
             sinWhatsapp: sinWhatsapp.has(c.placeid)

@@ -297,8 +297,19 @@ término: cuando se activen, se mide el suyo antes de encenderlos.
 
 ### Un proveedor sin teléfono
 
-**Medido:** Google no tiene número para una parte de los comercios (JB Artículos
-de Limpieza, Santi Estevez, Vinotecas). A ésos no se les puede mandar WhatsApp
+**Medido, y hay dos casos distintos:**
+
+**a) Sin teléfono.** Google no tiene número para una parte de los comercios (JB
+Artículos de Limpieza, Santi Estevez, Vinotecas, y en CABA hasta Librería Teorema,
+que tiene 3.794 reseñas).
+
+**b) Con un teléfono que no recibe WhatsApp.** Rex, en Córdoba, publica
+`0800-777-7739`. Es un número válido y el comercio es bueno —453 reseñas—, pero un
+0800 no recibe WhatsApp. Se muestra con el botón de **llamar**, sin el de WhatsApp:
+ofrecerlo sería mandar al usuario a un chat que no abre, y eso se lee como que el
+comercio no tiene WhatsApp cuando el problema es el tipo de número.
+
+Para el caso (a): A ésos no se les puede mandar WhatsApp
 **ni llamarlos**, que eran las dos salidas previstas.
 
 No se filtran: siguen en la lista, con su nombre, su puntuación y su distancia,
@@ -517,3 +528,9 @@ visitas. De ahí el tope diario por usuario.
 - Elegir el radio o la cantidad de proveedores desde la UI. Son constantes de
   configuración hasta que haya datos de uso que justifiquen exponerlas.
 - Direcciones fuera de Argentina.
+- **Pueblos chicos.** El producto apunta a **centros urbanos**: CABA, AMBA y
+  ciudades. Los términos de búsqueda se calibran y se validan ahí, y no se
+  garantiza que funcionen en una localidad de pocos miles de habitantes, donde
+  puede no haber ningún comercio que se llame "papelera" —palabra que además
+  significa cesto de basura— y la búsqueda devolvería nada o cualquier cosa.
+  Medido el 2026-10-15 en Villa Ballester, CABA y Córdoba: en las tres anda.
