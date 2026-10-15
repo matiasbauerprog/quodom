@@ -15,6 +15,7 @@ import { ErrorState } from '../../components/ErrorState';
 import { SelectorAtributo } from './SelectorAtributo';
 import { ProductImage } from '../../components/ProductImage';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
+import { ProveedoresContactados } from '../../quodom/ProveedoresContactados';
 import { migrarRubro } from '../../guest/migrateGuestQuodom';
 import { nombreRubro } from '../../quodom/rubros';
 import { rubroDisponible } from '../../quodom/rubrosDisponibles';
@@ -317,6 +318,10 @@ export function DetalleQuodom() {
             Tus productos quedan guardados acá por si el rubro vuelve.
           </p>
         )}
+
+        {/* Enviado no es el final: el comprador le manda a uno, no le contestan
+            y le manda a otro, y a quién ya le mandó sólo lo sabe el servidor. */}
+        {yaEnviado && server && <ProveedoresContactados idquodom={server.quodom.id} />}
 
         {selector && (
           <DialogoProveedores
