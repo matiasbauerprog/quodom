@@ -28,6 +28,9 @@ if (process.env.API_DOCS === 'true') {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec));
 }
 app.use(require('./middleware/stripTrailingSlash'));
+// Render decodifica %20 en la reescritura /api/*: hay que volver a codificar
+// antes de que el validador juzgue la URL. Ver el encabezado del middleware.
+app.use(require('./middleware/encodeQuerySpaces'));
 app.use(require('./helpers/openapi').buildValidator());
 // After the validator, so this res.json wraps the validator's and hands it plain JSON.
 if (process.env.NODE_ENV === 'test') app.use(require('./helpers/openapi').plainJson);
