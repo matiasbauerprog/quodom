@@ -168,13 +168,15 @@ describe('DetalleQuodom: los proveedores de un Quodom enviado', () => {
   });
 
   // Google puede fallar o cortar por el tope de 10/min. Acá no hay nada que
-  // enviar de urgencia, así que alcanza con decirlo y no romper la pantalla.
+  // enviar de urgencia, así que alcanza con decirlo —en castellano y sin el
+  // texto de diagnóstico del servidor— y no romper la pantalla.
   it('si la búsqueda falla lo dice y el Quodom sigue a la vista', async () => {
-    vi.mocked(proveedores.delQuodom).mockRejectedValue(new Error('Estás buscando proveedores muy seguido.'));
+    vi.mocked(proveedores.delQuodom).mockRejectedValue(new Error('places: HTTP 503'));
 
     montar({ estado: 'ENVIADO' });
 
-    expect(await screen.findByText(/no pudimos buscar proveedores/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no pudimos consultar el mapa/i)).toBeInTheDocument();
+    expect(screen.queryByText(/places: HTTP/i)).toBeNull();
     expect(screen.getByText('Latex Interior Blanco Mate')).toBeInTheDocument();
   });
 });

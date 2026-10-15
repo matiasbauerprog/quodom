@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { AvisoPuntoAproximado } from './AvisoPuntoAproximado';
 import { FilaProveedor } from './FilaProveedor';
 import { useProveedores } from './useProveedores';
 import './DialogoProveedores.css';
@@ -60,14 +60,7 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSin
           {datos?.desde ? 'Proveedores cerca de ' + datos.desde : 'Proveedores cerca'}
         </h2>
 
-        {datos && !datos.preciso && (
-          <p className="dp-aprox">
-            Tu dirección no está ubicada con precisión — las distancias son desde el centro de la localidad.{' '}
-            {/* Un Link y no un href: un ancla recarga el documento entero en
-                medio de un envío y se lleva el Quodom a medio mandar. */}
-            <Link to="/direcciones">Revisá tu dirección</Link>
-          </p>
-        )}
+        {datos && !datos.preciso && <AvisoPuntoAproximado />}
 
         {cargando && (
           // Esqueleto y no spinner: la forma de la lista ya se conoce, y un
@@ -85,7 +78,9 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSin
         )}
 
         {error && (
-          <p className="dp-error" role="alert">No pudimos buscar proveedores cerca. {error}</p>
+          // La salida está en el pie, justo debajo: el aviso la nombra porque
+          // es lo único que el comprador puede hacer con esto.
+          <p className="dp-error" role="alert">{error} Podés enviar sin elegir proveedor.</p>
         )}
 
         {!cargando && !error && datos && datos.proveedores.length === 0 && (

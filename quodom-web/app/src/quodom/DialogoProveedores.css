@@ -15,14 +15,6 @@
 /* El aviso del punto aproximado va arriba y no al pie: una distancia que el
    comprador lee como "desde mi puerta" cuando es desde el centro del pueblo es
    justamente la falla que este selector existe para no cometer. */
-.dp-aprox {
-  margin: 0 0 var(--sp-3) 0;
-  font-size: var(--fs-small);
-  line-height: 1.35;
-  color: #5C5C5C;
-}
-.dp-aprox a { color: var(--color-acento); }
-
 .dp-lista {
   list-style: none; margin: 0 0 var(--sp-3) 0; padding: 0;
   display: flex; flex-direction: column; gap: var(--sp-2);

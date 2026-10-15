@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ProveedoresContactados } from '../ProveedoresContactados';
 import { proveedores } from '../../api/proveedores';
+import { ApiError } from '../../api/client';
 
 vi.mock('../../api/proveedores', () => ({ proveedores: { delQuodom: vi.fn(), noEnviado: vi.fn() } }));
 vi.mock('../../api/quodom', () => ({ quodom: { whatsapp: vi.fn() } }));
@@ -61,6 +62,44 @@ describe('ProveedoresContactados', () => {
     // Y sin número: no vino de Google, así que no hay desde dónde medirlo, y
     // un "0,4 km" acá sería una distancia medida desde otra parte.
     expect(screen.queryByText(/km/)).toBeNull();
+  });
+
+  // La promesa central del feature: la pantalla nunca muestra una distancia
+  // medida desde otro lugar que el que nombra. El diálogo lo hacía y el
+  // historial, que consume la MISMA respuesta, no renderizaba ni `desde` ni el
+  // aviso de `preciso`. El comprador cuya calle Google no tiene leía
+  // "JB Artículos de Limpieza — 0,4 km" y entendía cuatro cuadras: son 0,4 km
+  // del centro de Villa Ballester, que puede estar a 3 km de su casa.
+  it('dice desde dónde midió', async () => {
+    vi.mocked(proveedores.delQuodom).mockResolvedValue(respuesta());
+
+    montar();
+
+    expect(await screen.findByText(/cerca de Almte Brown 3185/i)).toBeInTheDocument();
+  });
+
+  it('con el punto aproximado avisa que midió desde la localidad', async () => {
+    vi.mocked(proveedores.delQuodom).mockResolvedValue(respuesta({ preciso: false, desde: 'Villa Ballester' }));
+
+    montar();
+
+    expect(await screen.findByText(/centro de la localidad/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /dirección/i })).toHaveAttribute('href', '/direcciones');
+    expect(screen.getByText(/cerca de Villa Ballester/i)).toBeInTheDocument();
+  });
+
+  // Acá el Quodom ya salió, así que el aviso no puede ofrecer "enviar sin
+  // elegir proveedor": lo único que corresponde es decir que el mapa no
+  // contesta, sin el texto de diagnóstico del servidor.
+  it('una falla de Google no le muestra al comprador el texto del servidor', async () => {
+    vi.mocked(proveedores.delQuodom).mockRejectedValue(
+      new ApiError('places: HTTP 503 {"error":{"code":503}}', 503));
+
+    montar();
+
+    expect(await screen.findByText(/no pudimos consultar el mapa/i)).toBeInTheDocument();
+    expect(screen.queryByText(/places: HTTP/i)).toBeNull();
+    expect(screen.queryByText(/enviar sin elegir/i)).toBeNull();
   });
 
   it('la cuenta sale de la unión y no de los cinco de hoy', async () => {

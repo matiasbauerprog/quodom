@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { proveedores } from '../api/proveedores';
+import { ApiError } from '../api/client';
 import type { RespuestaProveedores } from '../api/proveedores';
 import type { Proveedor } from '../api/types';
 import { quodom } from '../api/quodom';
 import { openWhatsappLink } from '../utils/whatsapp';
+
+/**
+ * Qué lee el comprador cuando la búsqueda falla.
+ *
+ * El texto del servidor se conserva **sólo en el 429**: ese mensaje lo escribió
+ * este repo para esta pantalla, nombra lo que el comprador estaba haciendo y
+ * dice qué hacer. Todos los demás son diagnóstico —*places: HTTP 503
+ * {"error":{"code":503…*, o una instrucción sobre el dashboard de Render cuando
+ * falta la clave—, y éste es justamente el modo de falla para el que existe la
+ * salida de emergencia: el mensaje que más se va a leer, y con bronca. Era el
+ * único del feature escrito para un servidor y no para una persona.
+ */
+function mensajeDeBusqueda(e: unknown): string {
+  if (e instanceof ApiError && e.status === 429) return e.message;
+  return 'No pudimos consultar el mapa en este momento.';
+}
 
 type Opciones = {
   /** El Quodom salió, por cualquiera de los dos caminos: ya está en ENVIADO. */
@@ -43,7 +60,7 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
       setError(null);
     } catch (e) {
       setDatos(null);
-      setError(e instanceof Error ? e.message : 'Falló la búsqueda.');
+      setError(mensajeDeBusqueda(e));
     } finally {
       setCargando(false);
     }

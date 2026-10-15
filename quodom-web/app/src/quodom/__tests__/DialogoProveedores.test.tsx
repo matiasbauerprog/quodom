@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { DialogoProveedores } from '../DialogoProveedores';
 import { proveedores } from '../../api/proveedores';
 import { quodom } from '../../api/quodom';
+import { ApiError } from '../../api/client';
 
 vi.mock('../../api/proveedores', () => ({ proveedores: { delQuodom: vi.fn(), noEnviado: vi.fn() } }));
 vi.mock('../../api/quodom', () => ({ quodom: { whatsapp: vi.fn() } }));
@@ -170,6 +171,35 @@ describe('DialogoProveedores', () => {
     montar();
 
     expect(await screen.findByRole('button', { name: /enviar sin elegir/i })).toBeInTheDocument();
+  });
+
+  // El modo de falla para el que existe la salida de emergencia es el que más
+  // se va a leer, y con bronca, así que es el que menos puede estar escrito
+  // para un servidor. El hook tomaba `e.message` tal cual para todos los
+  // estados: el comprador leía *places: HTTP 503 {"error":{"code":503…* o, sin
+  // la clave cargada, una instrucción sobre el dashboard de Render.
+  it('una falla de Google no le muestra al comprador el texto del servidor', async () => {
+    vi.mocked(proveedores.delQuodom).mockRejectedValue(
+      new ApiError('places: HTTP 503 {"error":{"code":503,"status":"UNAVAILABLE"}}', 503));
+
+    montar();
+
+    expect(await screen.findByText(/no pudimos consultar el mapa/i)).toBeInTheDocument();
+    expect(screen.queryByText(/places: HTTP/i)).toBeNull();
+    expect(screen.queryByText(/GOOGLE_MAPS_API_KEY/i)).toBeNull();
+    // Y la salida sigue debajo, que es de lo que habla el mensaje.
+    expect(screen.getByRole('button', { name: /enviar sin elegir/i })).toBeInTheDocument();
+  });
+
+  // El 429 es la excepción deliberada: ese texto lo escribió este repo para
+  // esta pantalla, nombra lo que el comprador estaba haciendo y dice qué hacer.
+  it('el tope por minuto sí se muestra tal cual lo manda el servidor', async () => {
+    vi.mocked(proveedores.delQuodom).mockRejectedValue(
+      new ApiError('Estás buscando proveedores muy seguido. Esperá un momento y probá de nuevo.', 429));
+
+    montar();
+
+    expect(await screen.findByText(/buscando proveedores muy seguido/i)).toBeInTheDocument();
   });
 
   // Que el botón exista no alcanza: mandar el par a medias (`proveedor` sin

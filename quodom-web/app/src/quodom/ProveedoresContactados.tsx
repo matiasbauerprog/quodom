@@ -1,3 +1,4 @@
+import { AvisoPuntoAproximado } from './AvisoPuntoAproximado';
 import { FilaProveedor } from './FilaProveedor';
 import { useProveedores } from './useProveedores';
 import './ProveedoresContactados.css';
@@ -25,13 +26,22 @@ export function ProveedoresContactados({ idquodom }: { idquodom: string }) {
 
   return (
     <section className="pc" aria-labelledby="pc-titulo">
-      <h2 id="pc-titulo" className="pc-titulo">Proveedores contactados</h2>
+      {/* El encabezado nombra el punto desde el que se midió, igual que el
+          diálogo. Sin eso la pantalla muestra distancias y no dice nunca desde
+          dónde: el comprador lee "0,4 km" y entiende cuatro cuadras desde su
+          casa, cuando pueden ser cuatro cuadras desde el centro de su
+          localidad. La cuenta de abajo es la que dice "contactados". */}
+      <h2 id="pc-titulo" className="pc-titulo">
+        {datos?.desde ? 'Proveedores cerca de ' + datos.desde : 'Proveedores contactados'}
+      </h2>
+
+      {datos && !datos.preciso && <AvisoPuntoAproximado />}
 
       {cargando && <p className="pc-cuenta">Buscando proveedores cerca…</p>}
 
-      {error && (
-        <p className="pc-error" role="alert">No pudimos buscar proveedores cerca. {error}</p>
-      )}
+      {/* Acá el Quodom ya salió: no hay nada urgente que ofrecer, alcanza con
+          decir que el mapa no contesta. */}
+      {error && <p className="pc-error" role="alert">{error}</p>}
 
       {!cargando && !error && lista.length === 0 && (
         <p className="pc-cuenta">No encontramos proveedores de este rubro cerca de tu dirección.</p>

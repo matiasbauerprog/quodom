@@ -1,0 +1,10 @@
+/* El aviso de que el punto es aproximado. No es un error —la lista sirve
+   igual—, así que va en gris y no en rojo; lo que tiene que resaltar es el
+   camino para arreglarlo. */
+.aviso-aprox {
+  margin: 0 0 var(--sp-3) 0;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  color: #5C5C5C;
+}
+.aviso-aprox a { color: var(--color-acento); }
