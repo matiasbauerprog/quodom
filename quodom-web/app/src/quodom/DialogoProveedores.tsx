@@ -10,6 +10,14 @@ import './DialogoProveedores.css';
 type Props = {
   idquodom: string;
   onCerrar: () => void;
+  /**
+   * Avisa que el Quodom salió, por cualquiera de los dos caminos: el proveedor
+   * elegido y el pie sin destinatario. Los dos lo pasan a ENVIADO, así que los
+   * dos tienen que disparar el refresco del árbol y de la barra inferior;
+   * avisar sólo en uno dejaba al Quodom figurando en armado después de salir.
+   * Y no cierra el diálogo: mandarle a varios proveedores es para lo que existe.
+   */
+  onEnviado?: () => void;
   /** Avisa que el Quodom salió sin destinatario, para que quien abrió el diálogo cierre y refresque. */
   onEnviadoSinProveedor?: () => void;
 };
@@ -48,7 +56,7 @@ function puntuacion(valor: number): string {
  *   sólo el mapa, y el renglón lo dice.
  * - `esfijo` es un aviso y nunca un bloqueo: un fijo puede tener WhatsApp Business.
  */
-export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }: Props) {
+export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSinProveedor }: Props) {
   const [datos, setDatos] = useState<RespuestaProveedores | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +115,9 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }
     try {
       const r = await quodom.whatsapp(idquodom, { proveedor: p.placeid, tel: p.telefono });
       openWhatsappLink(r.link);
+      // Avisa antes de recargar: el Quodom ya pasó a ENVIADO, y la recarga es
+      // una búsqueda paga que puede fallar sin que eso cambie lo que pasó.
+      onEnviado?.();
       // Se recarga para que el renglón vuelva marcado: el contacto lo anota el
       // servidor, así que la marca sale de él y no de un estado local.
       await cargar();
@@ -123,6 +134,7 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }
     try {
       const r = await quodom.whatsapp(idquodom);
       openWhatsappLink(r.link);
+      onEnviado?.();
       onEnviadoSinProveedor?.();
     } catch (e) {
       setErrorEnvio(e instanceof Error ? e.message : 'No pudimos enviar el Quodom.');

@@ -10,6 +10,7 @@ import { openWhatsappLink } from '../../../utils/whatsapp';
 import { categorias } from '../../../api/categorias';
 import { users } from '../../../api/users';
 import { abrirQuodom } from '../../../quodom/quodomAbierto';
+import { proveedores } from '../../../api/proveedores';
 
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn(() => ({ user: null })) }));
 vi.mock('../../../api/quodom', () => ({
@@ -27,6 +28,19 @@ vi.mock('../../../api/quodom_lines', () => ({ quodomLines: { porQuodom: vi.fn(),
 vi.mock('../../../utils/whatsapp', () => ({ openWhatsappLink: vi.fn() }));
 vi.mock('../../../api/categorias', () => ({ categorias: { raiz: vi.fn() } }));
 vi.mock('../../../api/users', () => ({ users: { getDirecciones: vi.fn() } }));
+// Cotizar abre el selector de proveedores, que consulta a Google al abrirse.
+vi.mock('../../../api/proveedores', () => ({ proveedores: { delQuodom: vi.fn(), noEnviado: vi.fn() } }));
+
+const LE_BLEU = {
+  placeid: 'p1', nombre: 'Pinturerías Le Bleu', rating: 4.9, resenas: 190,
+  distanciakm: 0.4, telefono: '+541166687854', telefonovisible: '011 6668-7854',
+  sintelefono: false, esfijo: false, sinwhatsapp: false, direccion: 'Almte Brown 3185',
+  contactadoen: null
+};
+const PROVEEDORES = {
+  proveedores: [LE_BLEU], preciso: true, desde: 'Almte Brown 3185',
+  atribucion: 'Resultados de Google'
+};
 
 // GET /categorias sólo devuelve los rubros habilitados (RUBROS_ACTIVOS
 // [1,2,3,5,7]); 4 (Construcción) está dado de baja en este lanzamiento.
@@ -50,6 +64,7 @@ function renderEn(ruta: string) {
 // efecto rompe el render, arrastrando a los tests que vienen después.
 beforeEach(() => {
   vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+  vi.mocked(proveedores.delQuodom).mockResolvedValue(PROVEEDORES);
 });
 
 describe('DetalleQuodom for guests', () => {
@@ -164,9 +179,14 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
     vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
+    vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+    vi.mocked(proveedores.delQuodom).mockResolvedValue(PROVEEDORES);
   });
 
-  it('migrates the cart and opens the WhatsApp link', async () => {
+  // El carrito se migra igual que antes, pero el envío pasa por el selector:
+  // el comprador elige a quién, y "enviar sin elegir proveedor" es el camino
+  // que existía antes de este feature.
+  it('migrates the cart and sends it through the provider picker', async () => {
     addGuestLine(7, GASEOSA);
     vi.mocked(quodom.create).mockResolvedValue({ res: true, idquodom: 'Q-NEW' });
     vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
@@ -177,6 +197,7 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
+    fireEvent.click(await screen.findByRole('button', { name: /enviar sin elegir/i }));
     await waitFor(() => expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola-bebidas'));
 
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-NEW', idproducto: 700 }));
@@ -198,8 +219,11 @@ describe('DetalleQuodom guest WhatsApp send (logged-in guest cart)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
+    fireEvent.click(await screen.findByRole('button', { name: /enviar sin elegir/i }));
     await waitFor(() => expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/?text=hola-nuevo'));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    // El único diálogo que aparece es el selector de proveedores: el de
+    // conflicto de rubro no existe más, un rubro admite varios Quodoms.
+    expect(screen.queryByText(/integrar|reemplazar/i)).toBeNull();
     expect(quodom.create).toHaveBeenCalledWith(expect.objectContaining({ idrubro: 7 }));
     expect(quodom.eliminar).not.toHaveBeenCalled();
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-NEW', idproducto: 700 }));
@@ -350,5 +374,58 @@ describe('DetalleQuodom: carrito de invitado vacío con la sesión iniciada', ()
 
     await waitFor(() => expect(quodom.activosPorRubro).toHaveBeenCalledWith(7));
     expect(quodom.porId).not.toHaveBeenCalled();
+  });
+});
+
+// Enviar es elegir a quién: el botón abre el selector de proveedores, que es
+// el que llama al endpoint. El camino de siempre —mandar sin destinatario y
+// elegir adentro de WhatsApp— sigue estando, en el pie del selector.
+describe('DetalleQuodom: el envío pasa por el selector de proveedores', () => {
+  const QUODOM = {
+    id: 'q-7', nro: 'QD-7', descripcion: 'Bebidas oficina', estado: 'CREADO', idrubro: 7
+  };
+  const LINEA = {
+    id: 11, idquodom: 'q-7', idproducto: 700, cantidad: 2, nombreProducto: 'Gaseosa 2L'
+  };
+
+  beforeEach(() => {
+    clearGuestQuodoms();
+    localStorage.clear();
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
+    vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+    vi.mocked(proveedores.delQuodom).mockResolvedValue(PROVEEDORES);
+    vi.mocked(quodom.porId).mockResolvedValue(QUODOM as never);
+    vi.mocked(quodomLines.porQuodom).mockResolvedValue([LINEA] as never);
+  });
+
+  it('tocar Cotizar abre el selector en vez de ir directo a WhatsApp', async () => {
+    renderEn('/quodom?id=q-7');
+    await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
+
+    expect(await screen.findByText(/proveedores cerca/i)).toBeInTheDocument();
+    expect(quodom.whatsapp).not.toHaveBeenCalled();
+    expect(openWhatsappLink).not.toHaveBeenCalled();
+  });
+
+  it('el envío a un proveedor avisa al resto de la app', async () => {
+    vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/541166687854?text=ok' });
+    const escuchado = vi.fn();
+    window.addEventListener('quodom:changed', escuchado);
+
+    renderEn('/quodom?id=q-7');
+    await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
+    fireEvent.click(await screen.findByRole('button', { name: /enviar por whatsapp/i }));
+
+    await waitFor(() => expect(quodom.whatsapp).toHaveBeenCalledWith('q-7', { proveedor: 'p1', tel: '+541166687854' }));
+    expect(openWhatsappLink).toHaveBeenCalledWith('https://wa.me/541166687854?text=ok');
+    // Sin el aviso, el árbol y la barra inferior lo siguen mostrando en armado.
+    await waitFor(() => expect(escuchado).toHaveBeenCalled());
+    window.removeEventListener('quodom:changed', escuchado);
   });
 });

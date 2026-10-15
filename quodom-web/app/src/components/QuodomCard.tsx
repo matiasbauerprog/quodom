@@ -4,6 +4,7 @@ import type { Quodom } from '../api/types';
 import type { BloqueoEnvio } from '../quodom/bloqueosEnvio';
 import { quodom as quodomApi } from '../api/quodom';
 import { ApiError } from '../api/client';
+import { DialogoProveedores } from '../quodom/DialogoProveedores';
 import './QuodomCard.css';
 
 type Variant = 'sidebar' | 'page';
@@ -35,7 +36,7 @@ function ZigZag() {
   );
 }
 
-export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, onEnviar, enviando, bloqueo }: {
+export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, expandido, onToggle, enviable, bloqueo }: {
   quodom: Quodom;
   variant?: Variant;
   rubroLabel?: string;
@@ -44,10 +45,11 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   // de navegar. La variante `page` no lo pasa y sigue navegando como siempre.
   expandido?: boolean;
   onToggle?: () => void;
-  // Sin `onEnviar` la tarjeta no ofrece enviar: los carritos de invitado
-  // necesitan login y migración antes, y eso vive en el detalle.
-  onEnviar?: () => void | Promise<void>;
-  enviando?: boolean;
+  // Sin `enviable` la tarjeta no ofrece enviar: los carritos de invitado
+  // necesitan login y migración antes, y eso vive en el detalle. Enviar es
+  // elegir a quién, así que el botón abre el selector de proveedores acá
+  // mismo; antes avisaba al padre para que él llamara al endpoint.
+  enviable?: boolean;
   // Lo que impide enviar, si algo lo impide. Lo calcula quien tiene los datos
   // (`bloqueoDeEnvio`): la tarjeta no sabe si el usuario cargó una dirección.
   bloqueo?: BloqueoEnvio | null;
@@ -58,6 +60,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   const [nombreNuevo, setNombreNuevo] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [selector, setSelector] = useState(false);
   const info = estadoInfo(quodom);
   const fechaDisplay = quodom.estado === 'ENVIADO' ? formatDate(quodom.fechaenvio) : formatDate(quodom.createdAt);
   const nombre = quodom.descripcion || quodom.nro;
@@ -193,15 +196,15 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
             <div className="qc-detail">{info.detail}</div>
             <div className="qc-acciones">
               <button className="qc-action" onClick={e => { e.stopPropagation(); seguirEnElRubro(); }}>Continuar</button>
-              {onEnviar && (
+              {enviable && (
                 <button
                   className="qc-action qc-action-enviar"
-                  disabled={enviando || !!bloqueo}
-                  onClick={e => { e.stopPropagation(); if (!bloqueo) onEnviar(); }}
-                >{enviando ? 'Cotizando…' : 'Cotizar por WhatsApp'}</button>
+                  disabled={!!bloqueo}
+                  onClick={e => { e.stopPropagation(); if (!bloqueo) setSelector(true); }}
+                >Cotizar por WhatsApp</button>
               )}
             </div>
-            {onEnviar && bloqueo && (
+            {enviable && bloqueo && (
               <p className="qc-bloqueo">
                 {bloqueo.texto}{' '}
                 {bloqueo.motivo === 'direccion' ? (
@@ -215,6 +218,22 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
         )}
         {err && <div className="qc-err">{err}</div>}
       </div>
+
+      {selector && (
+        // La tarjeta entera es un botón, así que el diálogo va envuelto en algo
+        // que corta la propagación: sin eso, cerrarlo o tocar cualquier cosa
+        // adentro abría además el detalle del Quodom.
+        <div onClick={e => e.stopPropagation()}>
+          <DialogoProveedores
+            idquodom={quodom.id}
+            onCerrar={() => setSelector(false)}
+            // El envío pasa el Quodom a ENVIADO: sin el aviso, el árbol y la
+            // barra inferior lo siguen mostrando en armado.
+            onEnviado={() => { window.dispatchEvent(new Event('quodom:changed')); onChange?.(); }}
+            onEnviadoSinProveedor={() => setSelector(false)}
+          />
+        </div>
+      )}
     </article>
   );
 }

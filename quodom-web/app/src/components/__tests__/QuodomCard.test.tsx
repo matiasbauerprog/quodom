@@ -3,11 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { QuodomCard } from '../QuodomCard';
 import { quodom as quodomApi } from '../../api/quodom';
+import { proveedores } from '../../api/proveedores';
 import type { Quodom } from '../../api/types';
 
 vi.mock('../../api/quodom', () => ({
   quodom: { update: vi.fn(), eliminar: vi.fn(), repetir: vi.fn(), whatsapp: vi.fn() }
 }));
+// Cotizar abre el selector de proveedores, que consulta a Google al abrirse.
+vi.mock('../../api/proveedores', () => ({ proveedores: { delQuodom: vi.fn(), noEnviado: vi.fn() } }));
 
 const update = quodomApi.update as unknown as ReturnType<typeof vi.fn>;
 
@@ -36,6 +39,9 @@ function montar(props: Partial<Parameters<typeof QuodomCard>[0]> = {}) {
 beforeEach(() => {
   update.mockReset();
   update.mockResolvedValue(BEBIDAS);
+  vi.mocked(proveedores.delQuodom).mockReset().mockResolvedValue({
+    proveedores: [], preciso: true, desde: 'Almte Brown 3185', atribucion: 'Resultados de Google'
+  });
 });
 
 describe('QuodomCard', () => {
@@ -58,7 +64,7 @@ describe('QuodomCard', () => {
   });
 
   it('el botón de enviar dice cotizar por WhatsApp', () => {
-    montar({ onEnviar: vi.fn() });
+    montar({ enviable: true });
 
     expect(screen.getByRole('button', { name: 'Cotizar por WhatsApp' })).toBeInTheDocument();
   });
@@ -123,7 +129,7 @@ describe('QuodomCard', () => {
 describe('QuodomCard con el envío bloqueado', () => {
   it('deshabilita enviar y muestra el motivo', () => {
     montar({
-      onEnviar: vi.fn(),
+      enviable: true,
       bloqueo: { motivo: 'atributo', texto: 'Falta elegir la medida de algún producto.', accion: 'Abrí el Quodom y completá lo que falta.' }
     });
 
@@ -131,33 +137,35 @@ describe('QuodomCard con el envío bloqueado', () => {
     expect(screen.getByText(/falta elegir la medida/i)).toBeInTheDocument();
   });
 
-  it('no llama a enviar cuando está bloqueado', () => {
-    const onEnviar = vi.fn();
+  // Bloqueado no abre ni el selector: el servidor va a rechazar el envío con
+  // 409, así que buscarle proveedores es gastar una consulta paga al vacío.
+  it('no abre el selector de proveedores cuando está bloqueado', () => {
     montar({
-      onEnviar,
+      enviable: true,
       bloqueo: { motivo: 'direccion', texto: 'Falta tu dirección.', accion: 'Cargar dirección' }
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
-    expect(onEnviar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(proveedores.delQuodom).not.toHaveBeenCalled();
   });
 
   it('ofrece el link para cargar la dirección que falta', () => {
     montar({
-      onEnviar: vi.fn(),
+      enviable: true,
       bloqueo: { motivo: 'direccion', texto: 'Falta tu dirección.', accion: 'Cargar dirección' }
     });
 
     expect(screen.getByRole('link', { name: /cargar dirección/i })).toHaveAttribute('href', '/direcciones/nuevo');
   });
 
-  it('sin bloqueo el botón funciona como siempre', () => {
-    const onEnviar = vi.fn();
-    montar({ onEnviar, bloqueo: null });
+  it('sin bloqueo el botón abre el selector de proveedores', async () => {
+    montar({ enviable: true, bloqueo: null });
 
     fireEvent.click(screen.getByRole('button', { name: 'Cotizar por WhatsApp' }));
 
-    expect(onEnviar).toHaveBeenCalled();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(proveedores.delQuodom).toHaveBeenCalledWith('q-7');
   });
 });
