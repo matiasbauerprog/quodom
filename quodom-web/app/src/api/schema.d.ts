@@ -2713,6 +2713,7 @@ export interface components {
             lng?: number | null;
             /** Format: date-time */
             coords_actualizado?: string | null;
+            punto_manual?: boolean | null;
         };
         DireccionInput: {
             alias?: string;
@@ -2728,6 +2729,7 @@ export interface components {
             placeid?: string | null;
             lat?: number | null;
             lng?: number | null;
+            punto_manual?: boolean | null;
         };
         SugerenciaLugar: {
             placeid: string;

@@ -1,0 +1,54 @@
+.dmapa-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 70;
+}
+
+.dmapa {
+  width: 100%;
+  max-width: 560px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.dmapa-titulo { margin: 0; font-family: var(--font-prompt); font-size: var(--fs-h2); }
+
+.dmapa-ayuda { margin: 0; font-size: var(--fs-small); color: var(--color-texto-suave, #6B6B6B); }
+
+/* El mapa necesita alto explícito: con alto automático Google lo dibuja de 0px
+   y la ventana queda con un hueco y sin error. En celular ocupa lo que puede
+   sin tapar el botón de confirmar, que es el que cierra el gesto. */
+.dmapa-lienzo {
+  width: 100%;
+  height: clamp(240px, 42dvh, 420px);
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  overflow: hidden;
+  background: #E4E4E4;
+}
+
+/* Reserva el alto de la lectura para que confirmar no se mueva cuando llega la
+   dirección: un botón que se corre bajo el dedo se toca por error. */
+.dmapa-lectura { min-height: 2.6em; display: flex; align-items: center; }
+
+.dmapa-direccion { margin: 0; font-size: var(--fs-body); }
+
+.dmapa-nada { margin: 0; font-size: var(--fs-small); color: var(--color-texto-suave, #6B6B6B); }
+
+.dmapa-err { margin: 0; font-size: var(--fs-small); color: var(--color-error, var(--color-acento)); }
+
+.dmapa-pie { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+@media (min-width: 601px) {
+  .dmapa-backdrop { align-items: center; padding: var(--sp-4); }
+  .dmapa-pie { flex-direction: row; }
+  .dmapa-pie > .btn { flex: 1 1 auto; }
+}

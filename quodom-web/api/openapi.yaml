@@ -232,6 +232,7 @@ components:
         lat: { type: number, nullable: true }
         lng: { type: number, nullable: true }
         coords_actualizado: { type: string, format: date-time, nullable: true }
+        punto_manual: { type: boolean, nullable: true }
     DireccionInput:
       type: object
       properties:
@@ -256,6 +257,10 @@ components:
         placeid: { type: string, nullable: true }
         lat: { type: number, nullable: true }
         lng: { type: number, nullable: true }
+        # El usuario puso el pin en el mapa con la mano: el tercer caso de
+        # precision. Se borra junto con las coordenadas y por lo mismo, si
+        # despues edita la calle el pin ya no describe esa direccion.
+        punto_manual: { type: boolean, nullable: true }
 
     SugerenciaLugar:
       type: object

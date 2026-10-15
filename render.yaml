@@ -54,6 +54,21 @@ services:
     envVars:
       - key: VITE_API_URL
         value: /api
+      # La clave del mapa arrastrable, con la que se ajusta el punto de una
+      # direccion. Es la UNICA clave de Google que vive en el navegador, y por
+      # eso es DISTINTA de GOOGLE_MAPS_API_KEY: una variable VITE_ se hornea en
+      # el bundle y ahi se lee, asi que esta tiene que estar restringida por
+      # HTTP referrer al dominio de la app en la consola de Google. Reusar la
+      # del servidor seria publicar una clave sin restriccion de dominio.
+      #
+      # Necesita habilitadas "Maps JavaScript API" y "Geocoding API" (la que
+      # convierte el punto del pin en una direccion legible).
+      #
+      # Sin ella la ventana del mapa avisa que no esta configurada y la carga a
+      # mano sigue andando: no bloquea cargar una direccion. Va a mano en el
+      # dashboard y nunca aca: este archivo se commitea.
+      - key: VITE_GOOGLE_MAPS_BROWSER_KEY
+        sync: false
     routes:
       # La sesión viaja en una cookie httpOnly. Si la app le hablara al API en
       # otro dominio (quodom-api.onrender.com), Safari descartaría la cookie y

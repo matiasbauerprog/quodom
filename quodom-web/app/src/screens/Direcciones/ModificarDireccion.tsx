@@ -9,6 +9,7 @@ import { AppBarBack } from '../../components/layout/AppBarBack';
 import { Loader } from '../../components/Loader';
 import { CampoDireccionMapa } from '../../components/CampoDireccionMapa';
 import { LinkMapa } from '../../components/LinkMapa';
+import { DialogoMapa } from '../../components/DialogoMapa';
 import type { DireccionDeLugar } from '../../api/types';
 import './AgregarDireccion.css';
 
@@ -21,6 +22,7 @@ export function ModificarDireccion() {
   const [f, setF] = useState<DireccionInput | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [mapaAbierto, setMapaAbierto] = useState(false);
 
   useEffect(() => {
     Promise.all([provincias.list(), userDirecciones.porId(idNum)])
@@ -63,7 +65,7 @@ export function ModificarDireccion() {
     setF(prev => prev ? ({
       ...prev,
       [k]: v,
-      ...(borraElMapa ? { placeid: null, lat: null, lng: null } : {})
+      ...(borraElMapa ? { placeid: null, lat: null, lng: null, punto_manual: null } : {})
     }) : prev);
   };
 
@@ -101,6 +103,36 @@ export function ModificarDireccion() {
     }) : prev);
   }
 
+  // Lo que vuelve del pin arrastrable. Dos diferencias con el autocompletado,
+  // y las dos importan:
+  //
+  // - `punto_manual: true`. Sin esa marca, `puntoDelQuodom` deduce la precisión
+  //   del `placeid` y una dirección sin él queda como imprecisa: el usuario
+  //   pondría el pin en su casa y la pantalla le seguiría diciendo "tu
+  //   dirección no está ubicada con precisión".
+  // - **No se toca el `placeid`.** El que devuelve la inversa es el de la
+  //   dirección más cercana que Google conoce, no el del punto elegido, y
+  //   guardarlo le daría dos fuentes al mismo punto.
+  //
+  // Los campos de texto se rellenan sólo si vienen con algo: quien movió el pin
+  // para corregir un punto ya tiene la calle escrita, y pisársela con '' sería
+  // borrarle lo que estaba bien.
+  function aplicarDelPin(d: DireccionDeLugar) {
+    setMapaAbierto(false);
+    setF(prev => prev ? ({
+      ...prev,
+      calle: d.calle || prev.calle,
+      numero: d.numero || prev.numero,
+      localidad: d.localidad || prev.localidad,
+      cp: d.cp || prev.cp,
+      direccion: d.direccion || prev.direccion,
+      idprovincia: d.idprovincia ?? prev.idprovincia,
+      lat: d.lat,
+      lng: d.lng,
+      punto_manual: true
+    }) : prev);
+  }
+
   return (
     <>
       <AppBarBack title="Editar dirección" />
@@ -110,7 +142,23 @@ export function ModificarDireccion() {
         {f && (
           <form onSubmit={onSubmit}>
             <CampoDireccionMapa onElegir={aplicarDelMapa} />
+            <div className="dir-mapa-acciones">
             <LinkMapa lat={f.lat} lng={f.lng} />
+            {/* Mirar el punto no alcanza: la geocodificación equivocada no da
+                error, da una dirección que se ve perfecta y un punto en otro
+                lado. Acá se arregla donde se ve. */}
+            <button type="button" className="btn btn-ghost dir-mapa-ajustar" onClick={() => setMapaAbierto(true)}>
+              {f.lat != null && f.lng != null ? 'Ajustar en el mapa' : 'Marcar en el mapa'}
+            </button>
+          </div>
+          {mapaAbierto && (
+            <DialogoMapa
+              lat={f.lat}
+              lng={f.lng}
+              onElegir={aplicarDelPin}
+              onCerrar={() => setMapaAbierto(false)}
+            />
+          )}
             <label className="field"><span>Alias</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
             <div className="grid-2">
               <label className="field"><span>Calle</span><input className="input" value={f.calle ?? ''} onChange={set('calle')} required /></label>
