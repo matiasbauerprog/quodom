@@ -21,3 +21,13 @@
 .drawer-nav a { padding: var(--sp-3) var(--sp-4); color: var(--color-texto); }
 .drawer-nav a.active { background: rgba(230,57,70,.1); color: var(--color-acento); font-weight: 500; }
 .drawer-footer { padding: var(--sp-4); border-top: 1px solid rgba(0,0,0,.06); }
+
+/* La cuenta de enviados, al lado de "Historial de pedidos". Gris y discreta:
+   en este panel un circulo rojo ya se leyo una vez como alerta, y aca no hay
+   nada que atender — es una referencia de donde quedo el pedido. */
+.drawer-cuenta {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-tiny);
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, .55);
+}

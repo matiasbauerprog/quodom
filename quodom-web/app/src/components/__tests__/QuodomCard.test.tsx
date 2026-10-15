@@ -124,3 +124,32 @@ describe('QuodomCard', () => {
     expect(update).not.toHaveBeenCalled();
   });
 });
+
+// Un pedido enviado dice ENVIADO para siempre.
+//
+// La tarjeta tenia un tercer estado, VENCIDO, que aparecia a las 72hs de
+// enviado: "Pasaron las 72hs y se vencio tu pedido". Es herencia de Quodom
+// 1.0, donde los vendedores tenian ese plazo para cotizar. En este producto no
+// hay vendedores ni cotizaciones y **nada vence**: el pedido sale por WhatsApp
+// y el proveedor contesta cuando puede. VENCIDO no existia en el backend ni en
+// el contrato, solo en este archivo, asi que a los tres dias el pedido se leia
+// como fracasado sin que nada hubiera fracasado.
+describe('QuodomCard: un enviado no vence', () => {
+  const haceDias = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
+
+  const enviadoHace = (dias: number) => ({
+    ...BEBIDAS, estado: 'ENVIADO', fechaenvio: haceDias(dias)
+  }) as unknown as Quodom;
+
+  it('dice ENVIADO recien salido', () => {
+    montar({ quodom: enviadoHace(0) });
+    expect(screen.getByText('ENVIADO')).toBeInTheDocument();
+  });
+
+  it('sigue diciendo ENVIADO una semana despues, y nunca VENCIDO', () => {
+    montar({ quodom: enviadoHace(7) });
+    expect(screen.getByText('ENVIADO')).toBeInTheDocument();
+    expect(screen.queryByText(/vencido/i)).toBeNull();
+    expect(screen.queryByText(/72hs/i)).toBeNull();
+  });
+});

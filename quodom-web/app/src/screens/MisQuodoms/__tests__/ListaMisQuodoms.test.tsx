@@ -4,7 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { ListaMisQuodoms } from '../ListaMisQuodoms';
 import { quodom as quodomApi } from '../../../api/quodom';
 
-vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(), create: vi.fn(), repetir: vi.fn() } }));
+vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(), create: vi.fn(), repetir: vi.fn(), porId: vi.fn() } }));
+vi.mock('../../../api/quodom_lines', () => ({ quodomLines: { porQuodom: vi.fn().mockResolvedValue([]) } }));
+vi.mock('../../../quodom/quodomAbierto', () => ({ abrirQuodom: vi.fn() }));
+// El selector pega a Google y tiene su propia suite.
+vi.mock('../../../quodom/DialogoProveedores', () => ({
+  DialogoProveedores: ({ idquodom }: { idquodom: string }) => <div data-testid="selector">selector de {idquodom}</div>
+}));
 
 const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const create = quodomApi.create as unknown as ReturnType<typeof vi.fn>;
@@ -136,5 +142,31 @@ describe('ListaMisQuodoms: Repetí un pedido', () => {
     await act(async () => { within(bloque).getByRole('button', { name: /^repetir$/i }).click(); });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo repetir/i);
+  });
+});
+
+// El historial es para mirar lo que ya paso: tocar un pedido abre una ventana y
+// no navega. Irse de la pantalla y volver pierde el lugar en la lista, y la
+// pantalla de detalle es la de editar, que sobre un pedido enviado no va.
+describe('ListaMisQuodoms: la tarjeta abre una ventana', () => {
+  const repetir = quodomApi.repetir as unknown as ReturnType<typeof vi.fn>;
+  beforeEach(() => { misQuodom.mockReset(); repetir.mockReset(); });
+
+  const ENVIADO = {
+    id: 'q-9', descripcion: 'Frente', estado: 'ENVIADO', nro: 'QD-9', idrubro: 5,
+    nombrerubro: 'Pintura', cantproductos: 2, createdBy: 'u-1', iddireccion: 1,
+    fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  };
+
+  it('abre la ventana del pedido al tocar la tarjeta, sin navegar', async () => {
+    misQuodom.mockResolvedValue([ENVIADO]);
+    render(<MemoryRouter><ListaMisQuodoms /></MemoryRouter>);
+
+    const tarjeta = await screen.findByRole('button', { name: /QD-9/ });
+    fireEvent.click(tarjeta);
+
+    const ventana = await screen.findByRole('dialog');
+    expect(within(ventana).getByText('Frente')).toBeInTheDocument();
+    expect(within(ventana).getByRole('button', { name: /otro proveedor/i })).toBeEnabled();
   });
 });

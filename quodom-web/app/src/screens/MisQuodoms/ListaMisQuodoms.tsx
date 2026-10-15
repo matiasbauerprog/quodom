@@ -6,6 +6,8 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
+import { abrirQuodom } from '../../quodom/quodomAbierto';
+import { DialogoPedido } from './DialogoPedido';
 import { QuodomCard } from '../../components/QuodomCard';
 import { RUBROS, nombreRubro } from '../../quodom/rubros';
 import './ListaMisQuodoms.css';
@@ -48,6 +50,13 @@ export function ListaMisQuodoms() {
     return () => clearTimeout(t);
   }, [agregado]);
 
+  // Qué pedido está abierto en la ventana. Se guarda el objeto y no el id, y la
+  // ventana se monta **al nivel de la sección** y no dentro del <li>: montada
+  // adentro, el refresco de la lista desmonta la tarjeta y se la lleva puesta a
+  // mitad de un envío, que es lo mismo que `MisQuodomsSidebar` se reestructuró
+  // para evitar.
+  const [pedido, setPedido] = useState<Quodom | null>(null);
+
   const terminados = (list ?? []).filter(q => q.estado === 'ENVIADO').slice(0, 5);
 
   async function repetirQuodom(q: Quodom) {
@@ -55,6 +64,10 @@ export function ListaMisQuodoms() {
     setRepitiendo(q.id); setErrRepetir(null);
     try {
       const creado = await quodomApi.repetir(q.id);
+      // Igual que "Volver a armado" de la ventana: el nuevo queda abierto en el
+      // árbol de su rubro. Los dos caminos tienen que dejar lo mismo, o repetir
+      // desde acá y desde la ventana darían resultados distintos.
+      abrirQuodom(q.idrubro, creado.idquodom);
       window.dispatchEvent(new Event('quodom:changed'));
       refresh();
       setAgregado(creado.idquodom);
@@ -178,6 +191,7 @@ export function ListaMisQuodoms() {
                   variant="page"
                   rubroLabel={q.nombrerubro || nombreRubro(q.idrubro)}
                   onChange={refresh}
+                  onAbrir={() => setPedido(q)}
                 />
               </li>
             ))}
@@ -185,6 +199,13 @@ export function ListaMisQuodoms() {
         )}
       </div>
       </div>
+      {pedido && (
+        <DialogoPedido
+          quodom={pedido}
+          onCerrar={() => setPedido(null)}
+          onRepetido={id => { refresh(); setAgregado(id); }}
+        />
+      )}
     </section>
   );
 }
