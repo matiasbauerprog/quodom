@@ -19,8 +19,13 @@ function direccionDeGoogle(lugar) {
   const comps = (lugar && lugar.addressComponents) || [];
   const loc = (lugar && lugar.location) || null;
 
-  // En CABA `locality` es "Buenos Aires" para toda la ciudad y el barrio vive
-  // en `sublocality`. El barrio es lo que le sirve al proveedor.
+  // En CABA `locality` es "Buenos Aires" para los 200 km2 de la ciudad entera y
+  // el barrio vive en `sublocality`. El barrio es lo que le sirve al proveedor.
+  //
+  // Medido el 2026-10-14 con scripts/verificar-direcciones.js: fuera de CABA
+  // Google no manda `sublocality` (Rosario trae `neighborhood`, que no miramos),
+  // asi que esta preferencia no pisa nada afuera. Si algun dia aparece una
+  // ciudad con sublocality, revisar si conviene acotarla a CABA.
   const barrio = porTipo(comps, 'sublocality') || porTipo(comps, 'sublocality_level_1');
 
   return {

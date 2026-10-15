@@ -24,6 +24,17 @@ describe('idProvinciaDesdeGoogle', () => {
     expect(idProvinciaDesdeGoogle('Tierra del Fuego')).toBe(23);
   });
 
+  // MEDIDO contra Google el 2026-10-14 con scripts/verificar-direcciones.js:
+  // devuelve "Provincia de Buenos Aires", no "Buenos Aires". Sin esto, las
+  // direcciones del Gran Buenos Aires y del interior bonaerense se guardaban
+  // sin provincia — en silencio, porque la columna es nullable.
+  it('saca el prefijo "Provincia de", que es como las nombra Google', () => {
+    expect(idProvinciaDesdeGoogle('Provincia de Buenos Aires')).toBe(1);
+    expect(idProvinciaDesdeGoogle('Provincia de Córdoba')).toBe(6);
+    expect(idProvinciaDesdeGoogle('Provincia de Tucumán')).toBe(24);
+    expect(idProvinciaDesdeGoogle('provincia de entre rios')).toBe(8);
+  });
+
   it('devuelve null para lo que no es una provincia argentina', () => {
     expect(idProvinciaDesdeGoogle('São Paulo')).toBeNull();
     expect(idProvinciaDesdeGoogle('')).toBeNull();

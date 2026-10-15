@@ -17,10 +17,18 @@ function normalizar(s) {
   if (typeof s !== 'string') return '';
   return s
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    // Marcas de acento combinadas (U+0300–U+036F), que NFD dejó sueltas.
+    .replace(/\p{Diacritic}/gu, '')
     .trim()
     .replace(/\s+/g, ' ')
-    .toLowerCase();
+    .toLowerCase()
+    // Google antepone "Provincia de" a casi todas: medido el 2026-10-14 con
+    // scripts/verificar-direcciones.js, devuelve "Provincia de Buenos Aires"
+    // y no "Buenos Aires". Sin sacarlo, el Gran Buenos Aires entero y el
+    // interior bonaerense se guardaban SIN provincia, y en silencio, porque
+    // la columna es nullable y nada falla. CABA y Tierra del Fuego no llevan
+    // el prefijo, y por eso ésas sí matcheaban.
+    .replace(/^provincia de /, '');
 }
 
 const POR_NOMBRE = new Map(Object.entries({
