@@ -285,12 +285,23 @@ Queda anotado acá para que "anda en las tres" sea un dato y no una afirmación:
 tabla de arriba es sólo Villa Ballester, y una zona no alcanza para elegir un término
 que corre para todo el país.
 
+> **De dónde salen estos números, y por qué nadie los puede confirmar leyendo el repo.**
+> Están **transcriptos a mano** de la salida de una corrida del 2026-10-15; esa salida
+> **no está guardada en ningún archivo del repositorio**, así que la única forma de
+> confirmarlos es volver a correr el script —
+> `node scripts/verificar-proveedores.js "Palermo, Ciudad Autónoma de Buenos Aires"` — y
+> los números van a diferir, porque las reseñas se mueven. La aclaración no es
+> burocracia: una transcripción mezcló resultados de Villa Ballester en la fila de
+> Librería de Palermo y así llegó a un commit, y lo único que lo delató fue un nombre
+> fuera de lugar ("Las Palabras **Ballester**" en una lista de Palermo). Si vas a tocar
+> un término apoyándote en estas listas, corré el script primero.
+
 **Palermo, CABA** (centro resuelto desde "Palermo, Ciudad Autónoma de Buenos Aires"):
 
 - Limpieza: Tienda Artículos de Limpieza (5★, 147), El Cacique Limpieza (5★, 81),
   El Cacique (4,5★, 36), ARTÍCULOS DE LIMPIEZA FÉNIX (5★, 27)
-- Librería: SANTA INÉS (4,4★, 946), El Chalet (4,4★, 732), Librería Catriel (4,5★, 145),
-  Las Palabras Ballester (4,2★, 57), y **Librería Teorema (4,4★, 3.794 reseñas y sin teléfono)**
+- Librería: Gráfica & Librería Copier (4,4★, 110), Librería Catriel (4,5★, 145),
+  Compañía de Libros (4,5★, 8), y **Librería Teorema (4,4★, 3.794 reseñas y sin teléfono)**
 - Papelera: Papelera Chacarita (3,2★, 231), PAPELERA MAGIC (4,8★, 155),
   Librería y Papelera Aries (3,2★, 44), PAPELERA Y DESCARTABLES ORO (5★, 18)
 - Pintura: Prestigio (4★, 351), Rex (4,9★, 223), TABARES pinturería (4,5★, 108),
@@ -314,16 +325,17 @@ que corre para todo el país.
 Dos cosas que muestran estos datos y que no se ven en la tabla de Villa Ballester:
 
 - **`book_store` es malo en CABA y aceptable en Córdoba.** En Palermo devuelve
-  Cristoneitor (5★ con **una** reseña), Lirbano (sin reseñas), Almacén Astral y
-  "365 Kioscos Argentinos" (2,2★); en Nueva Córdoba devuelve Librería del Palacio
-  (4,7★, 592) y OVNI Librerías (4,2★, 113), que son las correctas. **Eso mismo es el
-  argumento del texto**, y pesa más que cualquier promedio: un tipo cuya calidad
-  depende de la ciudad no es una regla en la que se pueda confiar. El texto devolvió lo
-  correcto en las dos, y en Córdoba sumó además Librería Mil Trazos (655 reseñas).
+  Cristoneitor (5★ con **una** reseña), Lirbano (sin reseñas), Almacén Astral (4,7★, 14)
+  y "365 Kioscos Argentinos" (2,2★, 10); por texto, la misma zona devuelve Copier (110
+  reseñas), Teorema (3.794) y Catriel (145). En Nueva Córdoba el tipo se porta bien
+  —Librería del Palacio (4,7★, 592) y OVNI Librerías (4,2★, 113), que son las
+  correctas— y el texto suma además Librería Mil Trazos (655). **Ese contraste es el
+  argumento del texto**, y pesa más que cualquier promedio: un tipo cuya calidad depende
+  de la ciudad no es una regla en la que se pueda confiar.
 - **El comercio sin teléfono no es el caso raro.** Librería Teorema tiene **3.794
   reseñas** y Google no tiene su número. Filtrar a los que no tienen teléfono habría
-  borrado del selector al mejor puntuado del rubro en CABA — por eso se muestran, con
-  "ver en Maps".
+  borrado del selector al comercio **más reseñado** del rubro en CABA — por eso se
+  muestran, con "ver en Maps".
 
 > **Lo que todavía NO está calibrado: ninguna ciudad chica del interior.** Las tres
 > zonas medidas son un partido del conurbano, CABA y una capital de provincia; o sea

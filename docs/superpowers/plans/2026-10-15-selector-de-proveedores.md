@@ -2124,6 +2124,6 @@ git commit -m "docs: document the provider search and add the calibration script
 
 Con la clave cargada, una persona:
 
-1. Corre el script sobre **tres zonas distintas** — una de CABA, una del Gran Buenos Aires, y una ciudad chica del interior. Lo medido hasta ahora es **una sola zona**, y un término que anda en el conurbano puede no andar en un pueblo.
+1. Corre el script sobre **una ciudad chica del interior**, que es la zona que falta: el conurbano (Villa Ballester), CABA (Palermo) y una capital de provincia (Nueva Córdoba) ya se midieron el 2026-10-15 y están anotadas comercio por comercio en la spec. Un término que anda en esas tres puede no andar en un pueblo —"papelera" también significa cesto de basura—, y eso es justamente lo que el producto declara fuera de alcance mientras nadie lo mida.
 2. Manda un Quodom de verdad a un proveedor real y confirma que el chat abre con el número correcto.
 3. Prueba con una dirección **sin coordenadas** y confirma que el popup dice que mide desde el centro de la localidad.
