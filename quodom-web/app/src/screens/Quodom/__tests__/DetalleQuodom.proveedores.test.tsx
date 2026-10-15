@@ -116,13 +116,12 @@ describe('DetalleQuodom: los proveedores de un Quodom enviado', () => {
     expect(screen.getByRole('button', { name: /enviar por whatsapp/i })).toBeInTheDocument();
   });
 
-  // Cada apertura y cada recarga es una búsqueda **paga** a Google, con tope de
-  // 10/min por usuario. El envío pasa el Quodom a ENVIADO y el nonce lo
-  // recarga, así que montar la sección ahí la montaba **detrás del selector
-  // abierto**: una tercera búsqueda por cada envío, para una lista que el
-  // comprador no está viendo, y dos copias del mismo estado donde deshacer en
-  // una dejaba a la otra mostrando el proveedor como contactado.
-  it('no gasta una búsqueda extra montando la sección detrás del selector', async () => {
+  // Cada apertura es una búsqueda **paga** a Google, con tope de 10/min por
+  // usuario. Enviar desde el detalle costaba TRES: la que abre el selector, la
+  // recarga que ya no existe (el valor nuevo se conoce) y la de la sección,
+  // montada detrás del selector abierto o al cerrarlo, para una lista que el
+  // comprador acababa de ver en el diálogo. Medido: 3 por envío, 1 necesaria.
+  it('enviar desde el detalle gasta una sola búsqueda', async () => {
     vi.mocked(quodom.porId).mockResolvedValueOnce({
       id: 'q-7', nro: 'QD-7', descripcion: 'Pintura del frente', estado: 'CREADO', idrubro: 1
     } as never);
@@ -138,15 +137,17 @@ describe('DetalleQuodom: los proveedores de un Quodom enviado', () => {
     fireEvent.click(await screen.findByRole('button', { name: /enviar por whatsapp/i }));
     await waitFor(() => expect(quodom.whatsapp).toHaveBeenCalled());
 
-    // 2: la recarga que deja el renglón marcado. Y ninguna más.
-    await waitFor(() => expect(proveedores.delQuodom).toHaveBeenCalledTimes(2));
-    expect(screen.queryByText(/proveedores contactados/i)).toBeNull();
+    // El renglón queda marcado sin preguntarle de nuevo a Google: los dos
+    // proveedores de la lista quedan con su marca (uno venía de antes).
+    expect(await screen.findAllByText(/ya le mandaste/i)).toHaveLength(2);
+    expect(proveedores.delQuodom).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/cerca de/i)).not.toBeNull();
 
-    // Al cerrar el selector la sección sí aparece, y recién ahí gasta la suya:
-    // esa búsqueda el comprador la ve.
+    // Y cerrar el selector tampoco gasta otra: el comprador acaba de ver esa
+    // misma lista en el diálogo. La sección aparece la próxima vez que entra.
     fireEvent.click(screen.getByRole('button', { name: /cerrar/i }));
-    expect(await screen.findByText(/proveedores contactados/i)).toBeInTheDocument();
-    expect(proveedores.delQuodom).toHaveBeenCalledTimes(3);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(proveedores.delQuodom).toHaveBeenCalledTimes(1);
   });
 
   it('un Quodom en armado no muestra la sección', async () => {

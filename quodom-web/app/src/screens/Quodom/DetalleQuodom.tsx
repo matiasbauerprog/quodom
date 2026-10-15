@@ -55,6 +55,12 @@ export function DetalleQuodom() {
   // pantalla: el envío de un carrito de invitado lo migra primero, así que el
   // carrito ya no existe y quedarse acá deja al comprador mirando un vacío.
   const [selector, setSelector] = useState<{ idquodom: string; migrado: boolean } | null>(null);
+  // El selector ya se usó en esta visita. La sección de contactados no se monta
+  // después: el comprador acaba de ver esa misma lista en el diálogo, y montarla
+  // al cerrarlo gastaba una búsqueda **paga** más por envío (tres en total, una
+  // necesaria) para repetirle lo que tenía delante. En la próxima entrada a la
+  // pantalla aparece como siempre.
+  const [selectorUsado, setSelectorUsado] = useState(false);
   // A cart can outlive its rubro: guest carts live in the user's own
   // localStorage and survive a deploy that retires one. Sending such a cart
   // always fails (POST /quodom/create -> 400 idrubro_invalido), so the send
@@ -173,6 +179,7 @@ export function DetalleQuodom() {
         if (!idquodom) { setErr('No hay productos en el Quodom.'); return; }
         // Migrado y recién ahora se elige a quién: el selector es el que envía.
         setSelector({ idquodom, migrado: true });
+        setSelectorUsado(true);
       } catch (e) {
         setErr(e instanceof ApiError ? e.message : 'No se pudo enviar.');
       } finally {
@@ -182,6 +189,7 @@ export function DetalleQuodom() {
     }
     if (!server) return;
     setSelector({ idquodom: server.quodom.id, migrado: false });
+    setSelectorUsado(true);
   }
 
   function cerrarSelector() {
@@ -321,13 +329,17 @@ export function DetalleQuodom() {
 
         {/* Enviado no es el final: el comprador le manda a uno, no le contestan
             y le manda a otro, y a quién ya le mandó sólo lo sabe el servidor.
-            No se monta con el selector abierto, y eso no es cosmética: el envío
-            pasa el Quodom a ENVIADO y el nonce lo recarga, así que la sección
-            aparecía **detrás** del diálogo y gastaba una búsqueda paga más por
-            cada envío (tres por el primero) para una lista que el comprador no
-            ve. Y eran dos `useProveedores` del mismo Quodom con estados
-            separados: deshacer en uno dejaba al otro mostrándolo contactado. */}
-        {yaEnviado && server && !selector && <ProveedoresContactados idquodom={server.quodom.id} />}
+            No se monta mientras el selector está abierto NI después de haberlo
+            usado en esta visita, y eso no es cosmética: el envío pasa el Quodom
+            a ENVIADO y el nonce lo recarga, así que la sección aparecía
+            **detrás** del diálogo y gastaba una búsqueda paga más por cada
+            envío (tres por el primero, una necesaria) para repetir la lista que
+            el comprador tenía delante. Y eran dos `useProveedores` del mismo
+            Quodom con estados separados: deshacer en uno dejaba al otro
+            mostrándolo contactado. */}
+        {yaEnviado && server && !selector && !selectorUsado && (
+          <ProveedoresContactados idquodom={server.quodom.id} />
+        )}
 
         {selector && (
           <DialogoProveedores

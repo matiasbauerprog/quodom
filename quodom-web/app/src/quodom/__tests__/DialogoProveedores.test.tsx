@@ -256,19 +256,23 @@ describe('DialogoProveedores', () => {
     await waitFor(() => expect(proveedores.noEnviado).toHaveBeenCalledWith('q1', 'p1', 'otro'));
   });
 
-  // La recarga de después de enviar es otra búsqueda paga, con tope de 10/min:
-  // si falla, la lista que el comprador ya tiene en pantalla se queda donde está.
-  it('una recarga que falla no borra la lista', async () => {
-    vi.mocked(proveedores.delQuodom)
-      .mockResolvedValueOnce(respuesta({ proveedores: [LE_BLEU, SIN_TEL] }))
-      .mockRejectedValueOnce(new Error('Estás buscando proveedores muy seguido.'));
+  // Enviar NO vuelve a buscar. La marca del renglón es un valor que ya se
+  // conoce —acabamos de mandarle—, y preguntárselo de nuevo a Google es una
+  // búsqueda **paga** con tope de 10/min: duplicaba el costo de cada envío y,
+  // cuando esa recarga fallaba por el tope, el renglón al que se le acababa de
+  // mandar aparecía como no contactado y el comprador le mandaba otra vez. Es
+  // el mismo razonamiento que `deshacer` ya aplicaba en el caso espejo.
+  it('enviarle a un proveedor no gasta una segunda búsqueda', async () => {
+    vi.mocked(proveedores.delQuodom).mockResolvedValue(respuesta({ proveedores: [LE_BLEU, SIN_TEL] }));
     vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/541166687854?text=hola' });
 
     montar();
     fireEvent.click(await screen.findByRole('button', { name: /whatsapp/i }));
 
-    expect(await screen.findByText(/no pudimos actualizar/i)).toBeInTheDocument();
-    expect(screen.getByText('Pinturerías Le Bleu')).toBeInTheDocument();
+    // El renglón queda marcado igual, con el valor que ya se sabía.
+    expect(await screen.findByText(/ya le mandaste/i)).toBeInTheDocument();
+    expect(proveedores.delQuodom).toHaveBeenCalledTimes(1);
+    // Y los que faltan siguen en pantalla, con la atribución.
     expect(screen.getByText('JB Artículos de Limpieza')).toBeInTheDocument();
     expect(screen.getByText('Resultados de Google')).toBeInTheDocument();
   });

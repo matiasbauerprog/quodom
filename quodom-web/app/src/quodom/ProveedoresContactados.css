@@ -22,14 +22,6 @@
   color: var(--color-acento);
   font-weight: 600;
 }
-/* El aviso de una recarga que falló: no es un error del envío y no se lleva la
-   lista, así que no va en rojo. */
-.pc-aviso {
-  margin: var(--sp-2) 0;
-  font-size: var(--fs-tiny);
-  line-height: 1.35;
-  color: #5C5C5C;
-}
 .pc-atribucion {
   margin: var(--sp-2) 0 0 0;
   font-size: var(--fs-tiny);

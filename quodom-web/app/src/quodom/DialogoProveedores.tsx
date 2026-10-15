@@ -32,7 +32,7 @@ type Props = {
  */
 export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSinProveedor }: Props) {
   const {
-    datos, cargando, error, avisoRecarga, errorEnvio, ocupado,
+    datos, cargando, error, errorEnvio, ocupado,
     preguntandoMotivo, setPreguntandoMotivo, enviarA, enviarSinProveedor, deshacer
   } = useProveedores(idquodom, { onEnviado, onEnviadoSinProveedor });
 
@@ -66,14 +66,6 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSin
             {/* Un Link y no un href: un ancla recarga el documento entero en
                 medio de un envío y se lleva el Quodom a medio mandar. */}
             <Link to="/direcciones">Revisá tu dirección</Link>
-          </p>
-        )}
-
-        {avisoRecarga && (
-          // No destructivo a propósito: la lista sigue en pantalla y esto sólo
-          // avisa que no se pudo refrescar.
-          <p className="dp-aviso" role="status">
-            No pudimos actualizar la lista, así que seguís viendo la de hace un momento. {avisoRecarga}
           </p>
         )}
 

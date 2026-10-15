@@ -16,7 +16,7 @@ import './ProveedoresContactados.css';
  */
 export function ProveedoresContactados({ idquodom }: { idquodom: string }) {
   const {
-    datos, cargando, error, avisoRecarga, errorEnvio, ocupado,
+    datos, cargando, error, errorEnvio, ocupado,
     preguntandoMotivo, setPreguntandoMotivo, enviarA, deshacer
   } = useProveedores(idquodom);
 
@@ -31,12 +31,6 @@ export function ProveedoresContactados({ idquodom }: { idquodom: string }) {
 
       {error && (
         <p className="pc-error" role="alert">No pudimos buscar proveedores cerca. {error}</p>
-      )}
-
-      {avisoRecarga && (
-        <p className="pc-aviso" role="status">
-          No pudimos actualizar la lista, así que seguís viendo la de hace un momento. {avisoRecarga}
-        </p>
       )}
 
       {!cargando && !error && lista.length === 0 && (

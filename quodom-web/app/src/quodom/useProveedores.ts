@@ -23,7 +23,6 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
   const [datos, setDatos] = useState<RespuestaProveedores | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [avisoRecarga, setAvisoRecarga] = useState<string | null>(null);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   // Qué renglón está trabajando: un placeid, o 'sin-proveedor' para el pie.
   const [ocupado, setOcupado] = useState<string | null>(null);
@@ -31,34 +30,26 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
   const [preguntandoMotivo, setPreguntandoMotivo] = useState<string | null>(null);
 
   /**
-   * `primera` separa la carga inicial de las recargas, y la diferencia no es
-   * cosmética: cada llamada es una búsqueda **paga** a Google con tope de
-   * 10/min. Si una recarga falla —el tope, un 503—, la lista que el comprador
-   * ya tiene en pantalla se queda donde está y el fallo se cuenta como aviso.
-   * Borrarla le saca los proveedores que todavía no contactó, y la atribución,
-   * un segundo después de haberlos tenido delante.
+   * La búsqueda, **una sola vez por apertura**. Cada llamada se le paga a
+   * Google y tiene tope de 10/min por usuario, así que acá no hay recargas: lo
+   * que cambia después de enviar o de deshacer es un valor que ya se conoce, y
+   * se parchea sobre la lista que está en pantalla (ver `enviarA` y `deshacer`).
    */
-  const cargar = useCallback(async (primera = false) => {
-    if (primera) setCargando(true);
+  const cargar = useCallback(async () => {
+    setCargando(true);
     try {
       const r = await proveedores.delQuodom(idquodom);
       setDatos(r);
       setError(null);
-      setAvisoRecarga(null);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Falló la búsqueda.';
-      if (primera) {
-        setDatos(null);
-        setError(msg);
-      } else {
-        setAvisoRecarga(msg);
-      }
+      setDatos(null);
+      setError(e instanceof Error ? e.message : 'Falló la búsqueda.');
     } finally {
-      if (primera) setCargando(false);
+      setCargando(false);
     }
   }, [idquodom]);
 
-  useEffect(() => { void cargar(true); }, [cargar]);
+  useEffect(() => { void cargar(); }, [cargar]);
 
   async function enviarA(p: Proveedor) {
     if (!p.telefono) return;
@@ -74,9 +65,18 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
       // que funcionó la contesta. Dejarla abierta pone "No tiene WhatsApp"
       // —global, permanente y sin forma de deshacerse— bajo el toque siguiente.
       setPreguntandoMotivo(null);
-      // Se recarga para que el renglón vuelva marcado: el contacto lo anota el
-      // servidor, así que la marca sale de él y no de un estado local.
-      await cargar();
+      // El renglón se marca acá y NO volviendo a preguntarle al servidor: el
+      // valor nuevo es "lo contacté ahora", que ya se sabe. La recarga costaba
+      // una segunda búsqueda **paga** por envío (2 por el primero, 3 desde el
+      // detalle del Quodom) y, cuando fallaba por el tope de 10/min, dejaba al
+      // proveedor que acababa de recibirlo mostrándose como no contactado, así
+      // que el comprador le mandaba otra vez. Es el mismo razonamiento que
+      // `deshacer` ya aplicaba en el caso espejo.
+      const ahora = new Date().toISOString();
+      setDatos(d => d && ({
+        ...d,
+        proveedores: d.proveedores.map(x => x.placeid === p.placeid ? { ...x, contactadoen: ahora } : x)
+      }));
     } catch (e) {
       setErrorEnvio(e instanceof Error ? e.message : 'No pudimos enviar el Quodom.');
     } finally {
@@ -128,7 +128,7 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
   }
 
   return {
-    datos, cargando, error, avisoRecarga, errorEnvio, ocupado,
+    datos, cargando, error, errorEnvio, ocupado,
     preguntandoMotivo, setPreguntandoMotivo,
     enviarA, enviarSinProveedor, deshacer
   };
