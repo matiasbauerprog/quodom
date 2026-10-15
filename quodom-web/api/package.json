@@ -12,6 +12,7 @@
     "dev": "nodemon src/server.js",
     "seed": "node src/seed/seed.js",
     "reset-quodoms": "node src/seed/reset-quodoms.js",
+    "migrar-proveedores": "node src/seed/migrar-proveedores.js",
     "migrar-empresa": "node src/seed/migrar-empresa.js",
     "migrar-multi-quodom": "node src/seed/migrar-multi-quodom.js",
     "migrar-direccion-mapa": "node src/seed/migrar-direccion-mapa.js",
