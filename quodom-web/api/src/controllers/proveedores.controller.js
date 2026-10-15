@@ -97,6 +97,22 @@ async function noEnviado(idquodom, userId, { placeid, motivo }) {
     }
 
     const fila = await db.quodom_proveedores.findOne({ where: { idquodom, placeid } });
+
+    // El estado se lee ANTES de limpiarlo: lo que habilita el reporte es que el
+    // lugar se le haya ofrecido al comprador (`orden`, que pone
+    // `anotarOfrecidos`) y que el comprador le haya mandado (`contactado_en`).
+    // Es la única situación que significa lo que dice la pantalla: "toqué el
+    // botón recién y WhatsApp no abrió".
+    //
+    // Sin esta guarda, `lugares_sinwhatsapp` —global, permanente, compartido
+    // por todos los compradores y sin forma de deshacerse— lo escribe cualquier
+    // sesión: se crea un Quodom y se manda este POST en bucle con placeids
+    // sacados de Maps. El endpoint no consulta a Google, así que a propósito no
+    // tiene cupo que lo frene. Y pasa también sin mala intención:
+    // `whatsappLink` crea la fila para cualquier `proveedor=` con un celular
+    // válido, y entonces `if (fila)` ya tenía algo que encontrar.
+    const eraContactado = !!(fila && fila.contactado_en && fila.orden != null);
+
     if (fila) {
         fila.contactado_en = null;
         await fila.save();
@@ -106,7 +122,7 @@ async function noEnviado(idquodom, userId, { placeid, motivo }) {
     // indexada por place_id, así que se puede guardar sin límite de tiempo. El
     // segundo reporte del mismo lugar tiene que sumar y no fallar: es
     // exactamente el caso que hace que la lista de una zona mejore con el uso.
-    if (motivo === 'sin_whatsapp') {
+    if (motivo === 'sin_whatsapp' && eraContactado) {
         const [lugar, creado] = await db.lugares_sinwhatsapp.findOrCreate({
             where: { placeid }, defaults: { placeid, reportes: 1 }
         });

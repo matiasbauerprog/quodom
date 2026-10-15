@@ -207,6 +207,42 @@ describe('DialogoProveedores', () => {
     expect(proveedores.delQuodom).toHaveBeenCalledTimes(1);
   });
 
+  // Los dos vectores de escritura accidental sobre `sin_whatsapp`, que es
+  // global, permanente y sin forma de deshacerse: abrir el grupo de motivos y
+  // no tener forma de salir, y que el grupo quede abierto después de un
+  // reintento que funcionó.
+  it('el grupo de motivos se puede cerrar sin reportar nada', async () => {
+    vi.mocked(proveedores.delQuodom).mockResolvedValue(respuesta({
+      proveedores: [{ ...LE_BLEU, contactadoen: new Date().toISOString() }]
+    }));
+
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: /no se envió/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^cancelar$/i }));
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: /no tiene whatsapp/i })).toBeNull());
+    expect(proveedores.noEnviado).not.toHaveBeenCalled();
+    // Y el camino sigue disponible: cancelar no es "no preguntes más".
+    expect(screen.getByRole('button', { name: /no se envió/i })).toBeInTheDocument();
+  });
+
+  it('un reintento que funciona cierra el grupo de motivos', async () => {
+    vi.mocked(proveedores.delQuodom).mockResolvedValue(respuesta({
+      proveedores: [{ ...LE_BLEU, contactadoen: new Date().toISOString() }]
+    }));
+    vi.mocked(quodom.whatsapp).mockResolvedValue({ res: true, link: 'https://wa.me/541166687854?text=hola' });
+
+    montar();
+    fireEvent.click(await screen.findByRole('button', { name: /no se envió/i }));
+    fireEvent.click(screen.getByRole('button', { name: /volver a enviar/i }));
+
+    await waitFor(() => expect(abrir).toHaveBeenCalled());
+    // Con el grupo abierto, el toque siguiente cae sobre "No tiene WhatsApp" y
+    // reporta al comercio para todos los compradores del país.
+    expect(screen.queryByRole('button', { name: /no tiene whatsapp/i })).toBeNull();
+    expect(proveedores.noEnviado).not.toHaveBeenCalled();
+  });
+
   it('deshacer por otro motivo no lo reporta como sin WhatsApp', async () => {
     vi.mocked(proveedores.delQuodom).mockResolvedValue(respuesta({
       proveedores: [{ ...LE_BLEU, contactadoen: new Date().toISOString() }]

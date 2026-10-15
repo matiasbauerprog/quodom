@@ -67,9 +67,13 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
     try {
       const r = await quodom.whatsapp(idquodom, { proveedor: p.placeid, tel: p.telefono });
       openWhatsappLink(r.link);
-      // Avisa antes de recargar: el Quodom ya pasó a ENVIADO, y la recarga es
-      // una búsqueda paga que puede fallar sin que eso cambie lo que pasó.
+      // Avisa antes de tocar el estado local: el Quodom ya pasó a ENVIADO y eso
+      // no lo cambia nada de lo que siga.
       onEnviado?.();
+      // Si el renglón tenía abierta la pregunta de "¿qué pasó?", el reintento
+      // que funcionó la contesta. Dejarla abierta pone "No tiene WhatsApp"
+      // —global, permanente y sin forma de deshacerse— bajo el toque siguiente.
+      setPreguntandoMotivo(null);
       // Se recarga para que el renglón vuelva marcado: el contacto lo anota el
       // servidor, así que la marca sale de él y no de un estado local.
       await cargar();

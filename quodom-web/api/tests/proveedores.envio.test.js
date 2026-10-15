@@ -188,6 +188,21 @@ describe('elegir un proveedor', () => {
   });
 });
 
+// El estado del que sale un reporte legítimo: el lugar se le OFRECIÓ al
+// comprador (`orden`, que lo pone `anotarOfrecidos` al mostrar la lista) y el
+// comprador le MANDÓ (`contactado_en`). Se arma a mano porque el camino real
+// —abrir el selector— consulta a Google, y en este archivo no hay mock de
+// `places` a propósito.
+async function ofrecidoYContactado(placeid) {
+  const [fila] = await db.quodom_proveedores.findOrCreate({
+    where: { idquodom, placeid }, defaults: { idquodom, placeid }
+  });
+  fila.orden = 1;
+  fila.contactado_en = new Date();
+  await fila.save();
+  return fila;
+}
+
 describe('POST /quodom/proveedores/:id/no-enviado', () => {
   it('desmarca el contactado', async () => {
     const res = await auth(request(app).post('/quodom/proveedores/' + idquodom + '/no-enviado')
@@ -199,20 +214,62 @@ describe('POST /quodom/proveedores/:id/no-enviado', () => {
   });
 
   // El aprendizaje: lo que hace que la lista de una zona mejore con el uso.
+  // La cuenta va con `toBe` y no con `toBeGreaterThanOrEqual`: con el `>=`, un
+  // incremento que nunca corre pasa igual, que es justo el bug que podría
+  // esconderse acá.
   it('con motivo sin_whatsapp lo anota contra el lugar, para todos', async () => {
+    await db.lugares_sinwhatsapp.destroy({ where: {} });
+    await ofrecidoYContactado('ChIJ-lebleu');
+
     await auth(request(app).post('/quodom/proveedores/' + idquodom + '/no-enviado')
       .send({ placeid: 'ChIJ-lebleu', motivo: 'sin_whatsapp' }));
 
     const anotado = await db.lugares_sinwhatsapp.findByPk('ChIJ-lebleu');
-    expect(anotado.reportes).toBeGreaterThanOrEqual(1);
+    expect(anotado.reportes).toBe(1);
   });
 
   it('dos reportes del mismo lugar suman, no fallan', async () => {
-    await auth(request(app).post('/quodom/proveedores/' + idquodom + '/no-enviado')
-      .send({ placeid: 'ChIJ-lebleu', motivo: 'sin_whatsapp' }));
+    await db.lugares_sinwhatsapp.destroy({ where: {} });
+
+    for (let i = 0; i < 2; i++) {
+      await ofrecidoYContactado('ChIJ-lebleu');
+      await auth(request(app).post('/quodom/proveedores/' + idquodom + '/no-enviado')
+        .send({ placeid: 'ChIJ-lebleu', motivo: 'sin_whatsapp' }));
+    }
 
     const anotado = await db.lugares_sinwhatsapp.findByPk('ChIJ-lebleu');
-    expect(anotado.reportes).toBeGreaterThanOrEqual(2);
+    expect(anotado.reportes).toBe(2);
+  });
+
+  // `lugares_sinwhatsapp` es global, permanente, compartido por todos los
+  // compradores del país y no hay forma de deshacerlo: un comercio marcado
+  // arrastra "Otro usuario reportó que no tiene WhatsApp" para siempre. Lo
+  // único que puede escribirlo es "toqué el botón recién y WhatsApp no abrió",
+  // y eso quiere decir que el lugar fue ofrecido Y contactado. Sin esta guarda
+  // alcanza con crear un Quodom y mandar el POST en bucle sobre placeids
+  // sacados de Maps: el endpoint no consulta a Google, así que tampoco tiene
+  // cupo que lo frene.
+  it('un lugar que nunca se ofreció no se puede reportar', async () => {
+    await db.lugares_sinwhatsapp.destroy({ where: {} });
+
+    const res = await auth(request(app).post('/quodom/proveedores/' + idquodom + '/no-enviado')
+      .send({ placeid: 'ChIJ-jamas-ofrecido', motivo: 'sin_whatsapp' }));
+
+    expect(res.status).toBe(200);
+    expect(await db.lugares_sinwhatsapp.findByPk('ChIJ-jamas-ofrecido')).toBeNull();
+  });
+
+  // El otro vector, y sin mala intención: `whatsappLink` crea la fila para
+  // cualquier `proveedor=` con un celular válido, así que después hay fila que
+  // encontrar. Una fila sin `orden` y sin contacto no es "lo vi y no me abrió".
+  it('una fila sin contacto ni orden tampoco alcanza para reportar', async () => {
+    await db.lugares_sinwhatsapp.destroy({ where: {} });
+    await db.quodom_proveedores.create({ idquodom, placeid: 'ChIJ-colado' });
+
+    await auth(request(app).post('/quodom/proveedores/' + idquodom + '/no-enviado')
+      .send({ placeid: 'ChIJ-colado', motivo: 'sin_whatsapp' }));
+
+    expect(await db.lugares_sinwhatsapp.findByPk('ChIJ-colado')).toBeNull();
   });
 
   it('el Quodom de otro usuario no se puede desmarcar', async () => {

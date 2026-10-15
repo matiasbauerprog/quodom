@@ -20,6 +20,8 @@ type Props = {
   permiteDeshacer?: boolean;
   onEnviar: () => void;
   onPreguntarMotivo: () => void;
+  /** Cierra la pregunta sin reportar nada. */
+  onCancelarMotivo: () => void;
   onDeshacer: (motivo: 'sin_whatsapp' | 'otro') => void;
 };
 
@@ -67,7 +69,7 @@ function cuando(iso: string): string {
  */
 export function FilaProveedor({
   proveedor: p, ocupado, preguntandoMotivo, permiteDeshacer = true,
-  onEnviar, onPreguntarMotivo, onDeshacer
+  onEnviar, onPreguntarMotivo, onCancelarMotivo, onDeshacer
 }: Props) {
   const contactado = !!p.contactadoen;
   const fecha = p.contactadoen ? cuando(p.contactadoen) : '';
@@ -160,6 +162,20 @@ export function FilaProveedor({
             disabled={ocupado}
           >
             Otro motivo
+          </button>
+          {/* La salida sin escribir nada. Los dos botones de arriba son la
+              única forma de abandonar la pregunta, y uno de ellos escribe un
+              dato global, permanente y sin forma de deshacerse: sin "Cancelar",
+              el que la abrió por error elige entre reportar al comercio para
+              todo el país o reportar "otro motivo", que igual le borra el
+              contacto que sí pasó. */}
+          <button
+            type="button"
+            className="dp-deshacer"
+            onClick={onCancelarMotivo}
+            disabled={ocupado}
+          >
+            Cancelar
           </button>
         </div>
       )}

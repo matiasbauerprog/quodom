@@ -110,6 +110,7 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSin
                   preguntandoMotivo={preguntandoMotivo === p.placeid}
                   onEnviar={() => enviarA(p)}
                   onPreguntarMotivo={() => setPreguntandoMotivo(p.placeid)}
+                  onCancelarMotivo={() => setPreguntandoMotivo(null)}
                   onDeshacer={motivo => deshacer(p, motivo)}
                 />
               </li>

@@ -63,6 +63,7 @@ export function ProveedoresContactados({ idquodom }: { idquodom: string }) {
                   permiteDeshacer={false}
                   onEnviar={() => enviarA(p)}
                   onPreguntarMotivo={() => setPreguntandoMotivo(p.placeid)}
+                  onCancelarMotivo={() => setPreguntandoMotivo(null)}
                   onDeshacer={motivo => deshacer(p, motivo)}
                 />
               </li>
