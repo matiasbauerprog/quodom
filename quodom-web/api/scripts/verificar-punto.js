@@ -11,12 +11,11 @@
  *
  * Correrlo:
  *   - después de tocar `lugarDeGeocoding.js` o `direccionDeGoogle.js`;
- *   - y la primera vez que la **Geocoding API** quede habilitada en el
- *     proyecto, porque los fixtures de `lugarDeGeocoding.test.js` se
- *     escribieron contra el formato documentado y no contra una respuesta
- *     medida: el 2026-10-15 la API devolvía `REQUEST_DENIED` ("This API is not
- *     activated on your API project"). Si algún campo no coincide, lo que hay
- *     que corregir son los fixtures.
+ *   - y cada vez que se dude de los fixtures de `lugarDeGeocoding.test.js`. La
+ *     primera corrida, el 2026-10-15, es la que encontró que **un punto sin
+ *     dirección no devuelve ZERO_RESULTS** sino un Plus Code: el 404 no se
+ *     disparaba nunca y el usuario podía confirmar un punto cuya dirección
+ *     decía "48Q46G22+22". Por eso el último punto de la lista es agua.
  *
  *   node scripts/verificar-punto.js
  *   node scripts/verificar-punto.js -34.5468 -58.5562

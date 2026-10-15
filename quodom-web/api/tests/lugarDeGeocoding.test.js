@@ -3,10 +3,10 @@ const { direccionDeGoogle } = require('../src/helpers/direccionDeGoogle');
 
 // La forma de la Geocoding API, que es distinta de la de Places API (New):
 // `address_components` con `long_name`, `geometry.location.lat`, `place_id`.
-// PENDIENTE DE MEDICIÓN: la API no estaba habilitada en el proyecto el
-// 2026-10-15 (REQUEST_DENIED, "This API is not activated"), así que estos
-// fixtures salen del formato documentado y no de una respuesta real. Cuando se
-// habilite, correr `node scripts/verificar-punto.js` y confirmar que coinciden.
+// MEDIDO el 2026-10-15 con `node scripts/verificar-punto.js` sobre las tres
+// zonas urbanas y un punto en el agua: el formato coincide y las tres
+// provincias matchean (Buenos Aires, CABA, Córdoba). Esa corrida encontró algo
+// que estos fixtures no cubrían — ver el último describe.
 const BALLESTER = {
   place_id: 'ChIJ-ballester',
   formatted_address: 'Ídolo 3720, B1653 Villa Ballester, Provincia de Buenos Aires, Argentina',
@@ -90,10 +90,16 @@ describe('mejorResultado', () => {
     expect(r.place_id).toBe('ChIJ-ballester');
   });
 
-  // En un descampado el primero puede ser un código postal o una ciudad. Se usa
-  // igual: una localidad alcanza para confirmar, y los campos son editables.
-  it('si no hay dirección de calle usa el primero', () => {
-    const ciudad = { types: ['locality'], place_id: 'loc' };
+  // Sin calle, una localidad alcanza: es el caso del pueblo chico y sirve para
+  // confirmar dónde quedó el pin. Lo que NO sirve es un resultado sin calle ni
+  // localidad (plus_code, partido, provincia) — ver el describe de abajo, que
+  // sale de medir la API de verdad.
+  it('si no hay dirección de calle usa la localidad', () => {
+    const ciudad = {
+      types: ['locality'], place_id: 'loc', formatted_address: 'Pueblo',
+      geometry: { location: { lat: -34, lng: -58 } },
+      address_components: [{ long_name: 'Pueblo', short_name: 'Pueblo', types: ['locality', 'political'] }]
+    };
 
     expect(mejorResultado([ciudad]).place_id).toBe('loc');
   });
@@ -101,5 +107,57 @@ describe('mejorResultado', () => {
   it('sin resultados devuelve null', () => {
     expect(mejorResultado([])).toBeNull();
     expect(mejorResultado(undefined)).toBeNull();
+  });
+});
+
+// MEDIDO el 2026-10-15 con la API ya habilitada, y esto es lo que mi primera
+// version se habia perdido: **un punto sin direccion NO devuelve ZERO_RESULTS**.
+//
+//   en el Rio de la Plata  -> 1 resultado, solo un plus_code (48Q46G22+22)
+//   en campo abierto       -> 4 resultados: plus_code, partido (Utracan),
+//                             provincia y pais. Ninguno con calle ni localidad.
+//
+// Sin esta regla el endpoint contestaba 200, el 404 no se disparaba nunca, y el
+// usuario confirmaba un punto cuya direccion decia "48Q46G22+22". Un Plus Code
+// es la coordenada escrita de otra forma: es exactamente lo que la ventana
+// existe para no mostrar.
+const RIO = {
+  place_id: 'GhIJZmZmZmZmQcARAAAAAADATMA',
+  formatted_address: '48Q46G22+22',
+  types: ['plus_code'],
+  geometry: { location: { lat: -34.8, lng: -57.5 } },
+  address_components: [{ long_name: '48Q46G22+22', short_name: '48Q46G22+22', types: ['plus_code'] }]
+};
+
+const CAMPO_PARTIDO = {
+  place_id: 'ChIJ-utracan',
+  formatted_address: 'Utracán, La Pampa, Argentina',
+  types: ['administrative_area_level_2', 'political'],
+  geometry: { location: { lat: -37.5, lng: -64.8 } },
+  address_components: [
+    { long_name: 'Utracán', short_name: 'Utracán', types: ['administrative_area_level_2', 'political'] },
+    { long_name: 'La Pampa', short_name: 'LP', types: ['administrative_area_level_1', 'political'] },
+    { long_name: 'Argentina', short_name: 'AR', types: ['country', 'political'] }
+  ]
+};
+
+describe('mejorResultado: un punto que no tiene direccion', () => {
+  it('descarta un plus_code, que es la coordenada escrita de otra forma', () => {
+    expect(mejorResultado([RIO])).toBeNull();
+  });
+
+  it('descarta un partido sin calle ni localidad', () => {
+    expect(mejorResultado([RIO, CAMPO_PARTIDO])).toBeNull();
+  });
+
+  // Una localidad sola SI sirve: es el caso del pueblo chico, y alcanza para
+  // confirmar donde quedo el pin.
+  it('acepta una localidad sin calle', () => {
+    const pueblo = {
+      place_id: 'p', formatted_address: 'Villa Ballester', types: ['locality'],
+      geometry: { location: { lat: -34.54, lng: -58.55 } },
+      address_components: [{ long_name: 'Villa Ballester', short_name: 'VB', types: ['locality', 'political'] }]
+    };
+    expect(mejorResultado([RIO, pueblo])).not.toBeNull();
   });
 });

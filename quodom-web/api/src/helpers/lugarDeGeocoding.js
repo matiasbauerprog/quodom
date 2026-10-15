@@ -43,23 +43,43 @@ function lugarDeGeocoding(resultado) {
 }
 
 /**
- * De los resultados que devuelve la inversa, el que sirve.
+ * De los resultados que devuelve la inversa, el que sirve como direccion.
  *
- * Google ordena del más específico al más general: primero la dirección con
- * altura y al final el país. Tomar `results[0]` a ciegas funciona casi siempre,
- * pero en un descampado el primero puede ser un código postal o una ciudad
- * entera, y eso llenaría el formulario con una localidad y ninguna calle sin
- * que nada falle. Se busca el primero que sea una dirección de calle y, si no
- * hay, se cae al primero: una localidad es mejor que nada para confirmar, y el
- * usuario igual puede corregir los campos a mano.
+ * **Un punto sin direccion no devuelve 'sin resultados'**, y eso esta medido el
+ * 2026-10-15 con la API habilitada:
+ *
+ *   en el Rio de la Plata  -> 1 resultado, solo un plus_code ("48Q46G22+22")
+ *   en campo abierto       -> 4 resultados: plus_code, partido ("Utracan"),
+ *                             provincia y pais. Ninguno con calle ni localidad.
+ *
+ * Un Plus Code es la coordenada escrita de otra forma, que es exactamente lo
+ * que esta ventana existe para NO mostrar. Y un partido o una provincia no son
+ * una direccion: llenarian el formulario con la nada y el mensaje de WhatsApp
+ * saldria sin domicilio.
+ *
+ * Asi que un resultado sirve solo si trae **calle o localidad**. Una localidad
+ * sola si alcanza: es el caso del pueblo chico, y basta para confirmar donde
+ * quedo el pin. Lo demas es "no hay direccion aca", que el endpoint contesta
+ * con 404 y el mensaje de que mueva el pin a una calle.
+ *
+ * Google ordena del mas especifico al mas general, asi que entre los usables se
+ * prefiere el que tiene calle.
  */
-function mejorResultado(resultados) {
-  const lista = resultados || [];
-  if (lista.length === 0) return null;
-  const conCalle = lista.find(r => (r.types || []).includes('street_address'))
-    || lista.find(r => (r.types || []).includes('premise'))
-    || lista.find(r => (r.types || []).includes('route'));
-  return conCalle || lista[0];
+function tieneTipo(resultado, tipo) {
+  return (resultado.address_components || []).some(c => (c.types || []).includes(tipo));
 }
 
-module.exports = { lugarDeGeocoding, mejorResultado };
+function sirveComoDireccion(resultado) {
+  if (!resultado) return false;
+  return tieneTipo(resultado, 'route')
+    || tieneTipo(resultado, 'locality')
+    || tieneTipo(resultado, 'sublocality');
+}
+
+function mejorResultado(resultados) {
+  const usables = (resultados || []).filter(sirveComoDireccion);
+  if (usables.length === 0) return null;
+  return usables.find(r => tieneTipo(r, 'route')) || usables[0];
+}
+
+module.exports = { lugarDeGeocoding, mejorResultado, sirveComoDireccion };
