@@ -18,10 +18,13 @@
  * divergieran, el comprador elegiría un local cerca de una dirección mientras al
  * proveedor le piden entregar en otra, y ninguno de los dos puede notarlo.
  *
- * `preciso` sale de que haya `placeid` —o sea, de que el usuario haya elegido la
- * dirección del mapa— y no de que haya coordenadas: una dirección cuyas
+ * `preciso` **nunca** sale de que haya coordenadas: una dirección cuyas
  * coordenadas vinieron de la localidad también las tiene, y decir que es precisa
- * haría que la pantalla mienta sobre desde dónde midió.
+ * haría que la pantalla mienta sobre desde dónde midió. Sale de dos cosas, y
+ * cualquiera alcanza:
+ *
+ * - `punto_manual`: el usuario puso el pin en el mapa con la mano.
+ * - `placeid`: eligió la dirección del autocompletado de Google.
  */
 const db = require('./db');
 const { puntoDeLocalidad, detalleDireccion } = require('./places');
@@ -62,6 +65,18 @@ async function puntoDelQuodom(quodom, userId) {
     const calle = [dir.calle, dir.numero].filter(Boolean).join(' ').trim();
 
     const vencidas = coordsVencidas(dir);
+
+    // El punto que el usuario puso a mano va PRIMERO y **no vence**.
+    //
+    // Los 30 días son una condición de los términos de Google sobre datos de
+    // Google; este punto lo eligió una persona y es dato nuestro, como el
+    // reporte de "no tiene WhatsApp". Si cayera en la caché, a los 30 días una
+    // dirección con placeid se volvería a resolver por él y le **pisaría al
+    // usuario la corrección que vino a hacer** — justo el caso de quien arrastró
+    // el pin porque Google lo había ubicado mal, que es para lo que existe.
+    if (dir.punto_manual && dir.lat != null && dir.lng != null) {
+        return { lat: dir.lat, lng: dir.lng, preciso: true, desde: calle || dir.localidad || '' };
+    }
 
     if (dir.placeid && dir.lat != null && dir.lng != null && !vencidas) {
         return { lat: dir.lat, lng: dir.lng, preciso: true, desde: calle || dir.localidad || '' };

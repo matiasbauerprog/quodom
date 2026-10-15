@@ -16,6 +16,7 @@
     "migrar-empresa": "node src/seed/migrar-empresa.js",
     "migrar-multi-quodom": "node src/seed/migrar-multi-quodom.js",
     "migrar-direccion-mapa": "node src/seed/migrar-direccion-mapa.js",
+    "migrar-punto-manual": "node src/seed/migrar-punto-manual.js",
     "guias": "node src/seed/guias.js",
     "import-images": "node src/seed/import-images.js",
     "report-missing-images": "node src/seed/report-missing-images.js",

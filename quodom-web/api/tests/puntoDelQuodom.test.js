@@ -203,3 +203,61 @@ describe('puntoDelQuodom', () => {
     expect(places.puntoDeLocalidad).not.toHaveBeenCalled();
   });
 });
+
+// Un punto que el usuario marco a mano en el mapa ES preciso, y no tiene
+// placeid: lo eligio el, no se eligio de una lista de Google.
+//
+// `preciso` se deducia SOLO del placeid, y esa regla existe por una razon real
+// —una direccion con el centro de su localidad tambien tiene coordenadas, asi
+// que deducirlo de "tiene lat/lng" hacia que la pantalla dijera que midio desde
+// la puerta algo que midio desde el centro del pueblo—. Pero con el mapa
+// arrastrable aparece un tercer caso que la regla vieja clasificaba al reves:
+// el usuario pone el pin en su casa, la pantalla le sigue diciendo "tu
+// direccion no esta ubicada con precision". Mentir al reves es mentir igual.
+describe('puntoDelQuodom: el punto marcado a mano', () => {
+  it('es preciso aunque no tenga placeid', async () => {
+    await direccion({
+      userid: 'u-pm', calle: 'Idolo', numero: '3720', localidad: 'Villa Ballester',
+      lat: -34.5468, lng: -58.5562, placeid: null, punto_manual: true
+    });
+    const r = await puntoDelQuodom(quodomSinDireccion(), 'u-pm');
+
+    expect(r.preciso).toBe(true);
+    expect(r.lat).toBeCloseTo(-34.5468, 4);
+    expect(r.desde).toBe('Idolo 3720');
+    // No se consulta a Google: el punto ya esta y es el que el usuario eligio.
+    expect(places.puntoDeLocalidad).not.toHaveBeenCalled();
+  });
+
+  // La razon por la que va primero y no vence. Quien arrastro el pin lo hizo
+  // porque Google lo habia ubicado mal; si el punto cayera en la cache de 30
+  // dias, al dia 31 se volveria a resolver por el placeid y le pisariamos
+  // exactamente la correccion que vino a hacer, en silencio.
+  it('a los 31 dias sigue siendo el punto del usuario, sin reconsultar a Google', async () => {
+    const hace31Dias = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+    await direccion({
+      userid: 'u-pm3', calle: 'Idolo', numero: '3720', localidad: 'Villa Ballester',
+      lat: -34.5468, lng: -58.5562, placeid: 'p-mal-ubicado', punto_manual: true,
+      coords_actualizado: hace31Dias
+    });
+
+    const r = await puntoDelQuodom(quodomSinDireccion(), 'u-pm3');
+
+    expect(r.preciso).toBe(true);
+    expect(r.lat).toBeCloseTo(-34.5468, 4);
+    expect(places.detalleDireccion).not.toHaveBeenCalled();
+    expect(places.puntoDeLocalidad).not.toHaveBeenCalled();
+  });
+
+  // Sin la marca, las mismas coordenadas siguen siendo imprecisas: es el caso
+  // de la direccion que tomo el centro de su localidad.
+  it('sin la marca, las mismas coordenadas no son precisas', async () => {
+    await direccion({
+      userid: 'u-pm2', calle: 'Idolo', numero: '3720', localidad: 'Villa Ballester',
+      lat: -34.5468, lng: -58.5562, placeid: null
+    });
+    const r = await puntoDelQuodom(quodomSinDireccion(), 'u-pm2');
+
+    expect(r.preciso).toBe(false);
+  });
+});
