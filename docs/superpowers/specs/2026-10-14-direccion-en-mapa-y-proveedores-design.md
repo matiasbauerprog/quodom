@@ -140,6 +140,56 @@ teléfono se ve actualizado.
 Y una obligación: la lista **muestra la atribución a Google**, como exigen los
 términos.
 
+### Desde qué punto se busca, cuando no hay punto exacto
+
+**Medido con un usuario real el 2026-10-15, y la spec no lo contemplaba:** hay
+direcciones argentinas que el autocompletado de Google **no tiene**. Buscando
+"Ídolo 3720, Villa Ballester" ofrece la localidad y cuatro comercios, ninguno es
+la dirección. El usuario la carga a mano y queda **sin coordenadas** — no por un
+error, sino porque Google no la conoce.
+
+Si la mitad B asumiera que toda dirección tiene punto, esos usuarios se quedarían
+sin el feature entero. Y son una porción desconocida pero no marginal: el primer
+usuario real que probó cayó justo ahí.
+
+La salida está en que **nunca se desconoce del todo dónde está**: la localidad es
+un campo obligatorio del formulario, y convertirla en coordenadas es una consulta
+del nivel básico (10.000 gratis por mes). O sea que siempre hay un punto; lo que
+cambia es la precisión.
+
+**La regla, en tres escalones:**
+
+1. **La dirección tiene coordenadas** → se busca desde ahí. El popup encabeza
+   *"Proveedores cerca de Ídolo 3720"*.
+2. **No las tiene, pero la localidad resuelve** → el servidor geocodifica
+   `localidad + provincia`, **guarda ese punto** (una vez por dirección, no por
+   envío) y busca desde ahí. El popup encabeza *"Proveedores cerca de Villa
+   Ballester"* y aclara en chico: *"tu dirección no está ubicada con precisión —
+   las distancias son desde el centro de la localidad"*, con un link para
+   ubicarla.
+3. **Ni la localidad resuelve** (texto mal escrito, pueblo que Google no conoce)
+   → no hay lista. El popup lo dice y ofrece el camino de hoy: enviar sin
+   destinatario y elegir en WhatsApp.
+
+> **Por qué no se le pide al usuario que vaya a ubicar su dirección.** Se
+> consideró y se descartó: mandarlo al formulario para que elija del buscador
+> termina, cuando Google no tiene su calle, en que elija **su localidad** — que
+> es el dato que el formulario ya tiene. Es hacerlo trabajar para entregar algo
+> que ya está. El link para ubicarla sigue ahí, pero como mejora opcional, no
+> como peaje.
+
+> **Por qué no bloquea el envío.** Las tres cosas que frenan un Quodom son las
+> que el proveedor **necesita** para cotizar. Las coordenadas no: el proveedor no
+> las ve nunca, son nuestras para buscar. Convertirlas en una cuarta traba le
+> sacaría a un usuario algo que hoy hace sin problemas, por un dato que antes no
+> hacía falta y que en su caso no depende de él.
+
+**Lo que la pantalla nunca hace es callar desde dónde midió.** La precisión del
+punto cambia qué tan creíble es la distancia, y la distancia es lo que el usuario
+usa para decidir. Mostrar "a 2 km" sin aclarar que es desde el centro del pueblo
+es el mismo tipo de mentira silenciosa que el diseño viene evitando en todo lo
+demás.
+
 ### El orden: distancia y puntuación
 
 El ranking es una función pura en `helpers/rankearProveedores.js`, separada del
