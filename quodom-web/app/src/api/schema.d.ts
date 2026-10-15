@@ -1327,10 +1327,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Arma el link wa.me y pasa el Quodom a ENVIADO */
+        /**
+         * Arma el link wa.me y pasa el Quodom a ENVIADO
+         * @description Sin `proveedor` y `tel` el link no lleva destinatario, que es la salida cuando no hay proveedores en la zona, cuando Google falla, y para mandarle a un proveedor propio que no está en la lista.
+         */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description place_id del proveedor elegido */
+                    proveedor?: string;
+                    /** @description Teléfono del proveedor; el servidor lo valida y rechaza el que no recibe WhatsApp */
+                    tel?: string;
+                };
                 header?: never;
                 path: {
                     id: components["parameters"]["QuodomId"];
@@ -1402,6 +1410,112 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quodom/proveedores/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proveedores del rubro cerca de la dirección del Quodom */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Hasta 5 proveedores. Lista vacía si no hay ninguno en la zona. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            proveedores: components["schemas"]["Proveedor"][];
+                            preciso: boolean;
+                            desde: string;
+                            atribucion: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                /** @description No se puede ubicar la dirección ni por su localidad */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                429: components["responses"]["TooMany"];
+                503: components["responses"]["ServicioExterno"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quodom/proveedores/{id}/no-enviado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deshacer el contacto con un proveedor */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        placeid: string;
+                        /** @enum {string} */
+                        motivo?: "sin_whatsapp" | "otro";
+                    };
+                };
+            };
+            responses: {
+                /** @description Desmarcado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            res: boolean;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2567,6 +2681,21 @@ export interface components {
             lat: number;
             lng: number;
             direccion: string;
+        };
+        Proveedor: {
+            placeid: string;
+            nombre: string;
+            rating?: number | null;
+            resenas?: number;
+            distanciakm: number;
+            telefono?: string | null;
+            telefonovisible?: string | null;
+            sintelefono: boolean;
+            esfijo: boolean;
+            sinwhatsapp: boolean;
+            direccion?: string;
+            /** Format: date-time */
+            contactadoen?: string | null;
         };
         Notificacion: {
             id: number;

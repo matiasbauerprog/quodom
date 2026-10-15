@@ -3,6 +3,7 @@ const serie = require('../helpers/series');
 const { httpError } = require('../helpers/http-error');
 const { esRubroActivo } = require('../config/rubros');
 const { resolverDireccion, getDireccionDefault } = require('../helpers/direccionDelQuodom');
+const { analizarTelefono } = require('../helpers/telefonoWhatsapp');
 
 module.exports = {
     getById,
@@ -125,10 +126,24 @@ function atributosSinElegir(linea) {
     return faltan;
 }
 
-async function whatsappLink(id, userId) {
+async function whatsappLink(id, userId, proveedor, tel) {
     const quodom = await getQuodom(id);
     if (quodom.createdBy !== userId) {
         throw 'El Id Quodom no pertenece a el usuario.';
+    }
+
+    // El número se revisa antes de tocar nada, para que un teléfono que no
+    // sirve deje el Quodom en CREADO y no a medio enviar. Se rechaza también el
+    // que es válido pero no recibe WhatsApp (un 0800): armarle el link igual
+    // manda al comprador a un chat que nunca abre, y eso se lee como que el
+    // comercio no tiene WhatsApp. La app ya esconde el botón; esto es la red.
+    let destino = null;
+    if (proveedor && tel) {
+        const n = analizarTelefono(tel);
+        if (!n || !n.sirveWhatsapp) {
+            throw 'El teléfono del proveedor no es válido.';
+        }
+        destino = n.e164.replace('+', '');
     }
 
     const lines = await db.v_Quodoms_lines.findAll({
@@ -205,6 +220,22 @@ async function whatsappLink(id, userId) {
             enviada: 0,
             leida: 0
         });
+    }
+
+    if (destino) {
+        // Se marca el toque del botón, que es lo único observable: lo que pasa
+        // dentro de WhatsApp no se ve. Fingir más conocimiento sería peor.
+        // `findOrCreate` y no `create` porque la tabla no tiene unique sobre
+        // (idquodom, placeid): mandarle dos veces al mismo duplicaría la fila y
+        // el popup lo mostraría repetido.
+        const [fila] = await db.quodom_proveedores.findOrCreate({
+            where: { idquodom: id, placeid: proveedor },
+            defaults: { idquodom: id, placeid: proveedor }
+        });
+        fila.contactado_en = new Date();
+        await fila.save();
+
+        return 'https://wa.me/' + destino + '?text=' + encodeURIComponent(msg);
     }
 
     return 'https://wa.me/?text=' + encodeURIComponent(msg);

@@ -71,7 +71,7 @@ function getQuodomCreados(req, res, next) {
 }
 
 function whatsappLink(req, res, next) {
-  Controler.whatsappLink(req.params.id, req.user.id)
+  Controler.whatsappLink(req.params.id, req.user.id, req.query.proveedor, req.query.tel)
     .then(link => res.json({ res: true, link }))
     .catch(next);
 }

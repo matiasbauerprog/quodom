@@ -20,10 +20,19 @@ router.get('/:id', auth.verifyToken(),
   (req, res, next) => rateLimit.perUserPerMinute(MAX_RPM(), 'proveedores', MENSAJE_TOPE)(req, res, next),
   getProveedores);
 
+// Sin cupo propio: no consulta a Google, sólo escribe lo que el comprador vio.
+router.post('/:id/no-enviado', auth.verifyToken(), postNoEnviado);
+
 module.exports = router;
 
 function getProveedores(req, res, next) {
   Controler.listar(req.params.id, req.user.id)
     .then(data => res.json(data))
     .catch(e => next(mapear(e)));
+}
+
+function postNoEnviado(req, res, next) {
+  Controler.noEnviado(req.params.id, req.user.id, req.body)
+    .then(data => res.json(data))
+    .catch(next);
 }

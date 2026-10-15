@@ -817,8 +817,15 @@ paths:
     get:
       tags: [quodom]
       summary: Arma el link wa.me y pasa el Quodom a ENVIADO
+      description: >-
+        Sin `proveedor` y `tel` el link no lleva destinatario, que es la salida
+        cuando no hay proveedores en la zona, cuando Google falla, y para
+        mandarle a un proveedor propio que no está en la lista.
       security: [{ cookieAuth: [] }, { bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/QuodomId' }]
+      parameters:
+        - { $ref: '#/components/parameters/QuodomId' }
+        - { name: proveedor, in: query, required: false, schema: { type: string }, description: 'place_id del proveedor elegido' }
+        - { name: tel, in: query, required: false, schema: { type: string }, description: 'Teléfono del proveedor; el servidor lo valida y rechaza el que no recibe WhatsApp' }
       responses:
         '200':
           description: OK
@@ -882,6 +889,38 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '429': { $ref: '#/components/responses/TooMany' }
         '503': { $ref: '#/components/responses/ServicioExterno' }
+  # Es POST .../no-enviado y no DELETE .../contactado porque lleva cuerpo: un
+  # DELETE con cuerpo es legal pero el validador y varios clientes lo tratan
+  # distinto, y acá el `motivo` es el que alimenta el aprendizaje.
+  /quodom/proveedores/{id}/no-enviado:
+    post:
+      tags: [quodom]
+      summary: Deshacer el contacto con un proveedor
+      security: [{ cookieAuth: [] }, { bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [placeid]
+              properties:
+                placeid: { type: string }
+                motivo: { type: string, enum: [sin_whatsapp, otro] }
+      responses:
+        '200':
+          description: Desmarcado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [res]
+                properties:
+                  res: { type: boolean }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /quodom/create:
     post:
       tags: [quodom]

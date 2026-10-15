@@ -8,7 +8,7 @@ const { httpError } = require('../helpers/http-error');
 
 const ATRIBUCION = 'Resultados de Google';
 
-module.exports = { listar };
+module.exports = { listar, noEnviado };
 
 async function listar(idquodom, userId) {
     const quodom = await db.Quodom.findByPk(idquodom);
@@ -84,6 +84,39 @@ async function listar(idquodom, userId) {
         desde: punto.desde,
         atribucion: ATRIBUCION
     };
+}
+
+// Deshacer el contacto: el comprador tocó el botón y del otro lado no había
+// nadie. Se borra la marca para que el proveedor vuelva a ofrecerse, y el Quodom
+// se deja como está: ya salió, y volverlo a CREADO borraría la notificación y el
+// historial de algo que sí pasó.
+async function noEnviado(idquodom, userId, { placeid, motivo }) {
+    const quodom = await db.Quodom.findByPk(idquodom);
+    if (!quodom || quodom.createdBy !== userId) {
+        throw 'El Id Quodom no pertenece a el usuario.';
+    }
+
+    const fila = await db.quodom_proveedores.findOne({ where: { idquodom, placeid } });
+    if (fila) {
+        fila.contactado_en = null;
+        await fila.save();
+    }
+
+    // El único dato propio que acumula el feature. Es una observación nuestra
+    // indexada por place_id, así que se puede guardar sin límite de tiempo. El
+    // segundo reporte del mismo lugar tiene que sumar y no fallar: es
+    // exactamente el caso que hace que la lista de una zona mejore con el uso.
+    if (motivo === 'sin_whatsapp') {
+        const [lugar, creado] = await db.lugares_sinwhatsapp.findOrCreate({
+            where: { placeid }, defaults: { placeid, reportes: 1 }
+        });
+        if (!creado) {
+            lugar.reportes = (lugar.reportes || 0) + 1;
+            await lugar.save();
+        }
+    }
+
+    return { res: true };
 }
 
 // Se anota a quiénes se le ofreció, sin pisar lo ya contactado: el usuario puede
