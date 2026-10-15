@@ -1,0 +1,32 @@
+.cdm { position: relative; display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.cdm-estado { margin: 0; font-size: var(--fs-small); color: #6E6E6E; }
+.cdm-error { color: #8A5A00; }
+
+.cdm-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--color-tarjeta);
+  border: 1px solid #E2E2E2;
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+  overflow: hidden;
+}
+
+.cdm-opcion {
+  display: block;
+  width: 100%;
+  padding: var(--sp-3);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-small);
+  text-align: left;
+  cursor: pointer;
+  /* Objetivo táctil cómodo: esto se usa con el pulgar. */
+  min-height: 44px;
+}
+.cdm-opcion:hover, .cdm-opcion:focus-visible { background: var(--color-fondo); }
+
+.cdm-lista li + li .cdm-opcion { border-top: 1px solid var(--color-fondo); }

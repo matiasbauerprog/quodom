@@ -12,6 +12,10 @@ export type DireccionInput = {
   observaciones?: string;
   idprovincia?: number;
   default?: boolean;
+  // Datos del mapa. El servidor sella la fecha de las coordenadas.
+  placeid?: string;
+  lat?: number;
+  lng?: number;
 };
 
 export const userDirecciones = {

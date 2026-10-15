@@ -7,6 +7,8 @@ import type { Provincia, Localidad } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { AppBarBack } from '../../components/layout/AppBarBack';
 import { Loader } from '../../components/Loader';
+import { CampoDireccionMapa } from '../../components/CampoDireccionMapa';
+import type { DireccionDeLugar } from '../../api/types';
 import './AgregarDireccion.css';
 
 export function ModificarDireccion() {
@@ -53,6 +55,24 @@ export function ModificarDireccion() {
     setF({ ...f, [k]: v });
   };
 
+  // Igual que en Nueva dirección: el mapa rellena los campos y los deja
+  // editables. Acá el estado puede ser null mientras carga, así que se
+  // actualiza sólo si ya hay formulario.
+  function aplicarDelMapa(d: DireccionDeLugar) {
+    setF(prev => prev ? ({
+      ...prev,
+      calle: d.calle,
+      numero: d.numero,
+      localidad: d.localidad,
+      cp: d.cp,
+      direccion: d.direccion,
+      idprovincia: d.idprovincia ?? undefined,
+      placeid: d.placeid,
+      lat: d.lat,
+      lng: d.lng
+    }) : prev);
+  }
+
   return (
     <>
       <AppBarBack title="Editar dirección" />
@@ -61,6 +81,7 @@ export function ModificarDireccion() {
         {err && <p className="auth-error">{err}</p>}
         {f && (
           <form onSubmit={onSubmit}>
+            <CampoDireccionMapa onElegir={aplicarDelMapa} />
             <label className="field"><span>Alias</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
             <div className="grid-2">
               <label className="field"><span>Calle</span><input className="input" value={f.calle ?? ''} onChange={set('calle')} required /></label>

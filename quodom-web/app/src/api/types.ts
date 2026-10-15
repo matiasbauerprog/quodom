@@ -16,3 +16,5 @@ export type Provincia = S['Provincia'];
 export type Localidad = S['Localidad'];
 export type Notificacion = S['Notificacion'];
 export type BusquedaResult = S['BusquedaResult'];
+export type SugerenciaLugar = S['SugerenciaLugar'];
+export type DireccionDeLugar = S['DireccionDeLugar'];

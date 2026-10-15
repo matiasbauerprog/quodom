@@ -6,6 +6,8 @@ import { userDirecciones, DireccionInput } from '../../api/user_direcciones';
 import type { Provincia, Localidad } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { AppBarBack } from '../../components/layout/AppBarBack';
+import { CampoDireccionMapa } from '../../components/CampoDireccionMapa';
+import type { DireccionDeLugar } from '../../api/types';
 import './AgregarDireccion.css';
 
 export function AgregarDireccion() {
@@ -40,11 +42,32 @@ export function AgregarDireccion() {
     setF({ ...f, [k]: v });
   };
 
+  // Los campos quedan editables después de aplicarlos. Google no siempre trae
+  // la altura (una esquina, un lugar con nombre) y el piso nunca lo trae, así
+  // que el formulario sigue siendo el que manda: el mapa lo rellena, no lo
+  // reemplaza. Y sin clave de Google el buscador no anda: cargar a mano es el
+  // único camino que queda.
+  function aplicarDelMapa(d: DireccionDeLugar) {
+    setF(prev => ({
+      ...prev,
+      calle: d.calle,
+      numero: d.numero,
+      localidad: d.localidad,
+      cp: d.cp,
+      direccion: d.direccion,
+      idprovincia: d.idprovincia ?? undefined,
+      placeid: d.placeid,
+      lat: d.lat,
+      lng: d.lng
+    }));
+  }
+
   return (
     <>
       <AppBarBack title="Nueva dirección" />
       <section className="container dir-form">
         <form onSubmit={onSubmit}>
+          <CampoDireccionMapa onElegir={aplicarDelMapa} />
           <label className="field"><span>Alias (ej: casa, obra)</span><input className="input" value={f.alias ?? ''} onChange={set('alias')} /></label>
           <div className="grid-2">
             <label className="field"><span>Calle</span><input className="input" value={f.calle ?? ''} onChange={set('calle')} required /></label>
