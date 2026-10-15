@@ -71,8 +71,25 @@
 }
 .dp-deshacer:disabled { opacity: 0.6; cursor: not-allowed; }
 
+/* El motivo de "no se envió": dos opciones y nada más, porque es lo que
+   alimenta el único dato que este feature aprende de los compradores. */
+.dp-motivos {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3);
+  margin-top: var(--sp-2);
+  font-size: var(--fs-small);
+}
+.dp-motivos-txt { color: #5C5C5C; }
+
 .dp-vacio, .dp-error { margin: 0 0 var(--sp-3) 0; font-size: var(--fs-small); line-height: 1.35; }
 .dp-error { color: var(--color-acento); font-weight: 600; }
+/* El aviso de una recarga que falló: no es un error del envío y no se lleva la
+   lista, así que no va en rojo. */
+.dp-aviso {
+  margin: 0 0 var(--sp-3) 0;
+  font-size: var(--fs-tiny);
+  line-height: 1.35;
+  color: #5C5C5C;
+}
 
 /* El pie está en los tres estados —con lista, vacía y con la búsqueda caída—:
    una falla de Google no puede dejar al comprador sin poder enviar. */

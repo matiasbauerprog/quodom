@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { proveedores } from '../api/proveedores';
 import type { RespuestaProveedores } from '../api/proveedores';
 import type { Proveedor } from '../api/types';
@@ -51,25 +52,42 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }
   const [datos, setDatos] = useState<RespuestaProveedores | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [avisoRecarga, setAvisoRecarga] = useState<string | null>(null);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   // Qué renglón está trabajando: un placeid, o 'sin-proveedor' para el pie.
   const [ocupado, setOcupado] = useState<string | null>(null);
+  // De qué renglón se está preguntando el motivo de "no se envió".
+  const [preguntandoMotivo, setPreguntandoMotivo] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
+  /**
+   * `primera` separa la carga inicial de las recargas, y la diferencia no es
+   * cosmética: cada llamada es una búsqueda **paga** a Google con tope de
+   * 10/min. Si una recarga falla —el tope, un 503—, la lista que el comprador
+   * ya tiene en pantalla se queda donde está y el fallo se cuenta como aviso.
+   * Borrarla le saca los proveedores que todavía no contactó, y la atribución,
+   * un segundo después de haberlos tenido delante.
+   */
+  const cargar = useCallback(async (primera = false) => {
+    if (primera) setCargando(true);
     try {
       const r = await proveedores.delQuodom(idquodom);
       setDatos(r);
       setError(null);
+      setAvisoRecarga(null);
     } catch (e) {
-      setDatos(null);
-      setError(e instanceof Error ? e.message : 'Falló la búsqueda.');
+      const msg = e instanceof Error ? e.message : 'Falló la búsqueda.';
+      if (primera) {
+        setDatos(null);
+        setError(msg);
+      } else {
+        setAvisoRecarga(msg);
+      }
     } finally {
-      setCargando(false);
+      if (primera) setCargando(false);
     }
   }, [idquodom]);
 
-  useEffect(() => { void cargar(); }, [cargar]);
+  useEffect(() => { void cargar(true); }, [cargar]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !ocupado) onCerrar(); };
@@ -113,14 +131,27 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }
     }
   }
 
-  async function deshacer(p: Proveedor) {
+  /**
+   * "No se envió" es una corrección, y por eso pregunta el motivo:
+   * `sin_whatsapp` es el único dato propio que acumula el feature (por
+   * place_id, sin límite de tiempo) y es lo que hace que la lista de una zona
+   * mejore con el uso. Es un camino aparte de "Volver a enviar" justamente por
+   * eso: si reintentar pasara por acá, cada reintento ensuciaría ese dato
+   * diciendo que el comercio no tiene WhatsApp.
+   */
+  async function deshacer(p: Proveedor, motivo: 'sin_whatsapp' | 'otro') {
     setOcupado(p.placeid);
     setErrorEnvio(null);
     try {
-      // El motivo es opcional y el diálogo no lo pregunta: deshacer cuesta un
-      // solo toque, que es lo que hace que el dato llegue.
-      await proveedores.noEnviado(idquodom, p.placeid, undefined);
-      await cargar();
+      await proveedores.noEnviado(idquodom, p.placeid, motivo);
+      // Con el 200 del propio noEnviado alcanza para liberar el renglón: volver
+      // a preguntarle a Google es otra búsqueda paga que puede fallar por el
+      // tope y dejar al comprador sin la lista que ya tenía.
+      setDatos(d => d && ({
+        ...d,
+        proveedores: d.proveedores.map(x => x.placeid === p.placeid ? { ...x, contactadoen: null } : x)
+      }));
+      setPreguntandoMotivo(null);
     } catch (e) {
       setErrorEnvio(e instanceof Error ? e.message : 'No pudimos deshacer el envío.');
     } finally {
@@ -144,9 +175,17 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }
         {datos && !datos.preciso && (
           <p className="dp-aprox">
             Tu dirección no está ubicada con precisión — las distancias son desde el centro de la localidad.{' '}
-            {/* Un ancla y no un Link del router: el diálogo se abre desde varias
-                superficies, y el router no es suyo. */}
-            <a href="/direcciones">Revisá tu dirección</a>
+            {/* Un Link y no un href: un ancla recarga el documento entero en
+                medio de un envío y se lleva el Quodom a medio mandar. */}
+            <Link to="/direcciones">Revisá tu dirección</Link>
+          </p>
+        )}
+
+        {avisoRecarga && (
+          // No destructivo a propósito: la lista sigue en pantalla y esto sólo
+          // avisa que no se pudo refrescar.
+          <p className="dp-aviso" role="status">
+            No pudimos actualizar la lista, así que seguís viendo la de hace un momento. {avisoRecarga}
           </p>
         )}
 
@@ -199,20 +238,32 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }
                     {!p.sintelefono && p.esfijo && (
                       <p className="dp-nota">Es un teléfono fijo, puede no tener WhatsApp.</p>
                     )}
+                    {/* El 0800: tiene teléfono, pero no uno que reciba WhatsApp.
+                        Sin decirlo, la falta del botón se lee como un error nuestro. */}
+                    {!p.sintelefono && !p.telefono && (
+                      <p className="dp-nota">Este número no recibe WhatsApp.</p>
+                    )}
                     {p.sinwhatsapp && (
                       <p className="dp-nota">Otro usuario reportó que no tiene WhatsApp.</p>
                     )}
                     {contactado && <p className="dp-marca">Ya le mandaste este Quodom.</p>}
 
                     <div className="dp-acciones-prov">
-                      {!contactado && p.telefono && (
+                      {/* El contactado conserva su botón: "le mandé y no me
+                          contestaron, le mando otra vez" es el caso más común, y
+                          el backend no lo impide ni lo duplica (refresca la marca).
+                          Sin esto, el único camino de vuelta era "No se envió",
+                          que afirma algo falso sobre lo que pasó. */}
+                      {p.telefono && (
                         <button
                           type="button"
                           className="btn btn-whatsapp dp-wa"
                           onClick={() => enviarA(p)}
                           disabled={ocupado === p.placeid}
                         >
-                          {ocupado === p.placeid ? 'Abriendo WhatsApp…' : 'Enviar por WhatsApp'}
+                          {ocupado === p.placeid
+                            ? 'Abriendo WhatsApp…'
+                            : contactado ? 'Volver a enviar' : 'Enviar por WhatsApp'}
                         </button>
                       )}
                       {telLlamar && (
@@ -223,17 +274,39 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviadoSinProveedor }
                       <a className="dp-link" href={linkMaps(p)} target="_blank" rel="noopener noreferrer">
                         Ver en Maps
                       </a>
-                      {contactado && (
+                      {contactado && preguntandoMotivo !== p.placeid && (
                         <button
                           type="button"
                           className="dp-deshacer"
-                          onClick={() => deshacer(p)}
+                          onClick={() => setPreguntandoMotivo(p.placeid)}
                           disabled={ocupado === p.placeid}
                         >
                           No se envió
                         </button>
                       )}
                     </div>
+
+                    {contactado && preguntandoMotivo === p.placeid && (
+                      <div className="dp-motivos" role="group" aria-label="Por qué no se envió">
+                        <span className="dp-motivos-txt">¿Qué pasó?</span>
+                        <button
+                          type="button"
+                          className="dp-deshacer"
+                          onClick={() => deshacer(p, 'sin_whatsapp')}
+                          disabled={ocupado === p.placeid}
+                        >
+                          No tiene WhatsApp
+                        </button>
+                        <button
+                          type="button"
+                          className="dp-deshacer"
+                          onClick={() => deshacer(p, 'otro')}
+                          disabled={ocupado === p.placeid}
+                        >
+                          Otro motivo
+                        </button>
+                      </div>
+                    )}
                   </article>
                 </li>
               );
