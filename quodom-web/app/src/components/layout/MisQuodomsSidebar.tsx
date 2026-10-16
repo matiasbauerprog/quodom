@@ -23,10 +23,10 @@ import type { Agregado } from '../../quodom/agregarProducto';
 import { nombreRubro } from '../../quodom/rubros';
 
 /**
- * With the panel closed the tree isn't visible, so adding something — with +,
- * the destination dialog or a drop — left no trace on screen. This says what
- * went in and where, under the tab, for a few seconds. Open, the tree already
- * shows it and the notice isn't mounted.
+ * Says what went in and where, for a few seconds, floating under the header.
+ * Closed, adding something — with +, the destination dialog or a drop — left
+ * no trace on screen at all; open, the new line shows up in the tree but among
+ * several rubros and Quodoms it doesn't register on its own (user's call).
  */
 function AvisoAgregado({ ramas }: { ramas: RamaRubro[] }) {
   const [ultimo, setUltimo] = useState<Agregado | null>(null);
@@ -178,7 +178,7 @@ export function MisQuodomsSidebar() {
         {/* Arriba y no al pie: al pie repetía el título y se iba de pantalla en
             cuanto la lista crecía, que es cuando más hace falta. */}
         {user && <Link to="/mis-quodoms" className="mq-sidebar-vertodos">Ver historial →</Link>}
-        {panelCerrado && <AvisoAgregado ramas={ramas} />}
+        <AvisoAgregado ramas={ramas} />
         {user && arrastrando && panelCerrado && <DestinoCompacto arrastrando={arrastrando} ramas={ramas} />}
       </header>
 

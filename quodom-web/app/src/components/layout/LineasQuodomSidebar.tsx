@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { quodomLines } from '../../api/quodom_lines';
 import { ApiError } from '../../api/client';
 import { getGuestCart, removeGuestLine, updateGuestLineAtributos, updateGuestLineCantidad } from '../../guest/guestQuodom';
@@ -46,6 +46,33 @@ export function LineasQuodomSidebar(props: Props) {
 
   const clave = props.modo === 'servidor' ? props.idquodom : String(props.idrubro);
   const modo = props.modo;
+  // De qué Quodom son las líneas que hay en pantalla.
+  const claveCargada = useRef<string | null>(null);
+
+  // Lo que acaba de entrar: una línea nueva, o la que subió de cantidad porque
+  // era el mismo producto. Se compara contra lo que había en pantalla del mismo
+  // Quodom; la primera carga, o cambiar de Quodom, no resalta nada.
+  const anteriores = useRef<{ clave: string; lineas: Linea[] } | null>(null);
+  const [recien, setRecien] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!lineas) return;
+    const antes = anteriores.current;
+    anteriores.current = { clave, lineas };
+    const cantidadAntes = new Map((antes?.clave === clave ? antes.lineas : lineas).map(l => [l.key, l.cantidad]));
+    const nuevas = lineas
+      .filter(l => !cantidadAntes.has(l.key) || l.cantidad > cantidadAntes.get(l.key)!)
+      .map(l => l.key);
+    // Siempre se recalcula: si quedara el conjunto anterior, una recarga antes
+    // de que venza el temporizador (que la limpieza cancela) lo dejaría
+    // resaltado para siempre.
+    setRecien(prev => (prev.size === 0 && nuevas.length === 0 ? prev : new Set(nuevas)));
+    if (nuevas.length === 0) return;
+    const t = setTimeout(() => setRecien(new Set()), 2200);
+    return () => clearTimeout(t);
+  }, [lineas, clave]);
+  const verRecien = useCallback((li: HTMLLIElement | null) => {
+    li?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, []);
 
   useEffect(() => {
     if (modo === 'invitado') {
@@ -64,10 +91,16 @@ export function LineasQuodomSidebar(props: Props) {
       return;
     }
     let alive = true;
-    setLineas(null); setErr(null);
+    // Vaciar sólo al cambiar de Quodom. Una recarga (tocaron + en el catálogo)
+    // deja la lista a la vista hasta que llega la nueva: vaciarla mostraba
+    // "Cargando productos…" en su lugar, y en producción eso se veía como que
+    // la página se recargaba entera.
+    if (claveCargada.current !== clave) setLineas(null);
+    setErr(null);
     quodomLines.porQuodom(clave)
       .then(d => {
         if (!alive) return;
+        claveCargada.current = clave;
         setLineas(d.map(l => {
           const falta = faltante(l);
           return {
@@ -162,7 +195,11 @@ export function LineasQuodomSidebar(props: Props) {
       {err && <p className="lqs-err" role="alert">{err}</p>}
       <ul className="lqs-lista">
         {lineas.map((l, i) => (
-          <li key={l.key} className="lqs-linea">
+          <li
+            key={l.key}
+            className={'lqs-linea' + (recien.has(l.key) ? ' lqs-linea-nueva' : '')}
+            ref={recien.has(l.key) ? verRecien : undefined}
+          >
             <span className="lqs-nombre">
               <span className="lqs-nombre-txt" title={l.nombre}>{l.nombre}</span>
               {l.faltaAtributo && l.slotFaltante && (

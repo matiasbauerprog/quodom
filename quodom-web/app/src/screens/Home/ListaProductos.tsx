@@ -12,6 +12,8 @@ import { nombreRubro } from '../../quodom/rubros';
 import { agregarADestino, crearYAgregar } from '../../quodom/agregarProducto';
 import { iniciarArrastre, type Blanco } from '../../quodom/arrastre';
 import { DetalleProducto } from './DetalleProducto';
+import { useNombresQuodom } from '../../quodom/useNombresQuodom';
+import { abiertoDe } from '../../quodom/quodomAbierto';
 import './ListaProductos.css';
 
 /**
@@ -46,6 +48,31 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   const [nonce, setNonce] = useState(0);
   const [errSoltar, setErrSoltar] = useState<string | null>(null);
   const { user } = useAuth();
+  const nombresQuodom = useNombresQuodom(user?.id);
+  // De dónde salió la ventana de destino: crece desde esa tarjeta.
+  const [origen, setOrigen] = useState<DOMRect | null>(null);
+  // El abierto de cada rubro vive en localStorage: sin suscribirse, el cartel
+  // del + seguiría nombrando el anterior después de elegir otro.
+  const [, setVersionAbiertos] = useState(0);
+  useEffect(() => {
+    const releer = () => setVersionAbiertos(v => v + 1);
+    window.addEventListener('quodom:abierto', releer);
+    return () => window.removeEventListener('quodom:abierto', releer);
+  }, []);
+
+  // Adónde va el "+" de un producto, para el cartel y para el lector de
+  // pantalla: el mismo destino que va a usar agregarProducto.
+  function destinoDelMas(p: Product): string {
+    const rubro = nombreRubro(p.categoriaPadre);
+    if (!user) return 'Agregar a tu carrito de ' + rubro;
+    const id = abiertoDe(p.categoriaPadre);
+    const nombre = id ? nombresQuodom[id] : undefined;
+    return nombre ? 'Agregar a ' + nombre : 'Agregar · vas a elegir a qué Quodom de ' + rubro;
+  }
+
+  function tarjetaDe(el: Element): DOMRect | null {
+    return el.closest('.prod-item')?.getBoundingClientRect() ?? null;
+  }
   const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, pedirDestino, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
@@ -98,14 +125,11 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     const linea = destino.items[0].line;
     const p = prods?.find(x => x.id === linea.idproducto);
     if (!p) return null;
-    const conValor = (grupo?: string | null, valor?: string | null) =>
-      grupo ? (valor ? grupo + ': ' + valor : grupo) : null;
-    return {
-      id: p.id,
-      nombre: p.nombreproducto,
-      descripcion: p.descripcion,
-      atributos: [conValor(p.atributo1, linea.atributo1), conValor(p.atributo2, linea.atributo2)]
-    };
+    const atributos = [
+      p.atributo1 ? { nombre: p.atributo1, valor: linea.atributo1 ?? null } : null,
+      p.atributo2 ? { nombre: p.atributo2, valor: linea.atributo2 ?? null } : null
+    ].filter((a): a is { nombre: string; valor: string | null } => a !== null);
+    return { id: p.id, nombre: p.nombreproducto, descripcion: p.descripcion, atributos };
   }
 
   function agregar(p: Product) {
@@ -192,7 +216,11 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
               <button
                 className="prod-info"
                 aria-label={(user ? 'Elegir el Quodom de ' : 'Ver ') + p.nombreproducto}
-                onClick={() => (user ? agregarEnOtro(p) : setSelected(p))}
+                onClick={ev => {
+                  if (!user) { setSelected(p); return; }
+                  setOrigen(tarjetaDe(ev.currentTarget));
+                  agregarEnOtro(p);
+                }}
               >
                 <span className="prod-media">
                   <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />
@@ -205,8 +233,18 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
                   {selector(p, 2)}
                 </div>
                 <div className="prod-botones">
-                  <button className="prod-add" aria-label={'Agregar ' + p.nombreproducto} disabled={agregando} onClick={() => agregar(p)}>
+                  {/* El cartel nombra adónde va, el mismo destino que va a usar
+                      agregarProducto. Va adentro del botón para que el hover
+                      sea el del botón; se ve sólo con mouse (ListaProductos.css). */}
+                  <button
+                    className="prod-add"
+                    aria-label={'Agregar ' + p.nombreproducto}
+                    aria-describedby={'prod-cartel-' + p.id}
+                    disabled={agregando}
+                    onClick={ev => { setOrigen(tarjetaDe(ev.currentTarget)); agregar(p); }}
+                  >
                     <IconoMas />
+                    <span className="prod-cartel" id={'prod-cartel-' + p.id} role="tooltip">{destinoDelMas(p)}</span>
                   </button>
                 </div>
               </div>
@@ -226,6 +264,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
         nombreRubro={nombreRubro(destino.idrubro)}
         candidatos={destino.candidatos}
         producto={fichaDelDestino()}
+        origen={origen}
         onElegir={elegirDestino}
         onCrear={crear}
           onCancelar={cancelar}

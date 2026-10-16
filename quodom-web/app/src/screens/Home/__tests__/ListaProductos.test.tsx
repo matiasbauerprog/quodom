@@ -8,6 +8,10 @@ import { agregarADestino, crearYAgregar } from '../../../quodom/agregarProducto'
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({ useAgregarProducto: vi.fn() }));
 vi.mock('../../../quodom/agregarProducto', () => ({ agregarADestino: vi.fn(), crearYAgregar: vi.fn() }));
+// El cartel del + nombra el Quodom abierto: los nombres salen de esta lista.
+vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn(() => Promise.resolve([
+  { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7', idrubro: 7 }
+])) } }));
 const auth = vi.hoisted(() => ({ user: { id: 'u-1' } as { id: string } | null }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: () => ({ user: auth.user }) }));
 
@@ -279,7 +283,7 @@ describe('ListaProductos · mandar a otro Quodom', () => {
 
     const dialogo = within(screen.getByRole('dialog'));
     expect(dialogo.getByText('Bolsa de residuos')).toBeInTheDocument();
-    expect(dialogo.getByText(/TIPO: Negra 60 x 90/)).toBeInTheDocument();
+    expect(dialogo.getByText('Negra 60 x 90')).toBeInTheDocument();
   });
 
   // Varios "+" sin destino abierto encolan líneas: ahí no hay un producto que
@@ -302,7 +306,7 @@ describe('ListaProductos · mandar a otro Quodom', () => {
     await screen.findByText('Bolsa de residuos');
 
     const dialogo = within(screen.getByRole('dialog'));
-    expect(dialogo.getByRole('heading', { name: /a qué quodom de bebidas/i })).toBeInTheDocument();
+    expect(dialogo.getByRole('heading', { name: /sumar a.*bebidas/i })).toBeInTheDocument();
     expect(dialogo.queryByText(/atributos:/i)).toBeNull();
   });
 });
@@ -548,5 +552,37 @@ describe('ListaProductos · desmontar en pleno arrastre', () => {
     window.dispatchEvent(new PointerEvent('pointerup', { clientX: 160, clientY: 160 }));
     expect(agregarADestino).not.toHaveBeenCalled();
     document.getElementById('d')?.remove();
+  });
+});
+
+// Al pasar el mouse por el +, un cartel dice adónde va: sin él, el + manda al
+// Quodom abierto del rubro sin que nada lo nombre.
+describe('ListaProductos · el cartel del +', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it('nombra el Quodom abierto del rubro', async () => {
+    localStorage.setItem('quodom.abierto', JSON.stringify({ 7: 'q-7' }));
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+
+    const mas = await screen.findByRole('button', { name: 'Agregar Coca Cola 2L' });
+    await waitFor(() => expect(mas).toHaveAccessibleDescription('Agregar a Bebidas oficina'));
+  });
+
+  it('sin Quodom abierto avisa que va a preguntar', async () => {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+
+    const mas = await screen.findByRole('button', { name: 'Agregar Coca Cola 2L' });
+    expect(mas).toHaveAccessibleDescription(/vas a elegir a qué Quodom/i);
+  });
+
+  it('un invitado va a su carrito del rubro', async () => {
+    auth.user = null;
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+
+    const mas = await screen.findByRole('button', { name: 'Agregar Coca Cola 2L' });
+    expect(mas).toHaveAccessibleDescription('Agregar a tu carrito de Bebidas');
   });
 });
