@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MisQuodomsSidebar } from '../MisQuodomsSidebar';
 import { quodom as quodomApi } from '../../../api/quodom';
@@ -339,5 +339,110 @@ describe('sidebar: rubros sin Quodoms', () => {
 
     act(() => { window.dispatchEvent(new Event('arrastre:fin')); });
     expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+describe('MisQuodomsSidebar: panel cerrado', () => {
+  beforeEach(() => {
+    misQuodom.mockReset(); misQuodom.mockResolvedValue([]);
+    clearGuestQuodoms(); localStorage.clear(); login();
+    delete document.documentElement.dataset.panelCerrado;
+  });
+
+  // Cerrado queda sólo la pestaña de arriba; tocar "Mis Quodoms" lo abre al
+  // ancho original.
+  it('la pestaña "Mis Quodoms" abre el panel al ancho original', async () => {
+    localStorage.setItem('quodom.anchoPanel', '500');
+    localStorage.setItem('quodom.panelCerrado', '1');
+    document.documentElement.dataset.panelCerrado = 'true';
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Mis Quodoms' }));
+
+    expect(document.documentElement.dataset.panelCerrado).toBeUndefined();
+    expect(localStorage.getItem('quodom.panelCerrado')).toBeNull();
+    expect(localStorage.getItem('quodom.anchoPanel')).toBeNull();
+  });
+});
+
+// Cerrado, al arrastrar aparece un destino chico debajo de la pestaña: el
+// Quodom abierto del rubro del producto. El panel no se abre.
+describe('MisQuodomsSidebar: soltar con el panel cerrado', () => {
+  const CREADO = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, createdBy: 'u-1', iddireccion: null };
+
+  beforeEach(() => {
+    misQuodom.mockReset(); misQuodom.mockResolvedValue([CREADO]);
+    clearGuestQuodoms(); localStorage.clear(); login();
+    localStorage.setItem('quodom.panelCerrado', '1');
+    document.documentElement.dataset.panelCerrado = 'true';
+  });
+
+  function arrastrar() {
+    act(() => {
+      window.dispatchEvent(new CustomEvent('arrastre:inicio', { detail: { idrubro: 7, nombre: 'Coca Cola 2L', nombreRubro: 'Bebidas' } }));
+    });
+  }
+
+  it('ofrece el Quodom abierto del rubro como destino', async () => {
+    localStorage.setItem('quodom.abierto', JSON.stringify({ 7: 'q-7' }));
+    const { container } = render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await screen.findAllByText('Bebidas oficina');
+    arrastrar();
+
+    const destino = container.querySelector('.mq-sidebar-soltar') as HTMLElement;
+    expect(destino).toHaveAttribute('data-destino', 'q-7');
+    expect(destino).toHaveAttribute('data-rubro', '7');
+    expect(destino).toHaveTextContent('Bebidas oficina');
+    expect(document.documentElement.dataset.panelCerrado).toBe('true');
+  });
+
+  it('sin Quodom abierto en el rubro ofrece crear uno', async () => {
+    const { container } = render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    arrastrar();
+
+    const destino = container.querySelector('.mq-sidebar-soltar') as HTMLElement;
+    expect(destino).toHaveAttribute('data-nuevo');
+    expect(destino).toHaveAttribute('data-rubro', '7');
+  });
+
+  it('sin arrastrar no hay destino', async () => {
+    const { container } = render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    expect(container.querySelector('.mq-sidebar-soltar')).toBeNull();
+  });
+});
+
+describe('MisQuodomsSidebar: aviso de agregado con el panel cerrado', () => {
+  const CREADO = { id: 'q-7', descripcion: 'Bebidas oficina', estado: 'CREADO', nro: 'QD-7', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 2, createdBy: 'u-1', iddireccion: null };
+
+  beforeEach(() => {
+    misQuodom.mockReset(); misQuodom.mockResolvedValue([CREADO]);
+    clearGuestQuodoms(); localStorage.clear(); login();
+    delete document.documentElement.dataset.panelCerrado;
+  });
+
+  function agregado() {
+    act(() => {
+      window.dispatchEvent(new CustomEvent('quodom:agregado', { detail: { nombre: 'Coca Cola 2L', idrubro: 7, idquodom: 'q-7' } }));
+    });
+  }
+
+  it('cerrado, dice qué se agregó y adónde', async () => {
+    localStorage.setItem('quodom.panelCerrado', '1');
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    await screen.findAllByText('Bebidas oficina');
+    agregado();
+    const aviso = screen.getByRole('status', { name: /agregado/i });
+    expect(aviso).toHaveTextContent('Coca Cola 2L');
+    expect(aviso).toHaveTextContent('Bebidas oficina');
+  });
+
+  it('abierto no avisa: el árbol ya lo muestra', async () => {
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+    await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    agregado();
+    expect(screen.queryByRole('status', { name: /agregado/i })).toBeNull();
   });
 });

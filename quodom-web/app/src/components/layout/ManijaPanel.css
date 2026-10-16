@@ -38,6 +38,11 @@
     transition: opacity 0.15s;
     pointer-events: none;
   }
+  /* Cerrado está contra el borde de la pantalla: la zona de agarre crece hacia
+     adentro, porque la mitad de afuera no existe. */
+  :root[data-panel-cerrado] .manija-panel::before { inset: 0 0 0 -10px; }
+  :root[data-panel-cerrado] .manija-panel::after { left: -4px; }
+
   .manija-panel:hover::after,
   .manija-panel:focus-visible::after,
   body.redimensionando .manija-panel::after { opacity: 1; }

@@ -123,6 +123,17 @@ describe('NotificacionesQuodom', () => {
     window.removeEventListener('quodom:changed', cambio);
   });
 
+  it('Repetir abre el panel si estaba cerrado', async () => {
+    localStorage.setItem('quodom.panelCerrado', '1');
+    document.documentElement.dataset.panelCerrado = 'true';
+    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+    montar();
+    const menu = await abrir();
+    fireEvent.click(await within(menu).findByRole('button', { name: /repetir pedido/i }));
+    await waitFor(() => expect(document.documentElement.dataset.panelCerrado).toBeUndefined());
+    expect(localStorage.getItem('quodom.panelCerrado')).toBeNull();
+  });
+
   it('si repetir falla lo dice y no abre nada', async () => {
     repetir.mockRejectedValue(new Error('No se pudo repetir.'));
     montar();

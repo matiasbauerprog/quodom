@@ -20,12 +20,14 @@ export async function agregarProducto(line: GuestLine, opts: Opts): Promise<Agre
   if (!opts.logueado) {
     addGuestLine(opts.idrubro, line);
     notificarCambio();
+    anunciarAgregado(line, opts.idrubro, null);
     return { estado: 'agregado', idquodom: null };
   }
 
   const abierto = await conAbierto(opts.idrubro, id => agregarAlServidor(id, line));
   if (abierto) {
     notificarCambio();
+    anunciarAgregado(line, opts.idrubro, abierto);
     return { estado: 'agregado', idquodom: abierto };
   }
 
@@ -59,6 +61,7 @@ export async function agregarADestino(line: GuestLine, idrubro: number, idquodom
   await agregarAlServidor(idquodom, line);
   abrirQuodom(idrubro, idquodom);
   notificarCambio();
+  anunciarAgregado(line, idrubro, idquodom);
 }
 
 /** El usuario pidió uno nuevo: se crea, recibe la línea y queda como el abierto. */
@@ -67,6 +70,7 @@ export async function crearYAgregar(line: GuestLine, idrubro: number, descripcio
   await agregarAlServidor(creado.idquodom, line);
   abrirQuodom(idrubro, creado.idquodom);
   notificarCambio();
+  anunciarAgregado(line, idrubro, creado.idquodom);
   return creado.idquodom;
 }
 
@@ -88,4 +92,17 @@ export async function agregarAlServidor(idquodom: string, line: GuestLine): Prom
 
 function notificarCambio(): void {
   window.dispatchEvent(new Event('quodom:changed'));
+}
+
+/** Lo que se agregó y adónde (`null`: el carrito de invitado del rubro). */
+export type Agregado = { nombre: string; idrubro: number; idquodom: string | null };
+
+/**
+ * Anuncia una línea que entró. Con el panel cerrado no se ve el árbol, así que
+ * sin esto agregar —con +, con el diálogo o soltando— no dejaba ningún rastro
+ * visible; el panel lo muestra como un aviso debajo de su pestaña.
+ */
+function anunciarAgregado(line: GuestLine, idrubro: number, idquodom: string | null): void {
+  const detail: Agregado = { nombre: line.nombreProducto, idrubro, idquodom };
+  window.dispatchEvent(new CustomEvent('quodom:agregado', { detail }));
 }

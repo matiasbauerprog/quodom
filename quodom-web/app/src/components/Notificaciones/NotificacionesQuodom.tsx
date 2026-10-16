@@ -7,6 +7,7 @@ import type { Notificacion, Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { abrirQuodom } from '../../quodom/quodomAbierto';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
+import { abrirPanel } from '../layout/panelLateral';
 import './NotificacionesQuodom.css';
 
 const CUANTAS = 5;
@@ -98,6 +99,8 @@ export function NotificacionesQuodom() {
     try {
       const r = await quodomApi.repetir(q.id);
       abrirQuodom(q.idrubro, r.idquodom);
+      // Vuelve al árbol: con el panel cerrado no se vería adónde fue.
+      abrirPanel();
       window.dispatchEvent(new Event('quodom:changed'));
       setAbierto(false);
     } catch (e) {
