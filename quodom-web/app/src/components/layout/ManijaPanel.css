@@ -1,0 +1,48 @@
+.manija-panel { display: none; }
+
+@media (min-width: 1025px) {
+  /* Vive en una columna de ancho cero entre el catálogo y el panel, y la zona
+     que se agarra desborda 5px a cada lado. Sticky y con el alto de la ventana,
+     igual que el panel, para que el borde se pueda agarrar desde cualquier
+     altura aunque la página haya scrolleado. */
+  .manija-panel {
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    height: 100dvh;
+    width: 0;
+    /* Sobre la AppBar (20), que si no tapa el borde en su franja; bajo el
+       fondo del menú (30), que lo tiene que cubrir. */
+    z-index: 25;
+    outline: none;
+  }
+  .manija-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0 -5px;
+    cursor: col-resize;
+  }
+  /* La línea aparece al pasar o al enfocar: siempre visible competiría con la
+     tarjeta blanca, que es lo que el panel tiene que decir primero. */
+  .manija-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -2px;
+    width: 4px;
+    background: var(--color-acento);
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+  }
+  .manija-panel:hover::after,
+  .manija-panel:focus-visible::after,
+  body.redimensionando .manija-panel::after { opacity: 1; }
+
+  /* Mientras se arrastra, el cursor no cambia al pasar sobre otra cosa y el
+     texto no se selecciona. */
+  body.redimensionando { cursor: col-resize; user-select: none; }
+}

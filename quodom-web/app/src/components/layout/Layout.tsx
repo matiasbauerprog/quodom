@@ -4,6 +4,7 @@ import { AppBar } from './AppBar';
 import { Drawer } from './Drawer';
 import { BarraQuodomInferior } from './BarraQuodomInferior';
 import { MisQuodomsSidebar } from './MisQuodomsSidebar';
+import { ManijaPanel } from './ManijaPanel';
 import './Layout.css';
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -16,6 +17,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <main>{children}</main>
         <BarraQuodomInferior />
       </div>
+      <ManijaPanel />
       <MisQuodomsSidebar />
     </div>
   );

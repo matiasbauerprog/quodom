@@ -17,5 +17,11 @@
 }
 
 @media (min-width: 1025px) {
-  .layout { display: grid; grid-template-columns: 70% 30%; }
+  /* El panel lo puede ensanchar el usuario (ManijaPanel, en la columna de ancho
+     cero del medio). El clamp repite los topes del componente para que una
+     ventana que se achica después de guardado nunca deje al catálogo sin lugar. */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 0 clamp(300px, var(--ancho-panel, 30%), 50%);
+  }
 }
