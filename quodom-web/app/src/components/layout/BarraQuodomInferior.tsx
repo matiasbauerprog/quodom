@@ -9,6 +9,7 @@ import { abiertoDe } from '../../quodom/quodomAbierto';
 import { nombreRubro } from '../../quodom/rubros';
 import { PanelVacio } from './PanelVacio';
 import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
+import { NotificacionesQuodom } from '../Notificaciones/NotificacionesQuodom';
 import './BarraQuodomInferior.css';
 
 // A guest cart left over after a declined ('cancelar') migration, or one
@@ -112,6 +113,7 @@ export function BarraQuodomInferior() {
           )}
         </div>
       )}
+      <div className="barra-quodom-fila">
       <button
         type="button"
         className="barra-quodom"
@@ -127,6 +129,10 @@ export function BarraQuodomInferior() {
         </span>
         <span className="barra-quodom-arrow" aria-hidden="true">{abierto ? '⌄' : '⌃'}</span>
       </button>
+      {/* Al lado y no adentro del botón de la barra: un botón no puede llevar
+          otro adentro, y tocar la campanita no tiene que desplegar el árbol. */}
+      {user && <div className="barra-quodom-notif"><NotificacionesQuodom /></div>}
+      </div>
     </div>
   );
 }

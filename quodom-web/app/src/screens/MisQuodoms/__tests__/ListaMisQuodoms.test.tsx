@@ -137,3 +137,29 @@ describe('ListaMisQuodoms: la tarjeta abre una ventana', () => {
     expect(within(ventana).getByRole('button', { name: /otro proveedor/i })).toBeEnabled();
   });
 });
+
+describe('ListaMisQuodoms: entrar a un pedido desde una notificación', () => {
+  beforeEach(() => { misQuodom.mockReset(); });
+
+  const ENVIADO = {
+    id: 'q-9', descripcion: 'Frente', estado: 'ENVIADO', nro: 'QD-9', idrubro: 5,
+    nombrerubro: 'Pintura', cantproductos: 2, createdBy: 'u-1', iddireccion: 1,
+    fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  };
+
+  it('?pedido= abre la ventana de ese pedido', async () => {
+    misQuodom.mockResolvedValue([ENVIADO]);
+    render(<MemoryRouter initialEntries={['/mis-quodoms?pedido=q-9']}><ListaMisQuodoms /></MemoryRouter>);
+
+    const ventana = await screen.findByRole('dialog');
+    expect(within(ventana).getByText('Frente')).toBeInTheDocument();
+  });
+
+  it('un pedido que no está deja la lista como siempre', async () => {
+    misQuodom.mockResolvedValue([ENVIADO]);
+    render(<MemoryRouter initialEntries={['/mis-quodoms?pedido=q-borrado']}><ListaMisQuodoms /></MemoryRouter>);
+
+    await screen.findByRole('button', { name: /QD-9/ });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});

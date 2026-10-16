@@ -30,18 +30,26 @@
   /* La cabecera alinea a la izquierda y lleva "Ver todos" al otro extremo. El
      título centrado en mayúsculas competía con el wordmark de la barra. */
   .mq-sidebar-cab {
+    /* Contra esto se ubica el menú de notificaciones: toma todo el ancho de la
+       cabecera y no el de la campanita. */
+    position: relative;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    /* Con el panel angosto (ManijaPanel) el título, la campanita y "Ver historial"
+       no entran en una línea: el botón baja en vez de salirse del borde. */
+    flex-wrap: wrap;
     gap: var(--sp-3);
   }
   .mq-sidebar-marca { display: flex; flex-direction: column; gap: 6px; }
+  .mq-sidebar-fila { display: flex; align-items: center; gap: var(--sp-2); }
   .mq-sidebar-title {
     margin: 0;
     font-family: var(--font-prompt);
     font-size: 22px;
     font-weight: 600;
     line-height: 1.1;
+    white-space: nowrap;
     color: #fff;
   }
   .mq-sidebar-regla { width: 40px; height: 3px; background: var(--color-acento); }

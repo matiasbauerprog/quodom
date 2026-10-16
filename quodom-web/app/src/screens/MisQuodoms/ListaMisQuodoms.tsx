@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -53,6 +53,18 @@ export function ListaMisQuodoms() {
   // mitad de un envío, que es lo mismo que `MisQuodomsSidebar` se reestructuró
   // para evitar.
   const [pedido, setPedido] = useState<Quodom | null>(null);
+
+  // `?pedido=` es la entrada desde una notificación ("Ver en historial"): abre
+  // esa ventana apenas llega la lista. Se saca de la URL al usarlo, para que
+  // cerrar la ventana y recargar no la vuelva a abrir.
+  const [params, setParams] = useSearchParams();
+  const pedidoDeLaUrl = params.get('pedido');
+  useEffect(() => {
+    if (!pedidoDeLaUrl || !list) return;
+    const q = list.find(x => x.id === pedidoDeLaUrl);
+    if (q) setPedido(q);
+    setParams(p => { p.delete('pedido'); return p; }, { replace: true });
+  }, [pedidoDeLaUrl, list, setParams]);
 
 
 

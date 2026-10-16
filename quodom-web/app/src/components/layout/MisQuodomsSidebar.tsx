@@ -14,6 +14,7 @@ import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import { useArrastreActivo } from '../../quodom/useArrastreActivo';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
+import { NotificacionesQuodom } from '../Notificaciones/NotificacionesQuodom';
 import './MisQuodomsSidebar.css';
 
 export function MisQuodomsSidebar() {
@@ -88,7 +89,10 @@ export function MisQuodomsSidebar() {
     <aside className="mq-sidebar" aria-label="Mis Quodoms">
       <header className="mq-sidebar-cab">
         <div className="mq-sidebar-marca">
-          <h2 className="mq-sidebar-title">Mis Quodoms</h2>
+          <div className="mq-sidebar-fila">
+            <h2 className="mq-sidebar-title">Mis Quodoms</h2>
+            <NotificacionesQuodom />
+          </div>
           <span className="mq-sidebar-regla" aria-hidden="true" />
           {enArmado > 0 && (
             <span className="mq-sidebar-resumen">
