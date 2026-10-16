@@ -204,7 +204,7 @@
   }
 }
 
-/* El aviso de agregado (AvisoAgregado): sólo existe con el panel cerrado. */
+/* El aviso de agregado (AvisoAgregado), con el panel abierto o cerrado. */
 @media (min-width: 1025px) {
   .mq-sidebar-agregado {
     display: flex;
@@ -242,10 +242,11 @@
    quería evitar. Se ubican contra .mq-sidebar-cab (que es `relative`). */
 @media (min-width: 1025px) {
   :root[data-panel-cerrado] .mq-sidebar-soltar,
-  :root[data-panel-cerrado] .mq-sidebar-agregado {
+  .mq-sidebar-agregado {
     position: absolute;
     top: calc(100% + var(--sp-3));
     right: calc(-1 * var(--sp-2));
+    z-index: 6;
     width: 240px;
     max-width: none;
     margin: 0;

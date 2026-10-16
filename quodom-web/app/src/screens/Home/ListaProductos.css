@@ -267,3 +267,44 @@
 @media (prefers-reduced-motion: reduce) {
   .arrastre-interior { transition: none; }
 }
+
+/* El cartel del +: adónde va lo que se agrega. Sutil a propósito —oscuro, chico,
+   con un instante de espera— para que pasar el mouse por la grilla no la llene
+   de carteles. Abre hacia la izquierda porque el + está en la esquina derecha
+   de la tarjeta. Sólo con mouse: en celular no hay hover y quedaría pegado
+   después de tocar. Para el lector de pantalla es la descripción del botón. */
+.prod-cartel { display: none; }
+@media (hover: hover) {
+  .prod-cartel {
+    display: block;
+    position: absolute;
+    right: -6px;
+    bottom: calc(100% + 8px);
+    z-index: 5;
+    max-width: 220px;
+    padding: 5px 9px;
+    background: var(--color-panel-oscuro);
+    color: #fff;
+    border-radius: 6px;
+    font-family: var(--font-work);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(3px);
+    transition: opacity 0.12s, transform 0.12s;
+  }
+  .prod-add:hover:not(:disabled) .prod-cartel,
+  .prod-add:focus-visible .prod-cartel {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.35s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prod-cartel { transition: none; transform: none; }
+}

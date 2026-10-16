@@ -439,10 +439,13 @@ describe('MisQuodomsSidebar: aviso de agregado con el panel cerrado', () => {
     expect(aviso).toHaveTextContent('Bebidas oficina');
   });
 
-  it('abierto no avisa: el árbol ya lo muestra', async () => {
+  // También abierto: la línea nueva aparece en el árbol, pero entre varios
+  // rubros y Quodoms no se nota sola (lo pidió el usuario).
+  it('abierto también avisa', async () => {
     render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
     await waitFor(() => expect(misQuodom).toHaveBeenCalled());
+    await screen.findAllByText('Bebidas oficina');
     agregado();
-    expect(screen.queryByRole('status', { name: /agregado/i })).toBeNull();
+    expect(screen.getByRole('status', { name: /agregado/i })).toHaveTextContent('Coca Cola 2L');
   });
 });

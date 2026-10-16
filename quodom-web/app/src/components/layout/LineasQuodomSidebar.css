@@ -107,3 +107,18 @@
   color: #5C5C5C;
 }
 .lqs-err { color: #B42532; }
+
+/* Lo que acaba de entrar (un + del catálogo, soltar, el mismo producto que sube
+   de cantidad): un verde suave que se desvanece, para que se vea qué cambió sin
+   que quede marcado. */
+.lqs-linea-nueva {
+  animation: lqs-entro 2.2s ease-out;
+  border-radius: 6px;
+}
+@keyframes lqs-entro {
+  0%, 35% { background: #DFF3E8; box-shadow: inset 3px 0 0 var(--color-exito), -6px 0 0 #DFF3E8, 6px 0 0 #DFF3E8; }
+  100% { background: transparent; box-shadow: inset 3px 0 0 transparent, -6px 0 0 transparent, 6px 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lqs-linea-nueva { animation: none; background: #DFF3E8; }
+}

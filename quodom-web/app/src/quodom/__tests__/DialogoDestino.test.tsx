@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DialogoDestino } from '../DialogoDestino';
 import type { Quodom } from '../../api/types';
 
@@ -62,30 +62,68 @@ describe('DialogoDestino · la ficha del producto', () => {
     id: 137,
     nombre: 'Latex Interior Blanco Mate',
     descripcion: 'Para interiores, secado rápido.',
-    atributos: ['LITROS: 20 litros', null]
+    atributos: [{ nombre: 'LITROS', valor: '20 litros' }, { nombre: 'MARCA', valor: null }]
   };
 
-  it('muestra nombre, descripción y el atributo con lo elegido', () => {
+  it('muestra nombre, descripción y cada atributo con lo elegido', () => {
     montar({ producto: LATEX });
 
     expect(screen.getByText('Latex Interior Blanco Mate')).toBeInTheDocument();
     expect(screen.getByText(/secado rápido/i)).toBeInTheDocument();
-    expect(screen.getByText(/LITROS: 20 litros/)).toBeInTheDocument();
+    expect(screen.getByText('20 litros')).toBeInTheDocument();
     expect(screen.getByAltText('Latex Interior Blanco Mate')).toBeInTheDocument();
   });
 
-  it('un atributo sin valor elegido muestra sólo el grupo', () => {
-    montar({ producto: { ...LATEX, atributos: ['LITROS', null] } });
+  // Antes decía "Atributos: LITROS, MARCA": el nombre del grupo, que no
+  // dice nada. Lo que importa es si ya está elegido.
+  it('un atributo sin elegir lo dice', () => {
+    montar({ producto: LATEX });
 
-    expect(screen.getByText('Atributos: LITROS')).toBeInTheDocument();
+    expect(screen.getByText('sin elegir')).toBeInTheDocument();
   });
 
   // El buscador no tiene esos datos, y un "+" que encoló varias líneas no tiene
-  // un producto que mostrar: el diálogo sigue sirviendo sin cabecera.
+  // un producto que mostrar: el diálogo sigue sirviendo sin ficha.
   it('sin producto sigue preguntando el destino', () => {
     montar();
 
-    expect(screen.getByRole('heading', { name: /a qué quodom de pintura/i })).toBeInTheDocument();
-    expect(screen.queryByText(/atributos:/i)).toBeNull();
+    expect(screen.getByRole('heading', { name: /sumar a.*pintura/i })).toBeInTheDocument();
+    expect(screen.queryByText('sin elegir')).toBeNull();
+  });
+});
+
+// La ventana nace de la tarjeta que se tocó y vuelve a ella al cancelar.
+describe('DialogoDestino · el efecto desde la tarjeta', () => {
+  const ORIGEN = { left: 40, top: 500, width: 160, height: 150, right: 200, bottom: 650, x: 40, y: 500, toJSON: () => ({}) } as DOMRect;
+  type Animacion = { finished: Promise<void>; cancel: () => void };
+  let animate: ReturnType<typeof vi.fn<unknown[], Animacion>>;
+
+  beforeEach(() => {
+    animate = vi.fn((..._args: unknown[]): Animacion => ({ finished: Promise.resolve(), cancel: () => {} }));
+    (HTMLElement.prototype as unknown as { animate: unknown }).animate = animate;
+  });
+  afterEach(() => { delete (HTMLElement.prototype as unknown as { animate?: unknown }).animate; });
+
+  it('con origen, crece desde la tarjeta', () => {
+    montar({ origen: ORIGEN });
+    expect(animate).toHaveBeenCalled();
+    const [cuadros] = animate.mock.calls[0] as [Keyframe[]];
+    expect(String(cuadros[0].transform)).toMatch(/translate/);
+    expect(cuadros[cuadros.length - 1].transform).toBe('none');
+  });
+
+  it('al cancelar se achica hacia la tarjeta y recién después avisa', async () => {
+    const p = montar({ origen: ORIGEN });
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(p.onCancelar).not.toHaveBeenCalled();
+    await waitFor(() => expect(p.onCancelar).toHaveBeenCalledTimes(1));
+    expect(animate).toHaveBeenCalledTimes(2);
+  });
+
+  it('sin origen no anima y cancela en el acto', () => {
+    const p = montar();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(p.onCancelar).toHaveBeenCalledTimes(1);
+    expect(animate).not.toHaveBeenCalled();
   });
 });
