@@ -92,3 +92,53 @@ describe('agregarProducto con un Quodom abierto', () => {
     expect(getGuestCart(5).lines).toEqual([LINEA]);
   });
 });
+
+// Con el panel cerrado no se ve el árbol: el panel muestra un aviso cuando
+// algo entró, y para eso cada camino que agrega lo anuncia.
+describe('agregarProducto anuncia lo que agregó', () => {
+  beforeEach(() => { localStorage.clear(); clearGuestQuodoms(); vi.resetAllMocks(); });
+
+  function escuchar() {
+    const avisos: unknown[] = [];
+    const oir = (e: Event) => avisos.push((e as CustomEvent).detail);
+    window.addEventListener('quodom:agregado', oir);
+    return { avisos, dejar: () => window.removeEventListener('quodom:agregado', oir) };
+  }
+
+  it('con + al abierto', async () => {
+    abrirQuodom(5, 'q-casa');
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+    const { avisos, dejar } = escuchar();
+    await agregarProducto(LINEA, { logueado: true, idrubro: 5 });
+    dejar();
+    expect(avisos).toEqual([{ nombre: 'Gaseosa 2L', idrubro: 5, idquodom: 'q-casa' }]);
+  });
+
+  it('a un destino elegido y a uno nuevo', async () => {
+    vi.mocked(quodomLines.add).mockResolvedValue({ res: true, id: 1 });
+    vi.mocked(quodomApi.create).mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+    const { avisos, dejar } = escuchar();
+    await agregarADestino(LINEA, 5, 'q-depto');
+    await crearYAgregar(LINEA, 5, 'Nuevo');
+    dejar();
+    expect(avisos).toEqual([
+      { nombre: 'Gaseosa 2L', idrubro: 5, idquodom: 'q-depto' },
+      { nombre: 'Gaseosa 2L', idrubro: 5, idquodom: 'q-nuevo' }
+    ]);
+  });
+
+  it('al carrito del invitado', async () => {
+    const { avisos, dejar } = escuchar();
+    await agregarProducto(LINEA, { logueado: false, idrubro: 5 });
+    dejar();
+    expect(avisos).toEqual([{ nombre: 'Gaseosa 2L', idrubro: 5, idquodom: null }]);
+  });
+
+  it('si falla no anuncia nada', async () => {
+    vi.mocked(quodomLines.add).mockRejectedValue(new Error('red'));
+    const { avisos, dejar } = escuchar();
+    await expect(agregarADestino(LINEA, 5, 'q-depto')).rejects.toThrow();
+    dejar();
+    expect(avisos).toEqual([]);
+  });
+});

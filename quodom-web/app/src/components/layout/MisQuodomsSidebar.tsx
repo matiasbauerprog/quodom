@@ -14,6 +14,72 @@ import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import { useArrastreActivo } from '../../quodom/useArrastreActivo';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
+import { NotificacionesQuodom } from '../Notificaciones/NotificacionesQuodom';
+import { guardarPanel, usePanelCerrado } from './panelLateral';
+import { abiertoDe } from '../../quodom/quodomAbierto';
+import type { ArrastreActivo } from '../../quodom/useArrastreActivo';
+import type { RamaRubro } from './ArbolQuodoms';
+import type { Agregado } from '../../quodom/agregarProducto';
+import { nombreRubro } from '../../quodom/rubros';
+
+/**
+ * With the panel closed the tree isn't visible, so adding something — with +,
+ * the destination dialog or a drop — left no trace on screen. This says what
+ * went in and where, under the tab, for a few seconds. Open, the tree already
+ * shows it and the notice isn't mounted.
+ */
+function AvisoAgregado({ ramas }: { ramas: RamaRubro[] }) {
+  const [ultimo, setUltimo] = useState<Agregado | null>(null);
+  useEffect(() => {
+    const oir = (e: Event) => setUltimo((e as CustomEvent<Agregado>).detail);
+    window.addEventListener('quodom:agregado', oir);
+    return () => window.removeEventListener('quodom:agregado', oir);
+  }, []);
+  useEffect(() => {
+    if (!ultimo) return;
+    const t = setTimeout(() => setUltimo(null), 3500);
+    return () => clearTimeout(t);
+  }, [ultimo]);
+  if (!ultimo) return null;
+
+  const q = ramas.find(r => r.idrubro === ultimo.idrubro)?.quodoms.find(x => x.id === ultimo.idquodom);
+  const destino = q
+    ? q.descripcion || q.nro
+    : ultimo.idquodom === null
+      ? 'tu carrito de ' + nombreRubro(ultimo.idrubro)
+      : 'tu Quodom de ' + nombreRubro(ultimo.idrubro);
+  return (
+    <p className="mq-sidebar-agregado" role="status" aria-label={'Agregado: ' + ultimo.nombre + ' a ' + destino}>
+      <span className="mq-sidebar-agregado-ok" aria-hidden="true">✓</span>
+      <span><strong>{ultimo.nombre}</strong> agregado a {destino}</span>
+    </p>
+  );
+}
+
+/**
+ * With the panel closed, the only drop target left: a small box under the tab.
+ * It goes to the open Quodom of the product's rubro — the same one `+` would
+ * use — or, with none open, to a new one. It's only mounted closed: open, the
+ * tree has the real targets, and a hidden duplicate would still be in the DOM. Being a `data-destino`/`data-nuevo` like the
+ * tree's, the drop goes through the same path and the panel stays closed.
+ */
+function DestinoCompacto({ arrastrando, ramas }: { arrastrando: ArrastreActivo; ramas: RamaRubro[] }) {
+  const { idrubro, nombreRubro } = arrastrando;
+  const id = abiertoDe(idrubro);
+  const abierto = ramas.find(r => r.idrubro === idrubro)?.quodoms.find(q => q.id === id);
+  if (abierto) {
+    return (
+      <div className="mq-sidebar-soltar" data-destino={abierto.id} data-rubro={idrubro}>
+        Soltá para sumar a <strong>{abierto.descripcion || abierto.nro}</strong>
+      </div>
+    );
+  }
+  return (
+    <div className="mq-sidebar-soltar" data-nuevo={idrubro} data-rubro={idrubro}>
+      Soltá para crear un Quodom de <strong>{nombreRubro}</strong>
+    </div>
+  );
+}
 import './MisQuodomsSidebar.css';
 
 export function MisQuodomsSidebar() {
@@ -31,6 +97,7 @@ export function MisQuodomsSidebar() {
   const [faltas, setFaltas] = useState<Record<string, FaltaAtributo | null>>({});
   const { list, ramas, refresh } = useQuodomsEnArmado(user?.id);
   const arrastrando = useArrastreActivo();
+  const panelCerrado = usePanelCerrado();
 
   // Devolver `prev` cuando no cambió nada es lo que corta el ciclo: la lista
   // reporta en un efecto, así que un objeto nuevo en cada pasada volvería a
@@ -88,7 +155,19 @@ export function MisQuodomsSidebar() {
     <aside className="mq-sidebar" aria-label="Mis Quodoms">
       <header className="mq-sidebar-cab">
         <div className="mq-sidebar-marca">
-          <h2 className="mq-sidebar-title">Mis Quodoms</h2>
+          <div className="mq-sidebar-fila">
+            <h2 className="mq-sidebar-title">Mis Quodoms</h2>
+            {/* Sólo se ve con el panel cerrado (lo decide el CSS, por
+                `data-panel-cerrado`): es lo que queda arriba a la derecha, y
+                tocarlo lo vuelve a abrir al ancho original. */}
+            <button
+              type="button"
+              className="mq-sidebar-abrir"
+              aria-label="Abrir Mis Quodoms"
+              onClick={() => guardarPanel(null)}
+            >Mis Quodoms</button>
+            <NotificacionesQuodom />
+          </div>
           <span className="mq-sidebar-regla" aria-hidden="true" />
           {enArmado > 0 && (
             <span className="mq-sidebar-resumen">
@@ -99,6 +178,8 @@ export function MisQuodomsSidebar() {
         {/* Arriba y no al pie: al pie repetía el título y se iba de pantalla en
             cuanto la lista crecía, que es cuando más hace falta. */}
         {user && <Link to="/mis-quodoms" className="mq-sidebar-vertodos">Ver historial →</Link>}
+        {panelCerrado && <AvisoAgregado ramas={ramas} />}
+        {user && arrastrando && panelCerrado && <DestinoCompacto arrastrando={arrastrando} ramas={ramas} />}
       </header>
 
       {/* Mientras se arrastra, el panel dice qué se está arrastrando y a dónde

@@ -50,4 +50,16 @@
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
 }
 
-@media (min-width: 1025px) { .barra-quodom, .barra-quodom-panel { display: none; } }
+/* La barra y la campanita comparten la franja oscura. */
+.barra-quodom-fila {
+  display: flex;
+  background: var(--color-panel-oscuro);
+  box-shadow: 0 -2px 8px rgba(0,0,0,.2);
+}
+.barra-quodom-fila .barra-quodom { flex: 1; min-width: 0; box-shadow: none; }
+.barra-quodom-notif {
+  display: flex; align-items: center;
+  padding: 0 var(--sp-3) env(safe-area-inset-bottom, 0px) 0;
+}
+
+@media (min-width: 1025px) { .barra-quodom-fila, .barra-quodom-panel { display: none; } }

@@ -7,6 +7,8 @@ import { quodomLines } from '../../../api/quodom_lines';
 import { useAuth } from '../../../auth/AuthContext';
 import { addGuestLine, clearGuestQuodoms, getGuestCart } from '../../../guest/guestQuodom';
 
+// La campanita pide la cuenta al montar; sin esto sale un fetch real.
+vi.mock('../../../api/oper_notificaciones', () => ({ notificaciones: { count: vi.fn(() => Promise.resolve(0)), list: vi.fn(() => Promise.resolve([])), marcarLeida: vi.fn() } }));
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn() } }));
 vi.mock('../../../api/quodom_lines', () => ({
   quodomLines: { porQuodom: vi.fn(), update: vi.fn(), eliminar: vi.fn(), atributos: vi.fn() }

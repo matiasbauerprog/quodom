@@ -153,3 +153,24 @@ describe('QuodomCard: un enviado no vence', () => {
     expect(screen.queryByText(/72hs/i)).toBeNull();
   });
 });
+
+// Repetir devuelve un Quodom al árbol: si el panel estaba cerrado, se abre,
+// igual que desde la notificación y desde la ventana del pedido.
+describe('QuodomCard: repetir abre el panel', () => {
+  const repetir = quodomApi.repetir as unknown as ReturnType<typeof vi.fn>;
+  const ENVIADO = {
+    ...BEBIDAS, estado: 'ENVIADO', fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  } as unknown as Quodom;
+
+  it('abre el panel si estaba cerrado', async () => {
+    localStorage.setItem('quodom.panelCerrado', '1');
+    document.documentElement.dataset.panelCerrado = 'true';
+    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+    montar({ quodom: ENVIADO, variant: 'page' });
+
+    fireEvent.click(screen.getByRole('button', { name: /repetir/i }));
+
+    await waitFor(() => expect(document.documentElement.dataset.panelCerrado).toBeUndefined());
+    expect(localStorage.getItem('quodom.panelCerrado')).toBeNull();
+  });
+});

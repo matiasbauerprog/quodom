@@ -4,6 +4,7 @@ import type { Quodom, QuodomLine } from '../../api/types';
 import { quodom as quodomApi } from '../../api/quodom';
 import { quodomLines } from '../../api/quodom_lines';
 import { abrirQuodom } from '../../quodom/quodomAbierto';
+import { abrirPanel } from '../../components/layout/panelLateral';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
 import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
@@ -83,6 +84,8 @@ export function DialogoPedido({ quodom, onCerrar, onRepetido }: Props) {
       // Queda abierto en su rubro: "volver al sidebar" es, concretamente, ser
       // el Quodom que ese rubro muestra desplegado y que recibe lo que se agrega.
       abrirQuodom(quodom.idrubro, r.idquodom);
+      // Con el panel cerrado no se vería adónde volvió.
+      abrirPanel();
       window.dispatchEvent(new Event('quodom:changed'));
       onRepetido?.(r.idquodom);
       onCerrar();

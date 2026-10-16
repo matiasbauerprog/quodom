@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
+import {
+  MINIMO, UMBRAL_CIERRE, anchoGuardado, panelCerrado, previsualizar, guardarPanel
+} from './panelLateral';
 import './ManijaPanel.css';
 
-const CLAVE = 'quodom.anchoPanel';
-const VARIABLE = '--ancho-panel';
-const MINIMO = 300;
 const PASO = 16;
+
+type Estado = number | 'cerrado';
 
 // The CSS clamps the same range (Layout.css), so a window that shrinks after
 // the width was saved never squeezes the catalog: this only has to keep the
@@ -15,51 +17,49 @@ function acotar(px: number, anchoLayout: number): number {
   return Math.round(Math.min(maximo, Math.max(MINIMO, px)));
 }
 
-function leer(): number | null {
-  try {
-    const n = Number(localStorage.getItem(CLAVE));
-    return Number.isFinite(n) && n > 0 ? n : null;
-  } catch {
-    return null;
-  }
-}
-
-function aplicar(px: number | null): void {
-  const raiz = document.documentElement.style;
-  if (px === null) raiz.removeProperty(VARIABLE);
-  else raiz.setProperty(VARIABLE, px + 'px');
-}
-
 /**
- * The border between the catalog and the right panel, dragged to resize it.
- * Desktop only (the panel doesn't exist below 1025px). The width lives in a CSS
- * variable on <html> and is written directly while dragging: going through
- * React state would re-render the whole Layout, panel included, on every
- * pointermove.
+ * The border between the catalog and the right panel, dragged to resize it or,
+ * past UMBRAL_CIERRE, to close it. Closed, it stays at the right edge of the
+ * screen so the panel can be dragged back out. Desktop only. Everything visual
+ * goes through `panelLateral` straight to <html>: going through React state
+ * would re-render the whole Layout, panel included, on every pointermove.
  */
 export function ManijaPanel() {
   const ref = useRef<HTMLDivElement>(null);
   const arrastrando = useRef(false);
   const [ancho, setAncho] = useState<number | null>(null);
+  const [cerrado, setCerrado] = useState(false);
 
   function layout() {
     return ref.current!.parentElement!.getBoundingClientRect();
   }
 
-  function fijar(px: number | null, guardar: boolean): void {
-    const valor = px === null ? null : acotar(px, layout().width);
-    aplicar(valor);
-    setAncho(valor);
-    if (!guardar) return;
-    try {
-      if (valor === null) localStorage.removeItem(CLAVE);
-      else localStorage.setItem(CLAVE, String(valor));
-    } catch {}
+  // Where a drag or key leaves the panel: closed below the threshold, else the
+  // width clamped to the allowed range.
+  function resolver(px: number): Estado {
+    return px < UMBRAL_CIERRE ? 'cerrado' : acotar(px, layout().width);
+  }
+
+  function mostrar(estado: Estado | null, guardar: boolean) {
+    if (guardar) guardarPanel(estado);
+    else previsualizar(estado);
+    setCerrado(estado === 'cerrado');
+    if (estado !== 'cerrado') setAncho(estado);
   }
 
   useEffect(() => {
-    const guardado = leer();
-    if (guardado !== null) fijar(guardado, false);
+    const sincronizar = () => {
+      const guardado = anchoGuardado();
+      const valor = guardado === null ? null : acotar(guardado, layout().width);
+      previsualizar(valor);
+      setAncho(valor);
+      const estaCerrado = panelCerrado();
+      if (estaCerrado) previsualizar('cerrado');
+      setCerrado(estaCerrado);
+    };
+    sincronizar();
+    window.addEventListener('panel:cambio', sincronizar);
+    return () => window.removeEventListener('panel:cambio', sincronizar);
   }, []);
 
   // Without a saved width the CSS default (30%) rules, so the starting point
@@ -79,7 +79,7 @@ export function ManijaPanel() {
 
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
     if (!arrastrando.current) return;
-    fijar(layout().right - e.clientX, false);
+    mostrar(resolver(layout().right - e.clientX), false);
   }
 
   function soltar(): boolean {
@@ -90,21 +90,25 @@ export function ManijaPanel() {
   }
 
   function onPointerUp(e: PointerEvent<HTMLDivElement>) {
-    if (soltar()) fijar(layout().right - e.clientX, true);
+    if (soltar()) mostrar(resolver(layout().right - e.clientX), true);
   }
 
   // A cancelled pointer carries no reliable position (often clientX 0, which
-  // would read as "as wide as possible"): keep what was on screen.
+  // would read as "as wide as possible"): go back to what was saved.
   function onPointerCancel() {
-    if (soltar() && ancho !== null) fijar(ancho, true);
+    if (soltar()) window.dispatchEvent(new Event('panel:cambio'));
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     // The panel is on the right: moving the border left widens it.
-    const delta = e.key === 'ArrowLeft' ? PASO : e.key === 'ArrowRight' ? -PASO : 0;
-    if (!delta) return;
-    e.preventDefault();
-    fijar(actual() + delta, true);
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      mostrar(cerrado ? MINIMO : resolver(actual() + PASO), true);
+    } else if (e.key === 'ArrowRight' && !cerrado) {
+      e.preventDefault();
+      const angosto = actual() - PASO;
+      mostrar(actual() <= MINIMO ? 'cerrado' : acotar(angosto, layout().width), true);
+    }
   }
 
   return (
@@ -115,14 +119,17 @@ export function ManijaPanel() {
       aria-orientation="vertical"
       aria-label="Ancho del panel Mis Quodoms"
       aria-valuemin={MINIMO}
-      aria-valuenow={ancho ?? undefined}
-      title="Arrastrá para cambiar el ancho · doble clic para volver al original"
+      aria-valuenow={cerrado ? 0 : ancho ?? undefined}
+      aria-valuetext={cerrado ? 'Panel cerrado' : undefined}
+      title={cerrado
+        ? 'Arrastrá hacia la izquierda para abrir Mis Quodoms'
+        : 'Arrastrá para cambiar el ancho, hasta el borde para cerrarlo · doble clic para volver al original'}
       tabIndex={0}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
-      onDoubleClick={() => fijar(null, true)}
+      onDoubleClick={() => mostrar(null, true)}
       onKeyDown={onKeyDown}
     />
   );

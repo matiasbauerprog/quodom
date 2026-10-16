@@ -24,4 +24,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) 0 clamp(300px, var(--ancho-panel, 30%), 50%);
   }
+  /* Cerrado, el panel sale del grid (queda como pestaña fija, ver
+     MisQuodomsSidebar.css) y la manija queda contra el borde derecho. */
+  :root[data-panel-cerrado] .layout { grid-template-columns: minmax(0, 1fr) 0 0; }
 }

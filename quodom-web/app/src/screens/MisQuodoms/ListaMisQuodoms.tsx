@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -53,6 +53,22 @@ export function ListaMisQuodoms() {
   // mitad de un envío, que es lo mismo que `MisQuodomsSidebar` se reestructuró
   // para evitar.
   const [pedido, setPedido] = useState<Quodom | null>(null);
+
+  // `?pedido=` es la entrada desde una notificación ("Historial"): lleva a la
+  // lista, no a la ventana — se pidió ver el pedido en su historial. Para que se
+  // sepa cuál era, su tarjeta queda resaltada y la pantalla baja hasta ella. Se
+  // saca de la URL al usarlo, para que recargar no lo vuelva a marcar.
+  const [params, setParams] = useSearchParams();
+  const pedidoDeLaUrl = params.get('pedido');
+  const [resaltado, setResaltado] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pedidoDeLaUrl || !list) return;
+    if (list.some(x => x.id === pedidoDeLaUrl)) setResaltado(pedidoDeLaUrl);
+    setParams(p => { p.delete('pedido'); return p; }, { replace: true });
+  }, [pedidoDeLaUrl, list, setParams]);
+  const tarjetaResaltada = useCallback((li: HTMLLIElement | null) => {
+    li?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  }, []);
 
 
 
@@ -140,7 +156,12 @@ export function ListaMisQuodoms() {
         {list && list.length > 0 && (
           <ul className="mq-list">
             {list.map(q => (
-              <li key={q.id} className="mq-item">
+              <li
+                key={q.id}
+                className={'mq-item' + (q.id === resaltado ? ' mq-item-resaltado' : '')}
+                aria-current={q.id === resaltado ? 'true' : undefined}
+                ref={q.id === resaltado ? tarjetaResaltada : undefined}
+              >
                 <QuodomCard
                   quodom={q}
                   variant="page"

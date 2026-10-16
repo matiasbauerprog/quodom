@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { ManijaPanel } from '../ManijaPanel';
 
 const CLAVE = 'quodom.anchoPanel';
@@ -25,6 +25,7 @@ function montar() {
 beforeEach(() => {
   localStorage.clear();
   document.documentElement.style.removeProperty('--ancho-panel');
+  delete document.documentElement.dataset.panelCerrado;
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
     { left: 0, right: ANCHO_LAYOUT, width: ANCHO_LAYOUT, top: 0, bottom: 800, height: 800, x: 0, y: 0, toJSON: () => ({}) } as DOMRect
   );
@@ -67,14 +68,6 @@ describe('ManijaPanel', () => {
     expect(localStorage.getItem(CLAVE)).toBe('400');
   });
 
-  it('no deja el panel más angosto que el mínimo', () => {
-    const manija = montar();
-    fireEvent.pointerDown(manija, { clientX: 980, button: 0 });
-    fireEvent.pointerMove(manija, { clientX: 1350 });
-    fireEvent.pointerUp(manija, { clientX: 1350 });
-    expect(ancho()).toBe('300px');
-  });
-
   it('mover el mouse sin haber apretado no cambia nada', () => {
     const manija = montar();
     fireEvent.pointerMove(manija, { clientX: 1000 });
@@ -99,5 +92,76 @@ describe('ManijaPanel', () => {
     fireEvent.doubleClick(manija);
     expect(ancho()).toBe('');
     expect(localStorage.getItem(CLAVE)).toBeNull();
+  });
+});
+
+const cerrado = () => document.documentElement.dataset.panelCerrado === 'true';
+
+describe('ManijaPanel: cerrar y volver a abrir', () => {
+  it('arrastrar por debajo de 200px cierra el panel y lo recuerda', () => {
+    const manija = montar();
+    fireEvent.pointerDown(manija, { clientX: 980, button: 0 });
+    fireEvent.pointerMove(manija, { clientX: 1250 });
+    expect(cerrado()).toBe(true);
+    fireEvent.pointerUp(manija, { clientX: 1250 });
+    expect(localStorage.getItem('quodom.panelCerrado')).toBe('1');
+  });
+
+  it('entre 200 y el mínimo se queda en el mínimo, sin cerrarse', () => {
+    const manija = montar();
+    fireEvent.pointerDown(manija, { clientX: 980, button: 0 });
+    fireEvent.pointerMove(manija, { clientX: 1150 });
+    fireEvent.pointerUp(manija, { clientX: 1150 });
+    expect(cerrado()).toBe(false);
+    expect(ancho()).toBe('300px');
+  });
+
+  it('arrastrar desde el borde con el panel cerrado lo vuelve a abrir', () => {
+    localStorage.setItem('quodom.panelCerrado', '1');
+    const manija = montar();
+    expect(cerrado()).toBe(true);
+    fireEvent.pointerDown(manija, { clientX: 1398, button: 0 });
+    fireEvent.pointerMove(manija, { clientX: 1000 });
+    fireEvent.pointerUp(manija, { clientX: 1000 });
+    expect(cerrado()).toBe(false);
+    expect(ancho()).toBe('400px');
+    expect(localStorage.getItem('quodom.panelCerrado')).toBeNull();
+  });
+
+  it('un clic en el borde cerrado no lo abre', () => {
+    localStorage.setItem('quodom.panelCerrado', '1');
+    const manija = montar();
+    fireEvent.pointerDown(manija, { clientX: 1399, button: 0 });
+    fireEvent.pointerUp(manija, { clientX: 1399 });
+    expect(cerrado()).toBe(true);
+  });
+
+  it('con teclado: → en el mínimo lo cierra y ← lo abre en el mínimo', () => {
+    localStorage.setItem(CLAVE, '300');
+    const manija = montar();
+    fireEvent.keyDown(manija, { key: 'ArrowRight' });
+    expect(cerrado()).toBe(true);
+    fireEvent.keyDown(manija, { key: 'ArrowLeft' });
+    expect(cerrado()).toBe(false);
+    expect(ancho()).toBe('300px');
+  });
+
+  it('abrirPanel lo vuelve al ancho original', async () => {
+    const { abrirPanel } = await import('../panelLateral');
+    localStorage.setItem(CLAVE, '500');
+    localStorage.setItem('quodom.panelCerrado', '1');
+    montar();
+    act(() => abrirPanel());
+    expect(cerrado()).toBe(false);
+    expect(ancho()).toBe('');
+    expect(localStorage.getItem(CLAVE)).toBeNull();
+  });
+
+  it('abrirPanel con el panel abierto no le toca el ancho', async () => {
+    const { abrirPanel } = await import('../panelLateral');
+    localStorage.setItem(CLAVE, '500');
+    montar();
+    act(() => abrirPanel());
+    expect(ancho()).toBe('500px');
   });
 });

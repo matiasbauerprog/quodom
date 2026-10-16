@@ -30,18 +30,26 @@
   /* La cabecera alinea a la izquierda y lleva "Ver todos" al otro extremo. El
      título centrado en mayúsculas competía con el wordmark de la barra. */
   .mq-sidebar-cab {
+    /* Contra esto se ubica el menú de notificaciones: toma todo el ancho de la
+       cabecera y no el de la campanita. */
+    position: relative;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    /* Con el panel angosto (ManijaPanel) el título, la campanita y "Ver historial"
+       no entran en una línea: el botón baja en vez de salirse del borde. */
+    flex-wrap: wrap;
     gap: var(--sp-3);
   }
   .mq-sidebar-marca { display: flex; flex-direction: column; gap: 6px; }
+  .mq-sidebar-fila { display: flex; align-items: center; gap: var(--sp-2); }
   .mq-sidebar-title {
     margin: 0;
     font-family: var(--font-prompt);
     font-size: 22px;
     font-weight: 600;
     line-height: 1.1;
+    white-space: nowrap;
     color: #fff;
   }
   .mq-sidebar-regla { width: 40px; height: 3px; background: var(--color-acento); }
@@ -123,4 +131,126 @@
   .mq-sidebar-icono-ok { background: var(--color-exito); }
 
   .mq-sidebar-err { margin: 0; color: #FFB4B4; font-size: var(--fs-tiny); }
+}
+
+/* Panel cerrado (ManijaPanel / panelLateral): queda sólo la cabecera, como una
+   pestaña oscura arriba a la derecha con "Mis Quodoms" y la campanita. Todo lo
+   decide `data-panel-cerrado` en <html>, sin render de React, para que se vea
+   en vivo mientras se arrastra. */
+.mq-sidebar-abrir { display: none; }
+
+@media (min-width: 1025px) {
+  :root[data-panel-cerrado] .mq-sidebar {
+    position: fixed;
+    top: var(--sp-2);
+    right: var(--sp-3);
+    /* Sobre la AppBar (20) y la manija (25); bajo el fondo del menú (30). */
+    z-index: 26;
+    height: auto;
+    width: auto;
+    padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
+    overflow: visible;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    border-top-left-radius: var(--radius-hoja-tl);
+    border-bottom-right-radius: var(--radius-hoja-br);
+  }
+  /* El diálogo de proveedores cuelga del aside: si estaba abierto, sigue. */
+  :root[data-panel-cerrado] .mq-sidebar > :not(.mq-sidebar-cab):not(.dp-backdrop),
+  :root[data-panel-cerrado] .mq-sidebar-title,
+  :root[data-panel-cerrado] .mq-sidebar-regla,
+  :root[data-panel-cerrado] .mq-sidebar-resumen,
+  :root[data-panel-cerrado] .mq-sidebar-vertodos { display: none; }
+  :root[data-panel-cerrado] .mq-sidebar-abrir {
+    display: inline-flex;
+    padding: var(--sp-1) var(--sp-2);
+    background: none;
+    border: none;
+    color: #fff;
+    font-family: var(--font-prompt);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    border-top-left-radius: var(--radius-hoja-tl);
+    border-bottom-right-radius: var(--radius-hoja-br);
+  }
+  :root[data-panel-cerrado] .mq-sidebar-abrir:hover { background: rgba(255, 255, 255, 0.1); }
+  :root[data-panel-cerrado] .mq-sidebar-abrir:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  /* La pestaña es angosta: el menú de notificaciones toma su propio ancho,
+     alineado a la derecha, en vez del de la cabecera. */
+  :root[data-panel-cerrado] .mq-sidebar .notq-menu { left: auto; right: 0; width: 340px; }
+}
+
+/* El destino chico de arrastre (DestinoCompacto): sólo con el panel cerrado. */
+.mq-sidebar-soltar { display: none; }
+@media (min-width: 1025px) {
+  :root[data-panel-cerrado] .mq-sidebar-soltar {
+    display: block;
+    flex-basis: 100%;
+    max-width: 260px;
+    margin-top: var(--sp-1);
+    padding: var(--sp-3);
+    border: 2px dashed rgba(255, 255, 255, 0.45);
+    color: #fff;
+    font-size: var(--fs-small);
+    line-height: 1.3;
+    border-top-left-radius: var(--radius-hoja-tl);
+    border-bottom-right-radius: var(--radius-hoja-br);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  :root[data-panel-cerrado] .mq-sidebar-soltar.arrastre-encima {
+    background: rgba(45, 171, 102, 0.25);
+    border-color: var(--color-exito);
+  }
+}
+
+/* El aviso de agregado (AvisoAgregado): sólo existe con el panel cerrado. */
+@media (min-width: 1025px) {
+  .mq-sidebar-agregado {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    flex-basis: 100%;
+    max-width: 260px;
+    margin: var(--sp-1) 0 0;
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--color-tarjeta);
+    color: var(--color-texto);
+    font-size: var(--fs-small);
+    line-height: 1.3;
+    border-top-left-radius: var(--radius-hoja-tl);
+    border-bottom-right-radius: var(--radius-hoja-br);
+    animation: mq-agregado-entra 0.2s ease-out;
+  }
+  .mq-sidebar-agregado-ok {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px;
+    background: var(--color-exito); color: #fff;
+    border-radius: 50%;
+    font-size: 11px; font-weight: 700;
+  }
+  @keyframes mq-agregado-entra {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .mq-sidebar-agregado { animation: none; } }
+}
+
+/* El destino y el aviso flotan debajo de la pestaña, fuera del flujo: adentro
+   la estiraban hasta parecer el panel abierto, que es justo lo que cerrarlo
+   quería evitar. Se ubican contra .mq-sidebar-cab (que es `relative`). */
+@media (min-width: 1025px) {
+  :root[data-panel-cerrado] .mq-sidebar-soltar,
+  :root[data-panel-cerrado] .mq-sidebar-agregado {
+    position: absolute;
+    top: calc(100% + var(--sp-3));
+    right: calc(-1 * var(--sp-2));
+    width: 240px;
+    max-width: none;
+    margin: 0;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  }
+  :root[data-panel-cerrado] .mq-sidebar-soltar { background: var(--color-panel-oscuro); }
+  :root[data-panel-cerrado] .mq-sidebar-soltar.arrastre-encima { background: #1F4D36; }
 }

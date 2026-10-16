@@ -125,6 +125,19 @@ describe('DialogoPedido', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it('volver a armado abre el panel si estaba cerrado', async () => {
+    localStorage.setItem('quodom.panelCerrado', '1');
+    document.documentElement.dataset.panelCerrado = 'true';
+    repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
+    montar(ENVIADO);
+    await screen.findByText(/latex interior blanco mate/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /volver.*armado/i }));
+
+    await waitFor(() => expect(document.documentElement.dataset.panelCerrado).toBeUndefined());
+    expect(localStorage.getItem('quodom.panelCerrado')).toBeNull();
+  });
+
   it('cierra con Escape', async () => {
     const { onCerrar } = montar();
     await screen.findByText(/latex interior blanco mate/i);

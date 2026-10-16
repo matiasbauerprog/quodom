@@ -8,6 +8,8 @@ import { addGuestLine, clearGuestQuodoms } from '../../../guest/guestQuodom';
 import { abrirQuodom } from '../../../quodom/quodomAbierto';
 import { rubrosDisponibles } from '../../../quodom/rubrosDisponibles';
 
+// La campanita pide la cuenta al montar; sin esto sale un fetch real.
+vi.mock('../../../api/oper_notificaciones', () => ({ notificaciones: { count: vi.fn(() => Promise.resolve(0)), list: vi.fn(() => Promise.resolve([])), marcarLeida: vi.fn() } }));
 vi.mock('../../../api/quodom', () => ({ quodom: { misQuodom: vi.fn() } }));
 vi.mock('../../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../../quodom/rubrosDisponibles', () => ({

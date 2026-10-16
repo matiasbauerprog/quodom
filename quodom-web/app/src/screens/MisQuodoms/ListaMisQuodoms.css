@@ -2,6 +2,16 @@
 
 .mq-list { display: grid; gap: var(--sp-3); }
 .mq-item { width: 100%; }
+/* El pedido al que se llegó desde una notificación: un borde de acento que se
+   desvanece, para que se sepa cuál era sin quedar marcado para siempre. */
+.mq-item-resaltado > * { animation: mq-resalte 3s ease-out forwards; }
+@keyframes mq-resalte {
+  0%, 60% { box-shadow: 0 0 0 3px var(--color-acento); }
+  100% { box-shadow: 0 0 0 3px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mq-item-resaltado > * { animation: none; box-shadow: 0 0 0 3px var(--color-acento); }
+}
 
 .mq-rubros-backdrop {
   position: fixed; inset: 0; z-index: 50;
