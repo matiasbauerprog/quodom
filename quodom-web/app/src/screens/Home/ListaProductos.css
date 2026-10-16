@@ -225,8 +225,11 @@
 }
 @media (min-width: 1025px) {
   /* 960px en 4 columnas daban tarjetas de ~240px: demasiado grandes para una
-     foto de catálogo y muy poco producto visible sin scrollear. */
-  .prod-list { grid-template-columns: repeat(6, 1fr); max-width: 1040px; }
+     foto de catálogo y muy poco producto visible sin scrollear. Las columnas
+     salen del espacio y no de la ventana: el panel derecho se puede ensanchar
+     (ManijaPanel), y con 6 fijas la última quedaba cortada debajo de él. Con
+     el ancho máximo siguen siendo 6. */
+  .prod-list { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); max-width: 1040px; }
 }
 
 /* Lo que se lleva al arrastrar una tarjeta. El contenedor sigue al cursor con
