@@ -102,7 +102,7 @@ describe('NotificacionesQuodom', () => {
     expect(within(menu).getByText(/QD-7/)).toBeInTheDocument();
   });
 
-  it('Historial lleva a ese pedido en el historial', async () => {
+  it('Historial lleva a la pantalla de historial, marcando ese pedido', async () => {
     montar();
     const menu = await abrir();
     fireEvent.click(await within(menu).findByRole('button', { name: /ver en historial/i }));

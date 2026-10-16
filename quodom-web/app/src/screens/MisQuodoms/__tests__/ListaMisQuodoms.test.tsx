@@ -147,19 +147,23 @@ describe('ListaMisQuodoms: entrar a un pedido desde una notificación', () => {
     fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
   };
 
-  it('?pedido= abre la ventana de ese pedido', async () => {
+  // Lleva a la pantalla y no a la ventana: el usuario quiere ver el pedido
+  // en su lista. La tarjeta se resalta para que se sepa cuál era.
+  it('?pedido= resalta ese pedido en la lista, sin abrir la ventana', async () => {
     misQuodom.mockResolvedValue([ENVIADO]);
     render(<MemoryRouter initialEntries={['/mis-quodoms?pedido=q-9']}><ListaMisQuodoms /></MemoryRouter>);
 
-    const ventana = await screen.findByRole('dialog');
-    expect(within(ventana).getByText('Frente')).toBeInTheDocument();
+    const tarjeta = await screen.findByRole('button', { name: /QD-9/ });
+    await waitFor(() => expect(tarjeta.closest('li')).toHaveAttribute('aria-current', 'true'));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('un pedido que no está deja la lista como siempre', async () => {
     misQuodom.mockResolvedValue([ENVIADO]);
     render(<MemoryRouter initialEntries={['/mis-quodoms?pedido=q-borrado']}><ListaMisQuodoms /></MemoryRouter>);
 
-    await screen.findByRole('button', { name: /QD-9/ });
+    const tarjeta = await screen.findByRole('button', { name: /QD-9/ });
+    expect(tarjeta.closest('li')).not.toHaveAttribute('aria-current');
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

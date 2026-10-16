@@ -7,6 +7,9 @@ function model(sequelize) {
         id: { type: DataTypes.UUID, primaryKey: true },
         descripcion: { type: DataTypes.STRING, allowNull: false },
         createdBy: { type: DataTypes.STRING, allowNull: false },
+        // The view always had it; without declaring it here Sequelize never
+        // selects it, and the history read "Enviado el" with no date.
+        fechaenvio: { type: DataTypes.DATE, allowNull: true },
         fechavencimientoenvio: { type: DataTypes.DATE, allowNull: true },
         estado: { type: DataTypes.STRING, allowNull: false },
         idrubro: { type: DataTypes.INTEGER, allowNull: true },

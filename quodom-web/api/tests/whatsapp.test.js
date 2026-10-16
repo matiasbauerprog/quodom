@@ -77,6 +77,17 @@ describe('whatsapp export', () => {
     expect(notifs).toBe(1);
   });
 
+  // The history card and dialog read "Enviado el <date>" from this list. The
+  // view always had the column; the model didn't declare it, so Sequelize never
+  // selected it and the screen showed "Enviado el" with nothing after it.
+  it('lists the send date of a sent quodom', async () => {
+    const res = await request(app).get('/quodom/misQuodom')
+      .set('Authorization', 'Bearer ' + token);
+    const enviado = res.body.find(q => q.id === idquodom);
+    expect(enviado.estado).toBe('ENVIADO');
+    expect(Number.isNaN(Date.parse(enviado.fechaenvio))).toBe(false);
+  });
+
   it('allows re-generating the link without duplicating the notification', async () => {
     const res = await request(app).get('/quodom/whatsapp/' + idquodom)
       .set('Authorization', 'Bearer ' + token);
