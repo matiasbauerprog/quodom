@@ -156,7 +156,16 @@ export function MisQuodomsSidebar() {
       <header className="mq-sidebar-cab">
         <div className="mq-sidebar-marca">
           <div className="mq-sidebar-fila">
-            <h2 className="mq-sidebar-title">Mis Quodoms</h2>
+            {/* Abierto, el título es también el que lo cierra: el mismo lugar
+                que lo abre cuando queda la pestaña. El ancho elegido no se toca. */}
+            <h2 className="mq-sidebar-title">
+              <button
+                type="button"
+                className="mq-sidebar-cerrar"
+                aria-label="Cerrar Mis Quodoms"
+                onClick={() => guardarPanel('cerrado')}
+              >Mis Quodoms</button>
+            </h2>
             {/* Sólo se ve con el panel cerrado (lo decide el CSS, por
                 `data-panel-cerrado`): es lo que queda arriba a la derecha, y
                 tocarlo lo vuelve a abrir al ancho original. */}

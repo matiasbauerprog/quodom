@@ -363,6 +363,19 @@ describe('MisQuodomsSidebar: panel cerrado', () => {
     expect(localStorage.getItem('quodom.panelCerrado')).toBeNull();
     expect(localStorage.getItem('quodom.anchoPanel')).toBeNull();
   });
+
+  // Y al revés: abierto, tocar el título "Mis Quodoms" lo cierra, sin perder
+  // el ancho que había elegido el usuario.
+  it('abierto, el título "Mis Quodoms" cierra el panel', async () => {
+    localStorage.setItem('quodom.anchoPanel', '500');
+    render(<MemoryRouter><MisQuodomsSidebar /></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar Mis Quodoms' }));
+
+    expect(document.documentElement.dataset.panelCerrado).toBe('true');
+    expect(localStorage.getItem('quodom.panelCerrado')).toBe('1');
+    expect(localStorage.getItem('quodom.anchoPanel')).toBe('500');
+  });
 });
 
 // Cerrado, al arrastrar aparece un destino chico debajo de la pestaña: el
