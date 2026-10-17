@@ -137,6 +137,21 @@
    pestaña oscura arriba a la derecha con "Mis Quodoms" y la campanita. Todo lo
    decide `data-panel-cerrado` en <html>, sin render de React, para que se vea
    en vivo mientras se arrastra. */
+/* El título como botón: se ve igual que un título y cierra el panel. */
+.mq-sidebar-cerrar {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.mq-sidebar-cerrar:hover { opacity: 0.8; }
+.mq-sidebar-cerrar:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
 .mq-sidebar-abrir { display: none; }
 
 @media (min-width: 1025px) {
