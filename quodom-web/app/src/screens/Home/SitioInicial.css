@@ -36,14 +36,11 @@
   margin: var(--sp-2) 0 0 0;
 }
 .home-wordmark {
-  font-family: var(--font-prompt);
-  font-weight: 700;
-  font-size: 48px;
-  color: var(--color-texto);
-  letter-spacing: 0.02em;
   margin: 0;
   text-align: center;
+  line-height: 0;
 }
+.home-wordmark img { height: 52px; width: auto; }
 .home-wordmark::after {
   content: '';
   display: block;
@@ -131,7 +128,7 @@
 }
 
 @media (min-width: 601px) {
-  .home-wordmark { font-size: 56px; }
+  .home-wordmark img { height: 64px; }
   /* Tablet y desktop: todos los rubros en una sola fila, sean los que sean —
      cuando vuelvan los tres rubros apagados se reparten el ancho igual. */
   .cat-grid {

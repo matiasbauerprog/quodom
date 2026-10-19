@@ -16,6 +16,7 @@ import { ListaProductos } from './ListaProductos';
 import type { ModoIa } from './PestanasIA';
 import { PanelConversacion } from '../ModoIA/PanelConversacion';
 // import { PanelLista } from '../ListaIA/PanelLista';
+import { Logo } from '../../components/Logo';
 import './SitioInicial.css';
 
 // Devuelve el número del param o null: "", "abc" y "0" son todos "sin valor".
@@ -165,7 +166,7 @@ export function SitioInicial() {
     <section className={'container home-inicial' + (idrubro !== null ? ' home-compacto' : '')}>
       {idrubro === null && modoIa === null && (
         <hgroup className="home-marca">
-          <h1 className="home-wordmark">QUODOM</h1>
+          <h1 className="home-wordmark"><Logo /></h1>
           <p className="home-claim">Cotizá todo junto, en un sólo lugar.</p>
         </hgroup>
       )}

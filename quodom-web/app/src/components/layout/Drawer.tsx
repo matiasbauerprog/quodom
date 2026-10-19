@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { quodom as quodomApi } from '../../api/quodom';
+import { Logo } from '../Logo';
 import './Drawer.css';
 
 /**
@@ -51,7 +52,7 @@ export function Drawer({ open, onClose }: { open: boolean; onClose: () => void }
       {open && <div className="drawer-backdrop" onClick={onClose} aria-hidden="true" />}
       <aside className={'drawer' + (open ? ' drawer-open' : '')} aria-hidden={!open}>
         <div className="drawer-header">
-          <span className="drawer-brand">QUODOM</span>
+          <Logo className="drawer-brand" />
           {user && <span className="drawer-user">{user.nombre}</span>}
         </div>
         <nav className="drawer-nav">
