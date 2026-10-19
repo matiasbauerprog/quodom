@@ -13,7 +13,8 @@
 }
 .drawer-open { transform: translateX(0); }
 .drawer-header { background: var(--color-panel-oscuro); color: #fff; padding: var(--sp-5) var(--sp-4); }
-.drawer-brand { display: block; font-family: var(--font-prompt); font-weight: 600; font-size: 22px; }
+/* El logo es gris oscuro y el encabezado es el panel oscuro: en blanco. */
+.drawer-brand { display: block; height: 26px; width: auto; filter: brightness(0) invert(1); }
 .drawer-user { display: block; font-size: var(--fs-small); opacity: .9; margin-top: var(--sp-1); }
 /* Si algún día las entradas no entran, scrollea la lista y no el menú entero:
    el pie tiene que quedar siempre a la vista. */

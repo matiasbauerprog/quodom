@@ -1,4 +1,5 @@
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Logo } from '../Logo';
 import './AppBar.css';
 
 export function AppBar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
@@ -16,7 +17,7 @@ export function AppBar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
         <span /><span /><span />
       </button>
       {!enHomePelado && (
-        <Link to="/" className="appbar-marca" aria-label="Volver al inicio">QUODOM</Link>
+        <Link to="/" className="appbar-marca" aria-label="Volver al inicio"><Logo /></Link>
       )}
     </header>
   );

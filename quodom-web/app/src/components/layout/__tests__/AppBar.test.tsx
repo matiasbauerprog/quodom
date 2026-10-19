@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppBar } from '../AppBar';
 
@@ -19,7 +19,7 @@ describe('AppBar', () => {
   it('muestra el logo al entrar a un rubro, y vuelve al inicio', () => {
     montar('/?rubro=7');
     const logo = screen.getByRole('link', { name: /volver al inicio/i });
-    expect(logo).toHaveTextContent('QUODOM');
+    expect(within(logo).getByAltText('QUODOM')).toBeInTheDocument();
     expect(logo).toHaveAttribute('href', '/');
   });
 

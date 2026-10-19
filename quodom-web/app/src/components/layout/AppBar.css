@@ -16,11 +16,7 @@
   z-index: 20;
 }
 .appbar-marca {
-  font-family: var(--font-prompt);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.02em;
-  color: var(--color-texto);
+  display: inline-flex;
   text-decoration: none;
   margin-left: var(--sp-2);
   padding: 4px 2px;
@@ -44,3 +40,4 @@
   background: var(--color-texto);
   border-radius: 2px;
 }
+.appbar-marca img { height: 24px; width: auto; }

@@ -70,7 +70,7 @@ describe('SitioInicial', () => {
     montar('/');
 
     expect(await screen.findByRole('link', { name: /bebidas/i })).toBeInTheDocument();
-    expect(screen.getByText('QUODOM')).toBeInTheDocument();
+    expect(screen.getByAltText('QUODOM')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: /subcategorías/i })).toBeNull();
     expect(screen.getByRole('searchbox', { name: /buscar productos/i })).toBeInTheDocument();
     expect(subs).not.toHaveBeenCalled();
@@ -112,7 +112,7 @@ describe('SitioInicial', () => {
     montar('/?rubro=7');
 
     await screen.findByText('Coca Cola 2L');
-    expect(screen.queryByText('QUODOM')).toBeNull();
+    expect(screen.queryByAltText('QUODOM')).toBeNull();
     // Verlo desaparecer al entrar a un rubro se lee como que se perdió.
     expect(screen.getByRole('searchbox', { name: /buscar productos/i })).toBeInTheDocument();
   });
@@ -120,7 +120,7 @@ describe('SitioInicial', () => {
   it('un rubro inexistente vuelve al home sin mostrar error', async () => {
     montar('/?rubro=999');
 
-    expect(await screen.findByText('QUODOM')).toBeInTheDocument();
+    expect(await screen.findByAltText('QUODOM')).toBeInTheDocument();
     expect(subs).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -182,12 +182,12 @@ describe('SitioInicial (botón Modo IA)', () => {
   it('el wordmark se esconde con la conversación abierta', async () => {
     montar('/');
     await screen.findByRole('link', { name: /bebidas/i });
-    expect(screen.getByText('QUODOM')).toBeInTheDocument();
+    expect(screen.getByAltText('QUODOM')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /modo ia/i }));
 
     await screen.findByText('panel chat');
-    expect(screen.queryByText('QUODOM')).toBeNull();
+    expect(screen.queryByAltText('QUODOM')).toBeNull();
   });
 
   // Desde que el chat vive en la URL deja su propia entrada en el historial,
@@ -251,7 +251,7 @@ describe('SitioInicial (subtítulo)', () => {
   it('lo esconde junto al wordmark cuando hay un rubro elegido', async () => {
     montar('/?rubro=7');
     await screen.findByRole('navigation', { name: /subcategorías/i });
-    expect(screen.queryByText('QUODOM')).toBeNull();
+    expect(screen.queryByAltText('QUODOM')).toBeNull();
     expect(screen.queryByText(/cotizá todo junto/i)).toBeNull();
   });
 });
@@ -377,7 +377,7 @@ describe('SitioInicial (el Modo IA queda en la URL)', () => {
     await act(async () => { router.navigate('/'); });
 
     await waitFor(() => expect(screen.queryByText('panel chat')).toBeNull());
-    expect(screen.getByText('QUODOM')).toBeInTheDocument();
+    expect(screen.getByAltText('QUODOM')).toBeInTheDocument();
   });
 });
 
