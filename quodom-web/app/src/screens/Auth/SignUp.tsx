@@ -41,7 +41,7 @@ export function SignUp() {
           <div className="phone-row">
             <label className="field"><span>Cód. área</span><input className="input" value={COD_AREA} disabled /></label>
             <label className="field">
-              <span>Teléfono</span>
+              <span>Teléfono sin el 0 y sin el 15</span>
               <input
                 className="input" inputMode="numeric" value={f.telefono}
                 onChange={e => setF({ ...f, telefono: soloDigitos(e.target.value) })}

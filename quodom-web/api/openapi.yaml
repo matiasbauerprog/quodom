@@ -578,7 +578,9 @@ paths:
                 telefono: { type: string, pattern: '^[0-9]{8}$' }
                 password: { type: string, minLength: 6 }
                 empresa: { type: string }
-                cuit: { type: string }
+                # Once dígitos con los guiones (`30-71234567-8`): es como lo lee el
+                # proveedor en el pedido. Vacío borra el que había.
+                cuit: { type: string, pattern: '^([0-9]{2}-[0-9]{8}-[0-9])?$' }
                 facturaA: { type: boolean }
               # `username`, `dni` y `codArea` no están a propósito: se entra con
               # el mail, el DNI no se pide más y el código de área es fijo. El

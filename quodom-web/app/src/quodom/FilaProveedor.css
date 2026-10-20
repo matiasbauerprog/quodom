@@ -7,6 +7,7 @@
   border: 1px solid #d0d0d0;
   border-top-left-radius: 8px; border-bottom-right-radius: 8px;
   background: var(--color-tarjeta);
+  color: var(--color-texto);
 }
 .dp-prov-contactado { background: #F7F7F7; border-color: #BEBEBE; }
 .dp-nombre {

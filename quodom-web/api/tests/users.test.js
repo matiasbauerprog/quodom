@@ -43,6 +43,30 @@ describe('users', () => {
     expect(res.body).toEqual({ res: false, message: 'El correo electrónico ya está en uso.' });
   });
 
+  // El teclado del celular pone la primera letra en mayúscula: sin esto, la
+  // misma persona se registraba dos veces y entraba a una cuenta vacía.
+  it('POST /users/signup rejects the same email with other case', async () => {
+    const res = await request(app).post('/users/signup').send({ ...USER, email: 'Juan@Test.com' });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ res: false, message: 'El correo electrónico ya está en uso.' });
+  });
+
+  it('POST /users/signin accepts the email with other case', async () => {
+    const res = await request(app).post('/users/signin')
+      .send({ username: 'JUAN@test.com', password: 'secreto123' });
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe('juan@test.com');
+  });
+
+  it('POST /users/signup stores the email in lowercase', async () => {
+    const res = await request(app).post('/users/signup')
+      .send({ ...USER, email: 'Pedro@Test.com', telefono: '55551111' });
+    expect(res.status).toBe(200);
+    const u = await db.User.findByPk(res.body.id);
+    expect(u.email).toBe('pedro@test.com');
+    expect(u.username).toBe('pedro@test.com');
+  });
+
   it('POST /users/signin returns a token (by username or email)', async () => {
     const res = await request(app).post('/users/signin')
       .send({ username: 'juan@test.com', password: 'secreto123' });

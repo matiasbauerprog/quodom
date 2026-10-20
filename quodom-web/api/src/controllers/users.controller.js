@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../helpers/db');
 const correo = require('../helpers/email');
 const { SESSION_TTL } = require('../helpers/session');
-const { Op } = require('sequelize');
+const { Op, fn, col, where } = require('sequelize');
 
 module.exports = {
   authenticate,
@@ -34,10 +34,18 @@ const COD_AREA = '011';
 const RESET_SENT = { res: true, message: 'Si el e-mail o usuario está registrado, te enviamos un link para blanquear la contraseña. Dura 1 hora.' };
 const VALIDATION_SENT = { res: true, message: 'Si el correo está registrado y falta validarlo, te reenviamos el link.' };
 
+// SQLite compara con distinción de mayúsculas, y el teclado del celular pone la
+// primera en mayúscula: `Ana@x.com` y `ana@x.com` eran dos cuentas, y la misma
+// persona se registraba de nuevo y entraba a una vacía. Las altas nuevas se
+// guardan en minúscula y toda búsqueda por mail compara sin mayúsculas, porque
+// las cuentas viejas pueden tener el suyo escrito de cualquier forma.
+const normalizarEmail = email => String(email || '').trim().toLowerCase();
+const mismoEmail = email => where(fn('lower', col('email')), normalizarEmail(email));
+
 async function authenticate({ username, password }) {
   const user = await db.User.scope('withHash').findOne({
     where: {
-      [Op.or]: [{ email: username }, { username: username }]
+      [Op.or]: [mismoEmail(username), { username: username }]
     }
   });
 
@@ -66,7 +74,8 @@ async function getById(id) {
 }
 
 async function create(params) {
-  if (await db.User.findOne({ where: { email: params.email } })) {
+  params.email = normalizarEmail(params.email);
+  if (await db.User.findOne({ where: mismoEmail(params.email) })) {
     throw 'El correo electrónico ya está en uso.';
   }
 
@@ -106,8 +115,9 @@ async function create(params) {
 async function update(id, params) {
   const user = await getUser(id);
 
-  const emailChanged = params.email && user.email !== params.email;
-  if (emailChanged && await db.User.findOne({ where: { email: params.email } })) {
+  if (params.email) params.email = normalizarEmail(params.email);
+  const emailChanged = params.email && normalizarEmail(user.email) !== params.email;
+  if (emailChanged && await db.User.findOne({ where: { [Op.and]: [mismoEmail(params.email), { id: { [Op.ne]: user.id } }] } })) {
     throw 'Correo electrónico ya está en uso.';
   }
 
@@ -140,7 +150,7 @@ async function updateFoto(id, params) {
 async function reset(params) {
   const user = await db.User.scope('withHash').findOne({
     where: {
-      [Op.or]: [{ email: params.email }, { username: params.email }]
+      [Op.or]: [mismoEmail(params.email), { username: params.email }]
     }
   });
 
@@ -189,7 +199,7 @@ async function validateEmail(id) {
 }
 
 async function reenviar(params) {
-  const user = await db.User.findOne({ where: { email: params.email } });
+  const user = await db.User.findOne({ where: mismoEmail(params.email) });
   if (!user || user.emailValidado) return VALIDATION_SENT;
 
   const token = generarToken(user.id, '72h', 'validar');

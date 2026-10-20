@@ -6,6 +6,10 @@
 }
 .dp {
   background: var(--color-tarjeta);
+  /* Lo abren el panel oscuro y la barra de celular, que pintan el texto de
+     blanco: sin esto los nombres de los proveedores heredaban blanco sobre
+     el fondo blanco. */
+  color: var(--color-texto);
   max-width: 480px; width: 100%;
   padding: var(--sp-4);
   max-height: 90vh; overflow-y: auto;
