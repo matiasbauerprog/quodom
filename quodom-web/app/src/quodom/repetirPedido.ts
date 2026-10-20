@@ -3,15 +3,6 @@ import type { Quodom } from '../api/types';
 import { abrirQuodom } from './quodomAbierto';
 import { abrirPanel } from '../components/layout/panelLateral';
 
-/**
- * Adónde va el pedido recién repetido: su detalle, con el nombre seleccionado
- * para cambiarlo (`DetalleQuodom` lee `nombrar`). Nace con el nombre del
- * original, y dos iguales en el árbol no se distinguen.
- */
-export function rutaRenombrar(idquodom: string): string {
-  return '/quodom?id=' + encodeURIComponent(idquodom) + '&nombrar=1';
-}
-
 /** Lo que se repitió y cómo se llama el nuevo, para `AvisoRepetido`. */
 export type Repetido = { idquodom: string; idrubro: number; nombre: string; nombrerubro: string };
 
@@ -23,6 +14,10 @@ export type Repetido = { idquodom: string; idrubro: number; nombre: string; nomb
  * El anuncio (`quodom:repetido`) es lo que lo hace visible: el pedido nuevo
  * aparecía en el árbol sin que nada lo dijera, en celular el árbol ni se ve, y
  * el usuario no tenía ninguna prueba de que repetir había hecho algo.
+ *
+ * Quien llama abre después el pedido nuevo con el nombre seleccionado
+ * (`useAbrirQuodom()(id, { nombrar: true })`): nace con el nombre del
+ * original, y dos iguales en el árbol no se distinguen.
  */
 export async function repetirPedido(q: Quodom): Promise<string> {
   const r = await quodomApi.repetir(q.id);

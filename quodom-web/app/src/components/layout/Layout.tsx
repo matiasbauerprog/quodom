@@ -6,6 +6,7 @@ import { BarraQuodomInferior } from './BarraQuodomInferior';
 import { MisQuodomsSidebar } from './MisQuodomsSidebar';
 import { ManijaPanel } from './ManijaPanel';
 import { AvisoRepetido } from '../AvisoRepetido';
+import { VentanaQuodom } from '../../screens/Quodom/VentanaQuodom';
 import './Layout.css';
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -20,6 +21,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </div>
       <ManijaPanel />
       <MisQuodomsSidebar />
+      <VentanaQuodom />
       <AvisoRepetido />
     </div>
   );

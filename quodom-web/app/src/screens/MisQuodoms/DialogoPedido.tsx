@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Quodom, QuodomLine } from '../../api/types';
-import { repetirPedido, rutaRenombrar } from '../../quodom/repetirPedido';
+import { repetirPedido } from '../../quodom/repetirPedido';
+import { useAbrirQuodom } from '../../quodom/ventanaQuodom';
 import { quodomLines } from '../../api/quodom_lines';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
 import { ApiError } from '../../api/client';
@@ -44,6 +45,7 @@ function fecha(iso?: string | null) {
  */
 export function DialogoPedido({ quodom, onCerrar, onRepetido }: Props) {
   const navigate = useNavigate();
+  const abrirQuodom = useAbrirQuodom();
   const [lineas, setLineas] = useState<QuodomLine[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [selector, setSelector] = useState(false);
@@ -83,7 +85,7 @@ export function DialogoPedido({ quodom, onCerrar, onRepetido }: Props) {
       const id = await repetirPedido(quodom);
       onRepetido?.(id);
       onCerrar();
-      navigate(rutaRenombrar(id));
+      abrirQuodom(id, { nombrar: true });
     } catch (e) {
       setErr(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el pedido.');
     } finally { setRepitiendo(false); }

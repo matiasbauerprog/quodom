@@ -101,6 +101,23 @@ describe('SitioInicial', () => {
     expect(screen.getByRole('link', { name: 'Gaseosas' })).toHaveAttribute('aria-current', 'page');
   });
 
+  // La ventana del Quodom vive en la URL; la normalización la borraba en el
+  // instante en que se abría sobre un rubro.
+  it('normalizar el rubro no cierra la ventana del Quodom', async () => {
+    const router = createMemoryRouter(
+      [{ path: '/', element: <SitioInicial /> }],
+      { initialEntries: [{ pathname: '/', search: '?rubro=7&quodom=q-1&nombrar=1', state: { ventanaQuodom: true } }] }
+    );
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('Coca Cola 2L');
+    const p = new URLSearchParams(router.state.location.search);
+    expect(p.get('sub')).toBe('70');
+    expect(p.get('quodom')).toBe('q-1');
+    expect(p.get('nombrar')).toBe('1');
+    expect(router.state.location.state).toEqual({ ventanaQuodom: true });
+  });
+
   it('entrar directo a rubro y sub pinta todo sin pasar por el home vacío', async () => {
     montar('/?rubro=7&sub=71');
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useAbrirQuodom } from '../../quodom/ventanaQuodom';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -12,7 +13,7 @@ import { RUBROS, nombreRubro } from '../../quodom/rubros';
 import './ListaMisQuodoms.css';
 
 export function ListaMisQuodoms() {
-  const navigate = useNavigate();
+  const abrirQuodom = useAbrirQuodom();
   const [list, setList] = useState<Quodom[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -72,7 +73,7 @@ export function ListaMisQuodoms() {
       const r = await quodomApi.create({ descripcion: 'Mi Quodom', idrubro });
       setEligiendoRubro(false);
       window.dispatchEvent(new Event('quodom:changed'));
-      navigate('/quodom?id=' + encodeURIComponent(r.idquodom));
+      abrirQuodom(r.idquodom);
     } catch (e) {
       setEligiendoRubro(false);
       setErr(e instanceof ApiError ? e.message : 'No se pudo crear.');

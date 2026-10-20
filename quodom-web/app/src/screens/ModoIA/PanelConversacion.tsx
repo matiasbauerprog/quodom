@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { ESTADO_VENTANA, hrefVentana } from '../../quodom/ventanaQuodom';
 import { iaApi, type IaMessage, type IaProposalItem } from '../../api/ia';
 import { ApiError } from '../../api/client';
 import { agregarAlServidor } from '../../quodom/agregarProducto';
@@ -37,6 +38,7 @@ function agregarItemAlQuodom(idquodom: string, it: IaProposalItem) {
 
 export function PanelConversacion() {
   const { user } = useAuth();
+  const location = useLocation();
   const [agregadoEn, setAgregadoEn] = useState<string | null>(null);
   const [necesitaLogin, setNecesitaLogin] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([{ role: 'assistant', text: WELCOME }]);
@@ -125,7 +127,7 @@ export function PanelConversacion() {
 
       {agregadoEn && (
         <p className="mia-agregado">
-          Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregadoEn)}>ver Quodom</Link>
+          Agregado ✓ <Link to={hrefVentana(location, agregadoEn)} state={ESTADO_VENTANA}>ver Quodom</Link>
         </p>
       )}
       {necesitaLogin && <AvisoLogin onClose={() => setNecesitaLogin(false)} />}

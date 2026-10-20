@@ -122,7 +122,7 @@ describe('DialogoPedido', () => {
     await waitFor(() => expect(repetir).toHaveBeenCalledWith('q-9'));
     expect(abrirQuodom).toHaveBeenCalledWith(5, 'q-nuevo');
     await waitFor(() => expect(onRepetido).toHaveBeenCalledWith('q-nuevo'));
-    expect(navigate).toHaveBeenCalledWith('/quodom?id=q-nuevo&nombrar=1');
+    expect(navigate).toHaveBeenCalledWith('/?quodom=q-nuevo&nombrar=1', { state: { ventanaQuodom: true } });
   });
 
   it('volver a armado abre el panel si estaba cerrado', async () => {

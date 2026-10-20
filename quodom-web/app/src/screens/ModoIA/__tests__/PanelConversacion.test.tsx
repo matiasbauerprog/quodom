@@ -119,7 +119,7 @@ describe('PanelConversacion (confirming a proposal, same destination rule as the
 
     await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-EXIST');
+    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/?quodom=Q-EXIST');
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-EXIST', idproducto: 300, cantidad: 2 }));
     expect(quodom.activosPorRubro).not.toHaveBeenCalled();
     expect(quodom.create).not.toHaveBeenCalled();
@@ -140,7 +140,7 @@ describe('PanelConversacion (confirming a proposal, same destination rule as the
     fireEvent.click(screen.getByRole('button', { name: /casa/i }));
 
     await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-EXIST');
+    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/?quodom=Q-EXIST');
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-EXIST', idproducto: 300, cantidad: 2 }));
     expect(abiertoDe(5)).toBe('Q-EXIST');
   });
@@ -159,7 +159,7 @@ describe('PanelConversacion (confirming a proposal, same destination rule as the
     fireEvent.click(screen.getByRole('button', { name: /un quodom nuevo de pintura/i }));
 
     await waitFor(() => expect(screen.getByText(/agregado/i)).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/quodom?id=Q-NEW');
+    expect(screen.getByRole('link', { name: /ver quodom/i })).toHaveAttribute('href', '/?quodom=Q-NEW');
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(quodom.create).toHaveBeenCalledWith(expect.objectContaining({ idrubro: 5 }));
     expect(quodomLines.add).toHaveBeenCalledWith(expect.objectContaining({ idquodom: 'Q-NEW', idproducto: 300, cantidad: 2 }));

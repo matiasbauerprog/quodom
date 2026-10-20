@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import type { Quodom } from '../api/types';
 import { quodom as quodomApi } from '../api/quodom';
 import { ApiError } from '../api/client';
-import { repetirPedido, rutaRenombrar } from '../quodom/repetirPedido';
+import { repetirPedido } from '../quodom/repetirPedido';
+import { useAbrirQuodom } from '../quodom/ventanaQuodom';
 import './QuodomCard.css';
 
 type Variant = 'sidebar' | 'page';
@@ -66,6 +67,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   onAbrir?: () => void;
 }) {
   const navigate = useNavigate();
+  const abrirQuodom = useAbrirQuodom();
   const [menuOpen, setMenuOpen] = useState(false);
   const [renombrando, setRenombrando] = useState(false);
   const [nombreNuevo, setNombreNuevo] = useState('');
@@ -75,7 +77,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   const fechaDisplay = quodom.estado === 'ENVIADO' ? formatDate(quodom.fechaenvio) : formatDate(quodom.createdAt);
   const nombre = quodom.descripcion || quodom.nro;
 
-  async function openDetail() { navigate('/quodom?id=' + encodeURIComponent(quodom.id)); }
+  async function openDetail() { abrirQuodom(quodom.id); }
 
   // Continuar es "seguir sumando productos de este rubro": lo que hace falta a
   // continuación es el catálogo del rubro, no la ficha del Quodom.
@@ -109,7 +111,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
     try {
       const id = await repetirPedido(quodom);
       onChange?.();
-      navigate(rutaRenombrar(id));
+      abrirQuodom(id, { nombrar: true });
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'No se pudo repetir.');
     } finally { setBusy(false); }
