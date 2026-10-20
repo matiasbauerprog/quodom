@@ -88,7 +88,7 @@ describe('falta la dirección', () => {
     const q = await db.Quodom.findByPk(idquodom);
     expect(q.estado).toBe('CREADO');
     expect(q.fechaenvio).toBeFalsy();
-    expect(await db.oper_notificaciones.count({ where: { idquodom } })).toBe(0);
+    expect(await db.oper_notificaciones.count({ where: { idquodom, tiponotificacion: 'QUODOMENVIADO' } })).toBe(0);
   });
 
   // La dirección se copia al crear el Quodom. Quien no tenía ninguna entonces

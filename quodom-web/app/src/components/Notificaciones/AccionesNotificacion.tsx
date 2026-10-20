@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import type { Quodom } from '../../api/types';
+import type { Notificacion, Quodom } from '../../api/types';
+import { useAbrirQuodom } from '../../quodom/ventanaQuodom';
 export { repetirPedido } from '../../quodom/repetirPedido';
 import './AccionesNotificacion.css';
 
@@ -15,12 +16,22 @@ type Props = {
 };
 
 /**
+ * Qué pasó, para el renglón de la notificación. Hay dos tipos y el texto los
+ * distingue: con un solo "Se envió" para todo, crear un pedido se leía como
+ * que ya había salido para un proveedor.
+ */
+export function queSePaso(n: Pick<Notificacion, 'tiponotificacion'>): string {
+  return n.tiponotificacion === 'QUODOMCREADO' ? 'Se creó' : 'Se envió';
+}
+
+/**
  * Lo que se puede hacer con el Quodom de una notificación. Lo comparten la
  * campana y la pantalla Notificaciones: antes la pantalla sólo listaba, y
  * "Ver todas" llevaba a un lugar donde no se podía hacer nada.
  */
 export function AccionesNotificacion({ q, repitiendo, onRepetir, onOtroProveedor, onAntesDeNavegar }: Props) {
   const navigate = useNavigate();
+  const abrirQuodom = useAbrirQuodom();
   return (
     <div className="notq-acciones">
       <button
@@ -29,6 +40,16 @@ export function AccionesNotificacion({ q, repitiendo, onRepetir, onOtroProveedor
         title="Ver en historial"
         onClick={() => { onAntesDeNavegar?.(); navigate('/mis-quodoms?pedido=' + encodeURIComponent(q.id)); }}
       >Historial</button>
+      {/* En armado, lo que se quiere es seguir con él; repetir un borrador
+          recién creado no tiene sentido (y vacío, el servidor lo rechaza). */}
+      {q.estado === 'CREADO' ? (
+        <button
+          type="button"
+          aria-label="Abrir pedido"
+          title="Abrir pedido"
+          onClick={() => { onAntesDeNavegar?.(); abrirQuodom(q.id); }}
+        >Abrir</button>
+      ) : (
       <button
         type="button"
         aria-label="Repetir pedido"
@@ -36,6 +57,7 @@ export function AccionesNotificacion({ q, repitiendo, onRepetir, onOtroProveedor
         disabled={repitiendo !== null}
         onClick={() => onRepetir(q)}
       >{repitiendo === q.id ? 'Repitiendo…' : 'Repetir'}</button>
+      )}
       {q.estado === 'ENVIADO' && (
         <button
           type="button"

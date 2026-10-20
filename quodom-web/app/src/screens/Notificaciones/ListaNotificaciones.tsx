@@ -6,7 +6,7 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
-import { AccionesNotificacion, repetirPedido } from '../../components/Notificaciones/AccionesNotificacion';
+import { AccionesNotificacion, queSePaso, repetirPedido } from '../../components/Notificaciones/AccionesNotificacion';
 import { useAbrirQuodom } from '../../quodom/ventanaQuodom';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
 import './ListaNotificaciones.css';
@@ -73,7 +73,7 @@ export function ListaNotificaciones() {
               const q = n.idquodom ? quodoms[n.idquodom] : undefined;
               return (
                 <li key={n.id} className={'notif-item card hoja' + (n.leida ? ' notif-leida' : '')}>
-                  <div className="notif-title">{q ? <>Se envió <strong>{q.descripcion || q.nro}</strong></> : n.titulo}</div>
+                  <div className="notif-title">{q ? <>{queSePaso(n)} <strong>{q.descripcion || q.nro}</strong></> : n.titulo}</div>
                   <div className="notif-text">{q ? q.nro + ' · ' + q.nombrerubro : n.texto}</div>
                   <div className="notif-date">{new Date(n.createdAt).toLocaleString('es-AR')}</div>
                   {q && (

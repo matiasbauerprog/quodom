@@ -41,7 +41,8 @@ async function getPorcById(userId, id) {
     });
 }
 
-async function create(params, userId) {
+// `origen` es el nro del Quodom que se repitió, para que la notificación lo diga.
+async function create(params, userId, origen = null) {
     const rubro = await db.Category.findOne({
         where: { id: params.idrubro, idcategoriapadre: 0 }
     });
@@ -61,6 +62,21 @@ async function create(params, userId) {
     params.estado = 'CREADO';
 
     const { id } = await db.Quodom.create(params);
+
+    // Todo alta pasa por acá —"Nuevo", repetir y la migración del carrito de
+    // invitado al iniciar sesión—, así que la notificación sale una vez por
+    // Quodom sin que ningún camino tenga que acordarse.
+    await db.oper_notificaciones.create({
+        userId: userId,
+        titulo: 'Quodom creado',
+        texto: origen
+            ? 'Repetiste ' + origen + ': el nuevo es ' + params.nro + '.'
+            : 'Creaste el Quodom ' + params.nro + '.',
+        tiponotificacion: 'QUODOMCREADO',
+        idquodom: id,
+        enviada: 0,
+        leida: 0
+    });
     return (id);
 }
 
@@ -83,6 +99,11 @@ async function _delete(id, userId) {
     if (quodom.estado === 'CREADO') {
         await quodom.destroy();
         await db.Quodom_Lines.destroy({
+            where: { idquodom: id }
+        });
+        // Nunca salió, así que lo único que lo nombra es su "creado": dejarlo
+        // sería una notificación de algo que ya no existe y que no se puede tocar.
+        await db.oper_notificaciones.destroy({
             where: { idquodom: id }
         });
     } else {
@@ -270,7 +291,7 @@ async function repetir(id, userId) {
         descripcion: source.descripcion,
         idrubro: source.idrubro,
         iddireccion: source.iddireccion
-    }, userId);
+    }, userId, source.nro);
 
     for (const l of lines) {
         const raw = l.get();

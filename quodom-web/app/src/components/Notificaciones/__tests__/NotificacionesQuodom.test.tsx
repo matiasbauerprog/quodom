@@ -125,6 +125,24 @@ describe('NotificacionesQuodom', () => {
     window.removeEventListener('quodom:changed', cambio);
   });
 
+  // Crear un pedido también avisa. Con el "Se envió" de siempre se leía como
+  // que ya había salido para un proveedor.
+  it('un Quodom creado dice "Se creó" y ofrece abrirlo', async () => {
+    const BORRADOR = { ...ENVIADO, id: 'q-9', nro: 'QD-9', descripcion: 'Pintura casa', estado: 'CREADO', nombrerubro: 'Pintura' };
+    list.mockResolvedValue([{ ...NOTIF(3, 'q-9'), tiponotificacion: 'QUODOMCREADO', titulo: 'Quodom creado', texto: 'Creaste el Quodom QD-9.' }]);
+    misQuodom.mockResolvedValue([BORRADOR]);
+    montar();
+    const menu = await abrir();
+
+    expect(await within(menu).findByText(/se creó/i)).toHaveTextContent('Se creó Pintura casa');
+    expect(within(menu).queryByRole('button', { name: /repetir pedido/i })).toBeNull();
+    expect(within(menu).queryByRole('button', { name: /otro proveedor/i })).toBeNull();
+
+    fireEvent.click(within(menu).getByRole('button', { name: 'Abrir pedido' }));
+    expect(screen.getByTestId('ubicacion')).toHaveTextContent('/?quodom=q-9');
+    expect(screen.queryByRole('region', { name: /notificaciones/i })).toBeNull();
+  });
+
   it('Repetir abre el panel si estaba cerrado', async () => {
     localStorage.setItem('quodom.panelCerrado', '1');
     document.documentElement.dataset.panelCerrado = 'true';
