@@ -54,22 +54,7 @@
 }
 .notq-texto { margin: 0; font-size: var(--fs-small); line-height: 1.3; overflow-wrap: anywhere; }
 .notq-meta { margin: 0; font-size: var(--fs-tiny); color: #6B6B6B; }
-.notq-acciones {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  margin-top: var(--sp-2);
-}
-.notq-acciones button {
-  padding: 4px 10px;
-  background: #F1F1F1; color: var(--color-texto);
-  border: 1px solid #DADADA;
-  border-radius: 999px;
-  font: inherit; font-size: var(--fs-tiny); font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.notq-acciones button:hover:not(:disabled) { border-color: var(--color-texto); }
-.notq-acciones button:disabled { opacity: 0.6; cursor: default; }
-.notq-acciones button:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 1px; }
+/* Los botones de cada notificación: AccionesNotificacion.css. */
 .notq-vacio, .notq-error { margin: 0; padding: var(--sp-3) var(--sp-4); font-size: var(--fs-small); }
 .notq-error { color: #B3261E; }
 .notq-todas {

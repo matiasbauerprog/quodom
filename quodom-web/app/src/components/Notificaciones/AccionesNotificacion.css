@@ -1,0 +1,16 @@
+.notq-acciones {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: var(--sp-2);
+}
+.notq-acciones button {
+  padding: 4px 10px;
+  background: #F1F1F1; color: var(--color-texto);
+  border: 1px solid #DADADA;
+  border-radius: 999px;
+  font: inherit; font-size: var(--fs-tiny); font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.notq-acciones button:hover:not(:disabled) { border-color: var(--color-texto); }
+.notq-acciones button:disabled { opacity: 0.6; cursor: default; }
+.notq-acciones button:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 1px; }
