@@ -1,21 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
-import { abrirQuodom } from '../../quodom/quodomAbierto';
-import { abrirPanel } from '../layout/panelLateral';
+export { repetirPedido } from '../../quodom/repetirPedido';
 import './AccionesNotificacion.css';
-
-/**
- * Crea un Quodom nuevo con las líneas de `q` y lo deja abierto en el árbol de
- * su rubro. El panel está en todas las pantallas, así que abrirlo alcanza para
- * que se vea adónde fue, venga de la campana o de la pantalla Notificaciones.
- */
-export async function repetirPedido(q: Quodom): Promise<void> {
-  const r = await quodomApi.repetir(q.id);
-  abrirQuodom(q.idrubro, r.idquodom);
-  abrirPanel();
-  window.dispatchEvent(new Event('quodom:changed'));
-}
 
 type Props = {
   q: Quodom;

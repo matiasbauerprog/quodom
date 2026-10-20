@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Quodom } from '../api/types';
 import { quodom as quodomApi } from '../api/quodom';
 import { ApiError } from '../api/client';
-import { abrirPanel } from './layout/panelLateral';
+import { repetirPedido } from '../quodom/repetirPedido';
 import './QuodomCard.css';
 
 type Variant = 'sidebar' | 'page';
@@ -107,11 +107,9 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
     if (busy) return;
     setBusy(true); setErr(null);
     try {
-      const r = await quodomApi.repetir(quodom.id);
-      // Vuelve al árbol: con el panel cerrado no se vería adónde fue.
-      abrirPanel();
+      const id = await repetirPedido(quodom);
       onChange?.();
-      navigate('/quodom?id=' + encodeURIComponent(r.idquodom));
+      navigate('/quodom?id=' + encodeURIComponent(id));
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'No se pudo repetir.');
     } finally { setBusy(false); }
