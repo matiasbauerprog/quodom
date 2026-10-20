@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { notificaciones as notificacionesApi } from '../../api/oper_notificaciones';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Notificacion, Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
-import { abrirQuodom } from '../../quodom/quodomAbierto';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
-import { abrirPanel } from '../layout/panelLateral';
+import { AccionesNotificacion, repetirPedido } from './AccionesNotificacion';
 import './NotificacionesQuodom.css';
 
 const CUANTAS = 5;
@@ -29,7 +28,6 @@ function haceCuanto(iso: string): string {
  */
 export function NotificacionesQuodom() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [sinLeer, setSinLeer] = useState(0);
   const [abierto, setAbierto] = useState(false);
   const [lista, setLista] = useState<Notificacion[] | null>(null);
@@ -97,11 +95,7 @@ export function NotificacionesQuodom() {
     if (repitiendo) return;
     setRepitiendo(q.id); setError(null);
     try {
-      const r = await quodomApi.repetir(q.id);
-      abrirQuodom(q.idrubro, r.idquodom);
-      // Vuelve al árbol: con el panel cerrado no se vería adónde fue.
-      abrirPanel();
-      window.dispatchEvent(new Event('quodom:changed'));
+      await repetirPedido(q);
       setAbierto(false);
     } catch (e) {
       setError(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el pedido.');
@@ -146,29 +140,13 @@ export function NotificacionesQuodom() {
                       {q && <>{q.nro} · {q.nombrerubro} · </>}{haceCuanto(n.createdAt)}
                     </p>
                     {q && (
-                      <div className="notq-acciones">
-                        <button
-                          type="button"
-                          aria-label="Ver en historial"
-                          title="Ver en historial"
-                          onClick={() => { setAbierto(false); navigate('/mis-quodoms?pedido=' + encodeURIComponent(q.id)); }}
-                        >Historial</button>
-                        <button
-                          type="button"
-                          aria-label="Repetir pedido"
-                          title="Repetir pedido: crea uno nuevo con los mismos productos"
-                          disabled={repitiendo !== null}
-                          onClick={() => repetir(q)}
-                        >{repitiendo === q.id ? 'Repitiendo…' : 'Repetir'}</button>
-                        {q.estado === 'ENVIADO' && (
-                          <button
-                            type="button"
-                            aria-label="Cotizar con otro proveedor"
-                            title="Cotizar con otro proveedor"
-                            onClick={() => { setAbierto(false); setProveedoresDe(q.id); }}
-                          >Otro proveedor</button>
-                        )}
-                      </div>
+                      <AccionesNotificacion
+                        q={q}
+                        repitiendo={repitiendo}
+                        onRepetir={repetir}
+                        onOtroProveedor={x => { setAbierto(false); setProveedoresDe(x.id); }}
+                        onAntesDeNavegar={() => setAbierto(false)}
+                      />
                     )}
                   </li>
                 );
