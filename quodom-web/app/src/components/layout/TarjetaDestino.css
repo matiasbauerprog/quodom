@@ -86,23 +86,37 @@
   color: #5C5C5C;
 }
 
-/* El lápiz flota sobre la cabecera, afuera del botón que pliega: un hueco en
-   el título (`tq-lapiz-lugar`) le guarda el lugar para que el nombre largo no
-   quede debajo. */
-.tq-cab-fila { position: relative; }
-.tq-lapiz-lugar { flex-shrink: 0; width: 28px; }
-.tq-lapiz {
+/* Cabecera con lápiz: el botón que pliega se estira por debajo (inset 0) y el
+   contenido queda encima sin recibir clics, salvo el lápiz. Así el lápiz va
+   pegado al nombre sin anidar un botón en otro. */
+.tq-cab-estirada { position: relative; }
+.tq-cab-estirada > :not(.tq-cab-toggle) { position: relative; pointer-events: none; }
+.tq-cab-toggle {
   position: absolute;
-  top: 9px;
-  right: 40px;
-  width: 30px;
-  height: 30px;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.tq-cab-toggle:focus-visible { outline: 2px solid var(--color-exito); outline-offset: -2px; }
+/* El nombre ocupa lo que mide y no todo el ancho, para que el lápiz quede al
+   lado; el chevron se va a la otra punta con margin-left: auto. */
+.tq-nombre-ajustado { flex: 0 1 auto; }
+.tq-cab-estirada .tq-chevron { margin-left: auto; }
+.tq-lapiz {
+  flex-shrink: 0;
+  pointer-events: auto;
+  width: 28px;
+  height: 28px;
+  margin: -4px 0 -4px -4px;
   padding: 0;
   border: 0;
   border-radius: 999px;
   background: none;
   color: var(--color-texto-muted);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
 }
