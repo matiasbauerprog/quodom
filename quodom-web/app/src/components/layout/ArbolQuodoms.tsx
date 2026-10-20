@@ -5,6 +5,8 @@ import { abiertoDe, abrirQuodom, cerrarQuodom } from '../../quodom/quodomAbierto
 import { useArrastreActivo } from '../../quodom/useArrastreActivo';
 import { RotuloRubro } from './RotuloRubro';
 import { TarjetaDestino } from './TarjetaDestino';
+import { quodom as quodomApi } from '../../api/quodom';
+import { ApiError } from '../../api/client';
 import './ArbolQuodoms.css';
 
 export type RamaRubro = { idrubro: number; nombre: string; quodoms: Quodom[] };
@@ -105,6 +107,17 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
     ? ramas
     : [...ramas].sort((a, b) => Number(b.idrubro === enPantalla) - Number(a.idrubro === enPantalla));
 
+  // El evento recarga el árbol, la barra de celular y la ventana del detalle,
+  // que muestran el mismo nombre.
+  async function renombrar(idquodom: string, descripcion: string) {
+    try {
+      await quodomApi.update(idquodom, { descripcion });
+    } catch (e) {
+      throw new Error(e instanceof ApiError ? e.message : 'No se pudo cambiar el nombre.');
+    }
+    window.dispatchEvent(new Event('quodom:changed'));
+  }
+
   return (
     <div className="arbol">
       {ordenadas.map(rama => {
@@ -148,6 +161,7 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
                         expandido
                         dataDestino={q.id}
                         dataRubro={rama.idrubro}
+                        onRenombrar={nuevo => renombrar(q.id, nuevo)}
                       >
                         {renderAbierto && renderAbierto(q)}
                       </TarjetaDestino>
