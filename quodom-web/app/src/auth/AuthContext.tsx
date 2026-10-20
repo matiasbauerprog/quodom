@@ -35,9 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // La respuesta de /signin no trae teléfono ni datos de empresa: guardarla
+  // como el usuario dejaba el perfil vacío hasta recargar. El usuario completo
+  // sale de /users/current, igual que al cargar la página.
   const signin = useCallback(async (username: string, password: string) => {
-    const u = await users.signin({ username, password });
-    setUser(u);
+    await users.signin({ username, password });
+    setUser(await users.current());
   }, []);
 
   const signup = useCallback(async (body: Parameters<typeof users.signup>[0]) => {

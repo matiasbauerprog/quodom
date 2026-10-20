@@ -88,6 +88,18 @@ describe('datos de empresa', () => {
     expect(actual.body.facturaA).toBe(true);
   });
 
+  // Once dígitos con los guiones de siempre: es lo que el proveedor lee en el
+  // pedido para facturar. Vacío vale, porque es como se borra.
+  it.each(['30712345678', '30-7123456-78', '30-71234567-89', 'abc'])('rechaza el CUIT mal formado %s', async (cuit) => {
+    const res = await request(app).put('/users/').set(AUTH, 'Bearer ' + token).send({ cuit });
+    expect(res.status).toBe(400);
+  });
+
+  it('acepta borrar el CUIT', async () => {
+    const res = await request(app).put('/users/').set(AUTH, 'Bearer ' + token).send({ cuit: '' });
+    expect(res.status).toBe(200);
+  });
+
   it('acepta destildar Factura A', async () => {
     await request(app).put('/users/').set(AUTH, 'Bearer ' + token).send({ facturaA: false });
 

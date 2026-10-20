@@ -27,6 +27,14 @@ beforeEach(() => {
 // Se entra con el mail: pedir además un usuario era un dato más para inventar
 // y olvidar, y después ni siquiera se podía cambiar.
 describe('SignUp', () => {
+  // Con el 011 fijo al lado, sin la aclaración se tipeaba el 15 y el número
+  // quedaba corrido.
+  it('aclara que el teléfono va sin el 0 y sin el 15', () => {
+    montar();
+    expect(screen.getByLabelText('Teléfono sin el 0 y sin el 15')).toBeInTheDocument();
+  });
+
+
   it('no pide un usuario', () => {
     montar();
 

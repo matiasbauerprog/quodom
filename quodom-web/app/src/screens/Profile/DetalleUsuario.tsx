@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { ApiError } from '../../api/client';
 import { AppBarBack } from '../../components/layout/AppBarBack';
 import { COD_AREA, TELEFONO_DIGITOS, soloDigitos, telefonoCompleto, telefonoGuardado } from '../../utils/telefono';
+import { CUIT_DIGITOS, cuitValido, formatearCuit } from '../../utils/cuit';
 import './DetalleUsuario.css';
 
 export function DetalleUsuario() {
@@ -20,17 +21,21 @@ export function DetalleUsuario() {
     setF({
       email: user.email ?? '', nombre: user.nombre ?? '', apellido: user.apellido ?? '',
       telefono: telefonoGuardado(user.telefono),
-      empresa: user.empresa ?? '', cuit: user.cuit ?? '', facturaA: !!user.facturaA
+      empresa: user.empresa ?? '', cuit: formatearCuit(user.cuit ?? ''), facturaA: !!user.facturaA
     });
   }, [user]);
 
-  const set = (k: 'email' | 'nombre' | 'apellido' | 'empresa' | 'cuit') =>
+  const set = (k: 'email' | 'nombre' | 'apellido' | 'empresa') =>
     (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!telefonoCompleto(f.telefono)) {
       setMsg({ ok: false, text: 'El teléfono tiene que tener ' + TELEFONO_DIGITOS + ' dígitos, sin el código de área.' });
+      return;
+    }
+    if (!cuitValido(f.cuit)) {
+      setMsg({ ok: false, text: 'El CUIT tiene que tener ' + CUIT_DIGITOS + ' dígitos.' });
       return;
     }
     setMsg(null); setBusy(true);
@@ -55,7 +60,7 @@ export function DetalleUsuario() {
                 lo garantiza igual. Se muestra para que el número se lea entero. */}
             <label className="field"><span>Cód. área</span><input className="input" value={COD_AREA} disabled /></label>
             <label className="field">
-              <span>Teléfono</span>
+              <span>Teléfono sin el 0 y sin el 15</span>
               <input
                 className="input" inputMode="numeric" value={f.telefono}
                 onChange={e => setF({ ...f, telefono: soloDigitos(e.target.value) })}
@@ -68,7 +73,7 @@ export function DetalleUsuario() {
             <legend>Datos de empresa</legend>
             <p className="du-ayuda">Si los cargás, viajan en el pedido para que el proveedor pueda facturarte.</p>
             <label className="field"><span>Empresa</span><input className="input" value={f.empresa} onChange={set('empresa')} /></label>
-            <label className="field"><span>CUIT</span><input className="input" inputMode="numeric" value={f.cuit} onChange={set('cuit')} /></label>
+            <label className="field"><span>CUIT</span><input className="input" inputMode="numeric" placeholder="30-71234567-8" value={f.cuit} onChange={e => setF({ ...f, cuit: formatearCuit(e.target.value) })} /></label>
             <label className="du-check">
               <input type="checkbox" checked={f.facturaA} onChange={e => setF({ ...f, facturaA: e.target.checked })} />
               <span>Factura A</span>

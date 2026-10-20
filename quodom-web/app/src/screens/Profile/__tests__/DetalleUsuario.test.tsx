@@ -55,6 +55,14 @@ describe('DetalleUsuario: campos que ya no están', () => {
 });
 
 describe('DetalleUsuario: teléfono y código de área', () => {
+  // Con el 011 fijo al lado, sin la aclaración se tipeaba el 15 y el número
+  // quedaba corrido.
+  it('aclara que el teléfono va sin el 0 y sin el 15', () => {
+    montar();
+    expect(screen.getByLabelText('Teléfono sin el 0 y sin el 15')).toBeInTheDocument();
+  });
+
+
   it('muestra el código de área fijo en 011 y no deja cambiarlo', () => {
     montar();
 
@@ -98,6 +106,26 @@ describe('DetalleUsuario: datos de empresa', () => {
     expect((screen.getByLabelText(/empresa/i) as HTMLInputElement).value).toBe('Command');
     expect((screen.getByLabelText(/cuit/i) as HTMLInputElement).value).toBe('30-7');
     expect(screen.getByLabelText(/factura a/i)).toBeChecked();
+  });
+
+  it('pone los guiones del CUIT solos y corta en 11 dígitos', () => {
+    montar();
+    const cuit = screen.getByLabelText(/cuit/i) as HTMLInputElement;
+
+    fireEvent.change(cuit, { target: { value: '307123456789999' } });
+    expect(cuit.value).toBe('30-71234567-8');
+
+    fireEvent.change(cuit, { target: { value: '30 712' } });
+    expect(cuit.value).toBe('30-712');
+  });
+
+  it('no guarda un CUIT incompleto y dice por qué', async () => {
+    montar();
+    fireEvent.change(screen.getByLabelText(/cuit/i), { target: { value: '3071' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/11 dígitos/);
+    expect(update).not.toHaveBeenCalled();
   });
 
   it('los manda al guardar', async () => {
