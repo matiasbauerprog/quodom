@@ -5,6 +5,9 @@ import { ArbolQuodoms, type RamaRubro } from '../ArbolQuodoms';
 import { abiertoDe, abrirQuodom } from '../../../quodom/quodomAbierto';
 import { ramasDeQuodoms } from '../../../quodom/ramas';
 import type { Quodom } from '../../../api/types';
+import { quodom as quodomApi } from '../../../api/quodom';
+
+vi.mock('../../../api/quodom', () => ({ quodom: { update: vi.fn() } }));
 
 function q(id: string, descripcion: string, idrubro: number, estado = 'CREADO'): Quodom {
   return { id, descripcion, estado, nro: 'QD-' + id, idrubro, cantproductos: 2, porccompletado: 100 } as unknown as Quodom;
@@ -338,5 +341,60 @@ describe('ArbolQuodoms · soltar un producto', () => {
 
     expect(screen.getByRole('button', { name: /Casa/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Oficina/ })).toBeNull();
+  });
+});
+
+// Cambiar el nombre obligaba a abrir el detalle: el usuario lo pidió en el panel.
+describe('ArbolQuodoms: renombrar desde el panel', () => {
+  beforeEach(() => {
+    vi.mocked(quodomApi.update).mockReset().mockResolvedValue(true as never);
+    abrirQuodom(5, 'p1');
+  });
+
+  it('el lápiz vuelve editable el nombre y Enter lo guarda', async () => {
+    const cambio = vi.fn();
+    window.addEventListener('quodom:changed', cambio);
+    montar();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar el nombre' }));
+    const campo = screen.getByRole('textbox', { name: 'Nombre del Quodom' });
+    expect(campo).toHaveValue('Casa');
+    expect(document.activeElement).toBe(campo);
+
+    fireEvent.change(campo, { target: { value: '  Casa de mamá ' } });
+    await act(async () => { fireEvent.keyDown(campo, { key: 'Enter' }); });
+
+    expect(quodomApi.update).toHaveBeenCalledWith('p1', { descripcion: 'Casa de mamá' });
+    expect(cambio).toHaveBeenCalled();
+    expect(screen.queryByRole('textbox', { name: 'Nombre del Quodom' })).toBeNull();
+    window.removeEventListener('quodom:changed', cambio);
+  });
+
+  it('Escape cancela sin guardar', async () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar el nombre' }));
+    const campo = screen.getByRole('textbox', { name: 'Nombre del Quodom' });
+    fireEvent.change(campo, { target: { value: 'Otra cosa' } });
+    await act(async () => { fireEvent.keyDown(campo, { key: 'Escape' }); });
+
+    expect(quodomApi.update).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Casa/, expanded: true })).toBeInTheDocument();
+  });
+
+  it('si el servidor falla lo dice y deja el campo abierto', async () => {
+    vi.mocked(quodomApi.update).mockRejectedValue(new Error('x'));
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'Cambiar el nombre' }));
+    const campo = screen.getByRole('textbox', { name: 'Nombre del Quodom' });
+    fireEvent.change(campo, { target: { value: 'Casa nueva' } });
+    await act(async () => { fireEvent.keyDown(campo, { key: 'Enter' }); });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('No se pudo cambiar el nombre.');
+    expect(screen.getByRole('textbox', { name: 'Nombre del Quodom' })).toHaveValue('Casa nueva');
+  });
+
+  it('los Quodoms plegados no muestran el lápiz', () => {
+    montar();
+    expect(screen.getAllByRole('button', { name: 'Cambiar el nombre' })).toHaveLength(1);
   });
 });

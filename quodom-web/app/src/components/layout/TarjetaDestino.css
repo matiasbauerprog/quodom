@@ -85,3 +85,44 @@
   font-size: 13px;
   color: #5C5C5C;
 }
+
+/* El lápiz flota sobre la cabecera, afuera del botón que pliega: un hueco en
+   el título (`tq-lapiz-lugar`) le guarda el lugar para que el nombre largo no
+   quede debajo. */
+.tq-cab-fila { position: relative; }
+.tq-lapiz-lugar { flex-shrink: 0; width: 28px; }
+.tq-lapiz {
+  position: absolute;
+  top: 9px;
+  right: 40px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-texto-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tq-lapiz:hover, .tq-lapiz:focus-visible { background: var(--color-fondo); color: var(--color-texto); }
+
+.tq-cab-editando { cursor: default; }
+.tq-cab-editando:hover { background: none; }
+.tq-nombre-input {
+  flex: 1;
+  min-width: 0;
+  margin: -3px 0;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--color-acento);
+  border-radius: var(--radius-input);
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+  background: #fff;
+  font-family: var(--font-prompt);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+.tq-nombre-input:focus { outline: none; }
+.tq-err { padding-left: 28px; font-size: var(--fs-tiny); color: #B42532; }

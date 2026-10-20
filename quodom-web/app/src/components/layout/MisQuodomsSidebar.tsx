@@ -9,6 +9,7 @@ import { TarjetaDestino } from './TarjetaDestino';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
 import { PanelVacio } from './PanelVacio';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
+import { setGuestDescripcion } from '../../guest/guestQuodom';
 import { bloqueoDeEnvio, conFaltaConcreta, type FaltaAtributo } from '../../quodom/bloqueosEnvio';
 import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
@@ -211,6 +212,7 @@ export function MisQuodomsSidebar() {
             chip={{ texto: 'Sin guardar', tono: 'alerta' }}
             cuenta={cuentaProductos(r.cantproductos)}
             onActivar={() => navigate('/quodom?rubro=' + r.idrubro)}
+            onRenombrar={nuevo => { setGuestDescripcion(r.idrubro, nuevo); window.dispatchEvent(new Event('quodom:changed')); }}
           >
             <LineasQuodomSidebar modo="invitado" idrubro={r.idrubro} onChange={refresh} />
           </TarjetaDestino>
