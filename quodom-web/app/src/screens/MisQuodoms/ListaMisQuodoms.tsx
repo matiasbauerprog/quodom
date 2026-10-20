@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -18,9 +18,6 @@ export function ListaMisQuodoms() {
   const [nonce, setNonce] = useState(0);
   const [eligiendoRubro, setEligiendoRubro] = useState(false);
   const [creando, setCreando] = useState(false);
-  // Id del Quodom recién creado al repetir: el acuse de que algo pasó, porque
-  // el nuevo aparece en el árbol del panel derecho y no acá.
-  const [agregado, setAgregado] = useState<string | null>(null);
   const refresh = useCallback(() => setNonce(n => n + 1), []);
 
   useEffect(() => {
@@ -38,14 +35,6 @@ export function ListaMisQuodoms() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [eligiendoRubro, creando]);
-
-  // El acuse avisa que algo pasó y se va; si se queda, a la segunda repetición
-  // ya no se sabe a cuál se refiere.
-  useEffect(() => {
-    if (!agregado) return;
-    const t = setTimeout(() => setAgregado(null), 4000);
-    return () => clearTimeout(t);
-  }, [agregado]);
 
   // Qué pedido está abierto en la ventana. Se guarda el objeto y no el id, y la
   // ventana se monta **al nivel de la sección** y no dentro del <li>: montada
@@ -148,11 +137,6 @@ export function ListaMisQuodoms() {
         {list && list.length === 0 && (
           <EmptyState title="Todavía no tenés Quodoms" description="Armá uno desde el catálogo o creá uno vacío." />
         )}
-        {agregado && (
-          <p className="mq-agregado" role="status">
-            Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregado)}>ver Quodom</Link>
-          </p>
-        )}
         {list && list.length > 0 && (
           <ul className="mq-list">
             {list.map(q => (
@@ -179,7 +163,7 @@ export function ListaMisQuodoms() {
         <DialogoPedido
           quodom={pedido}
           onCerrar={() => setPedido(null)}
-          onRepetido={id => { refresh(); setAgregado(id); }}
+          onRepetido={() => refresh()}
         />
       )}
     </section>

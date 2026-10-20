@@ -1,0 +1,57 @@
+/* Abajo al centro y por encima de la barra inferior del celular (72px). */
+.aviso-repetido {
+  position: fixed;
+  left: var(--sp-3); right: var(--sp-3);
+  bottom: calc(72px + var(--sp-3));
+  z-index: 60;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  background: var(--color-panel-oscuro);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+  animation: aviso-repetido-entra 0.2s ease-out;
+}
+.aviso-repetido-ok {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  background: var(--color-exito); color: #fff;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 700;
+}
+.aviso-repetido-texto { flex: 1; margin: 0; }
+.aviso-repetido-ver {
+  flex-shrink: 0;
+  color: #fff; font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.aviso-repetido-cerrar {
+  flex-shrink: 0;
+  width: 28px; height: 28px; padding: 0;
+  background: none; border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px; line-height: 1;
+  cursor: pointer;
+}
+.aviso-repetido-cerrar:hover { color: #fff; }
+
+/* En escritorio no hay barra inferior. Abajo a la izquierda y no centrado: el
+   panel derecho cambia de ancho, y centrado en la ventana quedaba debajo de él. */
+@media (min-width: 1025px) {
+  .aviso-repetido {
+    left: var(--sp-5); right: auto;
+    bottom: var(--sp-5);
+    width: min(480px, calc(100vw - 2 * var(--sp-5)));
+  }
+}
+
+@keyframes aviso-repetido-entra {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .aviso-repetido { animation: none; } }
