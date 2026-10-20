@@ -11,9 +11,11 @@
   background: rgba(0, 0, 0, 0.5);
 }
 
+/* Cabecera y pie fijos, y sólo la lista scrollea: el nombre y el envío
+   siempre a la vista, tenga el pedido tres productos o treinta. */
 .vq.card {
   width: 100%;
-  max-width: 640px;
+  max-width: 600px;
   max-height: 92dvh;
   display: flex;
   flex-direction: column;
@@ -24,35 +26,52 @@
 .vq-cab {
   display: flex;
   align-items: flex-start;
-  gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-4) var(--sp-3);
-  border-bottom: 1px solid rgba(0, 0, 0, .07);
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-4) var(--sp-3) var(--sp-5);
 }
-.vq-cab-texto { flex: 1; min-width: 0; }
+.vq-cab-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .vq-rubro {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   margin: 0;
   font-family: var(--font-prompt);
   font-size: var(--fs-tiny);
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--color-texto-muted);
+  color: var(--color-acento);
 }
-.vq-titulo { margin: 0; font-family: var(--font-prompt); font-size: var(--fs-h2); }
+.vq-estado {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #E3F5EA;
+  color: #1E7A49;
+  letter-spacing: .04em;
+}
 .vq-cerrar {
   flex-shrink: 0;
   width: 36px; height: 36px; padding: 0;
-  background: none; border: none;
+  border: none;
+  border-radius: 999px;
+  background: none;
   color: var(--color-texto-muted);
-  font-size: 26px; line-height: 1;
+  font-size: 24px; line-height: 1;
   cursor: pointer;
 }
-.vq-cerrar:hover { color: var(--color-texto); }
+.vq-cerrar:hover { background: var(--color-fondo); color: var(--color-texto); }
 
 .vq-cuerpo {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: var(--sp-4);
+  padding: 0 var(--sp-5) var(--sp-4);
 }
-.vq-cuerpo .dq-lines { margin-bottom: 0; }
+
+.vq-pie {
+  padding: var(--sp-3) var(--sp-5) var(--sp-4);
+  border-top: 1px solid #EEEEEE;
+  background: #FAFAFA;
+}
 
 @media (min-width: 601px) {
   .vq-backdrop { align-items: center; padding: var(--sp-4); }

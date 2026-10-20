@@ -56,6 +56,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
   const nombrar = nombrarProp ?? sp.get('nombrar') === '1';
   const [renombrando, setRenombrando] = useState(false);
   const campoNombre = useRef<HTMLInputElement>(null);
+  const campoDetalle = useRef<HTMLTextAreaElement>(null);
   const idrubro = parseIdrubro(sp.get('rubro'));
   const { user } = useAuth();
   const tieneDireccion = useTieneDireccion(!!user);
@@ -63,6 +64,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
   const mode: Mode = id ? 'server' : 'guest';
 
   const [descripcion, setDescripcion] = useState<string>('');
+  const [detalle, setDetalle] = useState<string>('');
   const [server, setServer] = useState<{ quodom: Quodom; lines: QuodomLine[] } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -153,6 +155,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
         if (!alive) return;
         setServer({ quodom: q, lines });
         setDescripcion(q.descripcion);
+        setDetalle(q.detalle ?? '');
       })
       .catch(e => { if (alive) setErr(e instanceof ApiError ? e.message : 'Error al cargar el Quodom.'); });
     return () => { alive = false; };
@@ -180,6 +183,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       campoNombre.current?.blur();
+      campoDetalle.current?.blur();
       onCerrar();
     };
     window.addEventListener('keydown', onKey);
@@ -200,6 +204,16 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
       } catch {}
     }
   }, [mode, idrubro, server]);
+
+  const saveDetalle = useCallback(async (value: string) => {
+    if (!server) return;
+    const nuevo = value.trim() || null;
+    if (nuevo === (server.quodom.detalle ?? null)) return;
+    try {
+      await quodomApi.update(server.quodom.id, { detalle: nuevo });
+      setServer(s => s && { ...s, quodom: { ...s.quodom, detalle: nuevo } });
+    } catch {}
+  }, [server]);
 
   async function cambiarCantidadServer(line: QuodomLine, cantidad: number) {
     try {
@@ -321,7 +335,9 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
   const bloqueo = yaEnviado ? null : bloqueoDeEnvioPorLineas(lines, tieneDireccion);
   const enviarDisabled = busy || lines.length === 0 || yaEnviado || !!bloqueo;
 
-  const titulo = mode === 'server' ? (server?.quodom.nro ?? 'Quodom') : (idrubro !== null ? nombreRubro(idrubro) : 'Mi Quodom');
+  const rubroDelQuodom = mode === 'server'
+    ? (server ? (server.quodom.nombrerubro || nombreRubro(server.quodom.idrubro)) : '')
+    : (idrubro !== null ? nombreRubro(idrubro) : '');
 
   // En la ventana, el selector de proveedores la reemplaza en vez de apilarse
   // encima: dos ventanas oscureciendo el fondo no se lee como un paso, se lee
@@ -337,71 +353,109 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
     );
   }
 
+  function elegirAtributo(l: (typeof lines)[number], slot: 1 | 2) {
+    const nombreatributo = slot === 1 ? l.nombreAtributo1 : l.nombreAtributo2;
+    if (!nombreatributo) return;
+    const n = Number(l.key.slice(2));
+    setAttr({
+      lineIndex: mode === 'guest' ? n : undefined,
+      lineId: mode === 'server' ? n : undefined,
+      idproducto: l.idproducto, nombreatributo, slot,
+      actual: slot === 1 ? l.atributo1 : l.atributo2
+    });
+  }
+
+  // El nombre es el título: el número (QD-49) se leía como un id interno, y
+  // "Descripción" no decía que ese campo era el nombre del Quodom.
+  const campoDelNombre = (
+    <div className={'dq-nombre' + (renombrando ? ' dq-renombrando' : '')}>
+      <input
+        ref={campoNombre}
+        className="dq-nombre-input"
+        aria-label="Nombre del Quodom"
+        placeholder="Ponele un nombre"
+        value={descripcion}
+        onChange={e => setDescripcion(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        onBlur={() => { setRenombrando(false); saveDescripcion(descripcion); }}
+      />
+      {renombrando && <small className="dq-renombrar-ayuda">Es una copia de tu pedido. Ponele otro nombre para distinguirlo del original.</small>}
+    </div>
+  );
+
   const cuerpo = (
     <>
         {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
         {mode === 'server' && !server && !err && <Loader />}
 
-        <label className={'field' + (renombrando ? ' dq-renombrando' : '')}><span>Descripción</span>
-          <input
-            ref={campoNombre}
-            className="input"
-            value={descripcion}
-            onChange={e => setDescripcion(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-            onBlur={() => { setRenombrando(false); saveDescripcion(descripcion); }}
+        {!enVentana && campoDelNombre}
+
+        {/* Opcional y sólo en el servidor: el carrito de invitado no tiene
+            dónde guardarlo y la migración no lo llevaría. */}
+        {mode === 'server' && server && (
+          <textarea
+            ref={campoDetalle}
+            className="dq-detalle"
+            aria-label="Descripción"
+            placeholder="Agregá una descripción (opcional)"
+            rows={2}
+            maxLength={500}
+            value={detalle}
+            onChange={e => setDetalle(e.target.value)}
+            onBlur={() => saveDetalle(detalle)}
           />
-          {renombrando && <small className="dq-renombrar-ayuda">Es una copia de tu pedido. Ponele otro nombre para distinguirlo del original.</small>}
-        </label>
+        )}
 
-        {lines.length === 0 && <p className="dq-empty">Tu Quodom está vacío. Sumá productos desde Inicio.</p>}
+        {lines.length === 0 && (mode === 'guest' || server) && (
+          <p className="dq-empty">Tu Quodom está vacío. Sumá productos desde Inicio.</p>
+        )}
 
-        <ul className="dq-lines">
-          {lines.map(l => (
-            <li key={l.key} className="dq-line card hoja">
-              <div className="dq-line-head">
-                <ProductImage idproducto={l.idproducto} alt={l.nombreProducto ?? ''} size="sm" />
-                <span className="dq-line-name">{l.nombreProducto}</span>
-                <button className="dq-line-remove" aria-label="Quitar" onClick={l.onRemove}>×</button>
-              </div>
-              <div className="dq-line-qty">
-                <button className="btn btn-ghost dq-qty-btn" onClick={() => l.onCantidad(Math.max(0, l.cantidad - 1))} aria-label="Restar">−</button>
-                <input className="input dq-qty-input" type="number" min={1} value={l.cantidad} onChange={e => l.onCantidad(Math.max(1, Number(e.target.value) || 1))} />
-                <button className="btn btn-ghost dq-qty-btn" onClick={() => l.onCantidad(l.cantidad + 1)} aria-label="Sumar">+</button>
-              </div>
-              {l.nombreAtributo1 && (
-                <button className="dq-attr" onClick={() => setAttr({ lineIndex: mode === 'guest' ? Number(l.key.slice(2)) : undefined, lineId: mode === 'server' ? Number(l.key.slice(2)) : undefined, idproducto: l.idproducto, nombreatributo: l.nombreAtributo1!, slot: 1, actual: l.atributo1 })}>
-                  <span>{l.nombreAtributo1}:</span> <strong>{l.atributo1 ?? 'Elegir'}</strong>
-                </button>
-              )}
-              {l.nombreAtributo2 && (
-                <button className="dq-attr" onClick={() => setAttr({ lineIndex: mode === 'guest' ? Number(l.key.slice(2)) : undefined, lineId: mode === 'server' ? Number(l.key.slice(2)) : undefined, idproducto: l.idproducto, nombreatributo: l.nombreAtributo2!, slot: 2, actual: l.atributo2 })}>
-                  <span>{l.nombreAtributo2}:</span> <strong>{l.atributo2 ?? 'Elegir'}</strong>
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        {rubroHabilitado ? (
+        {lines.length > 0 && (
           <>
-            <button className="btn btn-whatsapp btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
-              {busy ? 'Cotizando…' : (yaEnviado ? 'Ya cotizado' : 'Cotizar por WhatsApp')}
-            </button>
-            {bloqueo && lines.length > 0 && (
-              <p className="dq-bloqueo" role="status">
-                {bloqueo.texto}{' '}
-                {bloqueo.motivo === 'direccion'
-                  ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
-                  : 'Tocá la medida en el producto que la tenga en "Elegir".'}
-              </p>
-            )}
+            <p className="dq-lineas-cab">
+              <span>Productos</span>
+              <span>{lines.length}</span>
+            </p>
+            <ul className="dq-lineas">
+              {lines.map(l => (
+                <li key={l.key} className="dq-linea">
+                  <ProductImage idproducto={l.idproducto} alt="" size="sm" />
+                  <div className="dq-linea-info">
+                    <span className="dq-linea-nombre" title={l.nombreProducto ?? ''}>{l.nombreProducto}</span>
+                    {(l.nombreAtributo1 || l.nombreAtributo2) && (
+                      <span className="dq-linea-attrs">
+                        {([1, 2] as const).map(slot => {
+                          const nombre = slot === 1 ? l.nombreAtributo1 : l.nombreAtributo2;
+                          const valor = slot === 1 ? l.atributo1 : l.atributo2;
+                          if (!nombre) return null;
+                          return (
+                            <button
+                              key={slot}
+                              type="button"
+                              className={'dq-attr' + (valor ? '' : ' dq-attr-falta')}
+                              aria-label={(valor ? 'Cambiar ' : 'Elegir ') + nombre.toLowerCase() + ' de ' + l.nombreProducto}
+                              onClick={() => elegirAtributo(l, slot)}
+                            >
+                              {valor
+                                ? <><span className="dq-attr-nombre">{nombre.toLowerCase()}</span> {valor}</>
+                                : <>Elegir {nombre.toLowerCase()}</>}
+                              <span aria-hidden="true"> ▾</span>
+                            </button>
+                          );
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  <span className="dq-stepper">
+                    <button type="button" className="dq-step" aria-label={'Restar ' + l.nombreProducto} onClick={() => l.onCantidad(Math.max(0, l.cantidad - 1))}>−</button>
+                    <span className="dq-cant">{l.cantidad}</span>
+                    <button type="button" className="dq-step" aria-label={'Sumar ' + l.nombreProducto} onClick={() => l.onCantidad(l.cantidad + 1)}>+</button>
+                  </span>
+                  <button type="button" className="dq-quitar" aria-label={'Quitar ' + l.nombreProducto} onClick={l.onRemove}>×</button>
+                </li>
+              ))}
+            </ul>
           </>
-        ) : (
-          <p className="dq-aviso hoja" role="status">
-            {nombreRubro(idrubro!)} no está disponible por ahora, así que este Quodom no se puede enviar.
-            Tus productos quedan guardados acá por si el rubro vuelve.
-          </p>
         )}
 
         {/* Enviado no es el final: el comprador le manda a uno, no le contestan
@@ -443,6 +497,29 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
     </>
   );
 
+  // El envío va al pie y no al final de la lista: con varios productos, en la
+  // ventana quedaba fuera de la vista y había que bajar a buscarlo.
+  const pie = rubroHabilitado ? (
+    <>
+      <button className="btn btn-whatsapp btn-block dq-send" disabled={enviarDisabled} onClick={enviarWhatsapp}>
+        {busy ? 'Cotizando…' : (yaEnviado ? 'Ya cotizado' : 'Cotizar por WhatsApp')}
+      </button>
+      {bloqueo && lines.length > 0 && (
+        <p className="dq-bloqueo" role="status">
+          {bloqueo.texto}{' '}
+          {bloqueo.motivo === 'direccion'
+            ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
+            : 'Tocá "Elegir" en el producto que lo tenga.'}
+        </p>
+      )}
+    </>
+  ) : (
+    <p className="dq-aviso hoja" role="status">
+      {nombreRubro(idrubro!)} no está disponible por ahora, así que este Quodom no se puede enviar.
+      Tus productos quedan guardados acá por si el rubro vuelve.
+    </p>
+  );
+
   if (enVentana) {
     return (
       <div className="vq-backdrop" onClick={onCerrar}>
@@ -450,17 +527,23 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
           className="vq card hoja"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="vq-titulo"
+          aria-label={descripcion || 'Quodom'}
           onClick={e => e.stopPropagation()}
         >
           <header className="vq-cab">
             <div className="vq-cab-texto">
-              {server && <p className="vq-rubro">{server.quodom.nombrerubro || nombreRubro(server.quodom.idrubro)}</p>}
-              <h2 id="vq-titulo" className="vq-titulo">{titulo}</h2>
+              {rubroDelQuodom && (
+                <p className="vq-rubro">
+                  {rubroDelQuodom}
+                  {yaEnviado && <span className="vq-estado">Enviado</span>}
+                </p>
+              )}
+              {server && campoDelNombre}
             </div>
             <button type="button" className="vq-cerrar" aria-label="Cerrar" onClick={onCerrar}>×</button>
           </header>
           <div className="vq-cuerpo">{cuerpo}</div>
+          {server && <footer className="vq-pie">{pie}</footer>}
         </section>
       </div>
     );
@@ -468,8 +551,11 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
 
   return (
     <>
-      <AppBarBack title={titulo} />
-      <section className="container detalle-quodom">{cuerpo}</section>
+      <AppBarBack title={rubroDelQuodom || 'Mi Quodom'} />
+      <section className="container detalle-quodom">
+        {cuerpo}
+        <div className="dq-pie-pagina">{pie}</div>
+      </section>
     </>
   );
 }

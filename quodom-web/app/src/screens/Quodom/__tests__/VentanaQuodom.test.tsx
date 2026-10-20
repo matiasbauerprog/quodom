@@ -59,9 +59,31 @@ describe('VentanaQuodom', () => {
     montar();
     fireEvent.click(screen.getByRole('button', { name: 'abrir' }));
 
-    expect(await screen.findByRole('dialog')).toHaveTextContent('QD-8');
+    expect(await screen.findByRole('dialog', { name: 'Bebidas oficina' })).toBeInTheDocument();
     expect(await screen.findByText('Gaseosa 2L')).toBeInTheDocument();
     expect(screen.getByTestId('ubicacion')).toHaveTextContent('/notificaciones?quodom=q-8');
+  });
+
+  // "QD-8" se leía como un id interno, y "Descripción" no decía que ese campo
+  // era el nombre.
+  it('el título es el nombre editable, sin el número', async () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'abrir' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Bebidas oficina' });
+    expect(screen.getByRole('textbox', { name: 'Nombre del Quodom' })).toHaveValue('Bebidas oficina');
+    expect(dialogo).not.toHaveTextContent('QD-8');
+  });
+
+  it('la descripción es opcional y se guarda aparte del nombre', async () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'abrir' }));
+    const detalle = await screen.findByRole('textbox', { name: 'Descripción' });
+    expect(detalle).toHaveValue('');
+
+    fireEvent.change(detalle, { target: { value: '  Para la oficina de Palermo ' } });
+    fireEvent.blur(detalle);
+    await waitFor(() => expect(quodom.update).toHaveBeenCalledWith('q-8', { detalle: 'Para la oficina de Palermo' }));
+    expect(quodom.update).not.toHaveBeenCalledWith('q-8', expect.objectContaining({ descripcion: expect.anything() }));
   });
 
   it('cerrar vuelve a la pantalla de antes, sin la ventana', async () => {
@@ -100,12 +122,12 @@ describe('VentanaQuodom', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'cerrar selector' }));
-    expect(await screen.findByRole('dialog')).toHaveTextContent('QD-8');
+    expect(await screen.findByRole('dialog', { name: 'Bebidas oficina' })).toBeInTheDocument();
   });
 
   it('un link viejo a /quodom?id= abre la ventana sobre el inicio', async () => {
     montar('/quodom?id=q-8');
-    expect(await screen.findByRole('dialog')).toHaveTextContent('QD-8');
+    expect(await screen.findByRole('dialog', { name: 'Bebidas oficina' })).toBeInTheDocument();
     expect(screen.getByTestId('ubicacion')).toHaveTextContent('/?quodom=q-8');
 
     // Sin una entrada propia a la que volver, cerrar saca el parámetro.

@@ -12,6 +12,10 @@ function model(sequelize) {
             primaryKey: true
         },
         descripcion: { type: DataTypes.STRING, allowNull: false },
+        // Opcional y aparte del nombre (`descripcion`, que es el nombre del
+        // Quodom aunque se llame así): un renglón para que el usuario se acuerde
+        // de qué era. No viaja en el mensaje de WhatsApp.
+        detalle: { type: DataTypes.TEXT, allowNull: true },
         idrubro: { type: DataTypes.INTEGER, allowNull: false },
         createdBy: { type: DataTypes.STRING, allowNull: false },
         fechavencimientoenvio: { type: DataTypes.DATE, allowNull: true },

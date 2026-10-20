@@ -1,17 +1,6 @@
 .detalle-quodom { padding: var(--pantalla-top) 0 calc(var(--sp-7) + 60px); }
-.dq-empty { text-align: center; color: var(--color-texto-muted); padding: var(--sp-6) 0; }
+.dq-empty { margin: 0; padding: var(--sp-5) 0; text-align: center; font-size: var(--fs-small); color: var(--color-texto-muted); }
 .dq-aviso { background: var(--color-tarjeta); border-left: 3px solid var(--color-acento); padding: var(--sp-3); color: var(--color-texto); }
-.dq-lines { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-4); }
-.dq-line { display: grid; gap: var(--sp-2); }
-.dq-line-head { display: flex; align-items: center; gap: var(--sp-3); }
-.dq-line-name { flex: 1; font-family: var(--font-prompt); font-weight: 500; color: var(--color-acento); }
-.dq-line-remove { width: 32px; height: 32px; color: var(--color-texto-muted); font-size: 24px; }
-.dq-line-qty { display: flex; align-items: center; gap: var(--sp-2); }
-.dq-qty-btn { width: 40px; height: 40px; padding: 0; }
-.dq-qty-input { width: 72px; text-align: center; }
-.dq-attr { display: block; text-align: left; padding: var(--sp-2) var(--sp-3); background: rgba(230,57,70,.08); border-radius: var(--radius-input); color: var(--color-acento); }
-.dq-attr strong { color: var(--color-texto); }
-.dq-send { margin-top: var(--sp-4); }
 .dq-chooser { display: grid; gap: var(--sp-3); margin-top: var(--sp-3); list-style: none; padding: 0; }
 .dq-chooser-item { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3); text-decoration: none; color: var(--color-texto); }
 .dq-chooser-item strong { font-family: var(--font-prompt); color: var(--color-acento); }
@@ -20,15 +9,155 @@
    1120px para las grillas de producto. */
 .container.detalle-quodom { max-width: var(--pantalla-ancho); }
 
+/* El nombre es el título y se edita en el lugar: se lee como un título hasta
+   que se lo toca, y recién ahí muestra que es un campo. */
+.dq-nombre { display: flex; flex-direction: column; gap: var(--sp-1); }
+.dq-nombre-input {
+  width: 100%;
+  margin: 0 0 0 calc(-1 * var(--sp-2));
+  padding: 2px var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-input);
+  background: none;
+  font-family: var(--font-prompt);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-texto);
+  text-overflow: ellipsis;
+}
+.dq-nombre-input:hover { border-color: #E2E2E2; }
+.dq-nombre-input:focus { outline: none; border-color: var(--color-acento); background: #fff; }
+.dq-nombre-input::placeholder { color: var(--color-texto-muted); font-weight: 500; }
+
+/* Recién repetido: el nombre es lo primero que hay que cambiar. */
+.dq-renombrando .dq-nombre-input { border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15); }
+.dq-renombrar-ayuda { color: var(--color-acento); font-size: var(--fs-tiny); }
+
+/* Opcional: sin borde hasta que se toca, para que vacía no parezca un
+   formulario a completar. */
+.dq-detalle {
+  display: block;
+  width: 100%;
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed #DCDCDC;
+  border-radius: var(--radius-input);
+  background: none;
+  font-family: var(--font-work);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  color: var(--color-texto);
+  resize: vertical;
+}
+.dq-detalle:hover { border-color: #C8C8C8; }
+.dq-detalle:focus { outline: none; border-style: solid; border-color: var(--color-acento); background: #fff; }
+.dq-detalle::placeholder { color: var(--color-texto-muted); }
+
+/* Las líneas, con el mismo idioma que las del panel (LineasQuodomSidebar):
+   una divisoria por producto, la cantidad en una píldora y quitar aparte. */
+.dq-lineas-cab {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding-bottom: var(--sp-2);
+  font-family: var(--font-prompt);
+  font-size: var(--fs-tiny);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-texto-muted);
+}
+.dq-lineas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.dq-linea {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid #EEEEEE;
+}
+.dq-linea:last-child { border-bottom: 1px solid #EEEEEE; }
+.dq-linea .prod-img { flex-shrink: 0; width: 44px; height: 44px; }
+.dq-linea-info { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.dq-linea-nombre {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-work);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: 1.3;
+}
+.dq-linea-attrs { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Elegido: un chip gris que se puede cambiar. Falta: ámbar, como en el panel,
+   porque es algo por hacer y no algo que esté mal. */
+/* En un renglón y con puntos suspensivos: partido en dos ("sabor Blue /
+   Curacao") el chip parecía dos cosas. */
+.dq-attr {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 24px;
+  padding: 0 10px;
+  border: 1px solid #E2E2E2;
+  border-radius: 999px;
+  background: var(--color-fondo);
+  font-family: inherit;
+  font-size: var(--fs-tiny);
+  font-weight: 600;
+  color: var(--color-texto);
+  cursor: pointer;
+}
+.dq-attr:hover, .dq-attr:focus-visible { border-color: #C8C8C8; }
+.dq-attr-nombre { font-weight: 400; color: var(--color-texto-muted); }
+.dq-attr-falta { background: #FFF4E0; border-color: #E9B562; color: #8A5A00; }
+.dq-attr-falta:hover, .dq-attr-falta:focus-visible { background: #FFE9C2; border-color: #E9B562; }
+
+.dq-stepper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border: 1px solid #DCDCDC;
+  border-radius: 999px;
+}
+.dq-step {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-texto);
+  font-size: 17px;
+  line-height: 1;
+}
+.dq-step:hover { background: var(--color-fondo); }
+.dq-cant { min-width: 24px; text-align: center; font-size: var(--fs-small); font-weight: 600; }
+.dq-quitar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: none;
+  color: var(--color-texto-muted);
+  font-size: 18px;
+  line-height: 1;
+}
+.dq-quitar:hover { background: #FDECEE; color: var(--color-acento); }
+
 /* Por qué el botón de enviar está deshabilitado, con cómo resolverlo. */
 .dq-bloqueo {
-  margin-top: var(--sp-2);
+  margin: var(--sp-2) 0 0;
   font-size: var(--fs-small);
   line-height: 1.4;
   color: var(--color-texto-muted);
 }
 .dq-bloqueo a { color: var(--color-acento); }
 
-/* Recién repetido: el nombre es lo primero que hay que cambiar. */
-.dq-renombrando .input { border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15); }
-.dq-renombrar-ayuda { display: block; margin-top: var(--sp-1); color: var(--color-acento); font-size: var(--fs-tiny); }
+.dq-pie-pagina { margin-top: var(--sp-5); }
