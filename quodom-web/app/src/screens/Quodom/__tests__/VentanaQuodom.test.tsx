@@ -125,6 +125,20 @@ describe('VentanaQuodom', () => {
     expect(await screen.findByRole('dialog', { name: 'Bebidas oficina' })).toBeInTheDocument();
   });
 
+  // Seguir sumando productos a este Quodom: queda abierto en su rubro y se va
+  // al catálogo de ese rubro.
+  it('Continuar en el rubro lo deja abierto y lleva al rubro', async () => {
+    localStorage.removeItem('quodom.abierto');
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'abrir' }));
+    await screen.findByText('Gaseosa 2L');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar en el rubro' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByTestId('ubicacion').textContent).toBe('/?rubro=7');
+    expect(JSON.parse(localStorage.getItem('quodom.abierto') ?? '{}')).toEqual({ 7: 'q-8' });
+  });
+
   it('un link viejo a /quodom?id= abre la ventana sobre el inicio', async () => {
     montar('/quodom?id=q-8');
     expect(await screen.findByRole('dialog', { name: 'Bebidas oficina' })).toBeInTheDocument();

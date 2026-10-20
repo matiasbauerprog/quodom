@@ -152,7 +152,9 @@ export function ListaMisQuodoms() {
                   variant="page"
                   rubroLabel={q.nombrerubro || nombreRubro(q.idrubro)}
                   onChange={refresh}
-                  onAbrir={() => setPedido(q)}
+                  // En armado abre la misma ventana que la campana (editar,
+                  // cotizar, continuar en el rubro); sólo lo enviado se mira.
+                  onAbrir={() => (q.estado === 'CREADO' ? abrirQuodom(q.id) : setPedido(q))}
                 />
               </li>
             ))}

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { ListaMisQuodoms } from '../ListaMisQuodoms';
 import { quodom as quodomApi } from '../../../api/quodom';
 
@@ -16,6 +16,11 @@ const misQuodom = quodomApi.misQuodom as unknown as ReturnType<typeof vi.fn>;
 const create = quodomApi.create as unknown as ReturnType<typeof vi.fn>;
 
 const BEBIDAS_ABIERTO = { id: 'q-7', descripcion: 'Bebidas', estado: 'CREADO', nro: 'QD-1', idrubro: 7, nombrerubro: 'Bebidas', cantproductos: 1, createdBy: 'u-1', iddireccion: null };
+
+function Ubicacion() {
+  const l = useLocation();
+  return <div data-testid="ubicacion">{l.pathname + l.search}</div>;
+}
 
 describe('ListaMisQuodoms: nuevo por rubro', () => {
   beforeEach(() => { misQuodom.mockReset(); create.mockReset(); });
@@ -135,6 +140,21 @@ describe('ListaMisQuodoms: la tarjeta abre una ventana', () => {
     const ventana = await screen.findByRole('dialog');
     expect(within(ventana).getByText('Frente')).toBeInTheDocument();
     expect(within(ventana).getByRole('button', { name: /otro proveedor/i })).toBeEnabled();
+  });
+
+  // Uno en armado abre la misma ventana que la campana, no la de sólo lectura.
+  it('un pedido en armado abre la ventana de editar', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS_ABIERTO]);
+    render(
+      <MemoryRouter initialEntries={['/mis-quodoms']}>
+        <ListaMisQuodoms />
+        <Ubicacion />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /QD-1/ }));
+    await waitFor(() => expect(screen.getByTestId('ubicacion')).toHaveTextContent('/mis-quodoms?quodom=q-7'));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 

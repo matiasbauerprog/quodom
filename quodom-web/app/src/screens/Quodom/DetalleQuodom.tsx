@@ -19,7 +19,7 @@ import { ProveedoresContactados } from '../../quodom/ProveedoresContactados';
 import { migrarRubro } from '../../guest/migrateGuestQuodom';
 import { nombreRubro } from '../../quodom/rubros';
 import { rubroDisponible } from '../../quodom/rubrosDisponibles';
-import { abiertoDe } from '../../quodom/quodomAbierto';
+import { abiertoDe, abrirQuodom as dejarAbierto } from '../../quodom/quodomAbierto';
 import { bloqueoDeEnvioPorLineas } from '../../quodom/bloqueosEnvio';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import './DetalleQuodom.css';
@@ -497,6 +497,16 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
     </>
   );
 
+  // Seguir sumando productos a este Quodom: queda abierto en su rubro (el que
+  // recibe el `+`) y se va al catálogo de ese rubro. Reemplaza la entrada de la
+  // ventana, así Atrás vuelve a donde estaba el usuario y no a la ventana.
+  function continuarEnRubro() {
+    if (!server) return;
+    const { id, idrubro: rubro } = server.quodom;
+    dejarAbierto(rubro, id);
+    navigate('/?rubro=' + rubro, { replace: true });
+  }
+
   // El envío va al pie y no al final de la lista: con varios productos, en la
   // ventana quedaba fuera de la vista y había que bajar a buscarlo.
   const pie = rubroHabilitado ? (
@@ -511,6 +521,11 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
             ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
             : 'Tocá "Elegir" en el producto que lo tenga.'}
         </p>
+      )}
+      {enVentana && server && !yaEnviado && (
+        <button type="button" className="btn btn-ghost btn-block dq-continuar" onClick={continuarEnRubro}>
+          Continuar en el rubro
+        </button>
       )}
     </>
   ) : (
