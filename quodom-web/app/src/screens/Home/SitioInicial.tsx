@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { conVentana } from '../../quodom/ventanaQuodom';
 import { categorias } from '../../api/categorias';
 import { busqueda as busquedaApi } from '../../api/busqueda';
 import type { Category, BusquedaResult } from '../../api/types';
@@ -28,6 +29,7 @@ function numParam(valor: string | null): number | null {
 export function SitioInicial() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
   const [q, setQ] = useState('');
   // El chat vive en la URL y no en estado del componente. Si vive en memoria,
   // la barra de arriba no puede saber que está abierto, y como el wordmark
@@ -65,8 +67,10 @@ export function SitioInicial() {
   // api/src/config/rubros.js) degrada al home, no muestra un error.
   const rubroValido = rubros !== null && rubroParam !== null && rubros.some(r => r.id === rubroParam);
   useEffect(() => {
-    if (rubros !== null && rubroParam !== null && !rubroValido) setParams({}, { replace: true });
-  }, [rubros, rubroParam, rubroValido, setParams]);
+    if (rubros !== null && rubroParam !== null && !rubroValido) {
+      setParams(p => conVentana({}, p), { replace: true, state: location.state });
+    }
+  }, [rubros, rubroParam, rubroValido, setParams, location.state]);
 
   const idrubro = rubroValido ? rubroParam : null;
 
@@ -86,8 +90,10 @@ export function SitioInicial() {
   const subValida = subs !== null && subParam !== null && subs.some(s => s.id === subParam);
   useEffect(() => {
     if (idrubro === null || subs === null || subs.length === 0 || subValida) return;
-    setParams({ rubro: String(idrubro), sub: String(subs[0].id) }, { replace: true });
-  }, [idrubro, subs, subValida, setParams]);
+    // La ventana del Quodom (y su estado) sobreviven: si no, abrirla sobre un
+    // rubro la cerraba en el acto.
+    setParams(p => conVentana({ rubro: String(idrubro), sub: String(subs[0].id) }, p), { replace: true, state: location.state });
+  }, [idrubro, subs, subValida, setParams, location.state]);
 
   const idsub = subValida ? subParam : null;
 

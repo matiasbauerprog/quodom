@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { ESTADO_VENTANA, hrefVentana } from '../../quodom/ventanaQuodom';
 import { PropuestaEditable } from '../ModoIA/PropuestaEditable';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { useDestinoLote } from '../../quodom/useDestinoLote';
@@ -23,6 +24,7 @@ export function GrupoRubro({
   grupo: ListaGrupo;
   pendientesSinResolver?: number;
 }) {
+  const location = useLocation();
   const [confirming, setConfirming] = useState(false);
   const [agregadoEn, setAgregadoEn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export function GrupoRubro({
 
       {agregadoEn && (
         <p className="gr-agregado">
-          Agregado ✓ <Link to={'/quodom?id=' + encodeURIComponent(agregadoEn)}>ver Quodom</Link>
+          Agregado ✓ <Link to={hrefVentana(location, agregadoEn)} state={ESTADO_VENTANA}>ver Quodom</Link>
         </p>
       )}
 

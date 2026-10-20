@@ -36,13 +36,24 @@ function parseIdrubro(raw: string | null): number | null {
   return Number.isInteger(n) ? n : null;
 }
 
-export function DetalleQuodom() {
+type Props = {
+  /** El Quodom del servidor; sin esto se lee `?id=` (la ruta) o es un carrito de invitado. */
+  idquodom?: string;
+  nombrar?: boolean;
+  /** Ya seleccionó el nombre: quien lo pidió saca la marca de la URL. */
+  onNombrado?: () => void;
+  /** Con esto se dibuja como ventana (`VentanaQuodom`) y no como pantalla. */
+  onCerrar?: () => void;
+};
+
+export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCerrar }: Props = {}) {
   const [sp, setSp] = useSearchParams();
-  const id = sp.get('id');
+  const id = idquodom ?? sp.get('id');
+  const enVentana = !!onCerrar;
   // Viene de Repetir: el pedido nuevo nace con el nombre del original, así que
   // se abre con el nombre listo para cambiar. Si no, quedan dos iguales en el
   // árbol y no hay forma de saber cuál es cuál.
-  const nombrar = sp.get('nombrar') === '1';
+  const nombrar = nombrarProp ?? sp.get('nombrar') === '1';
   const [renombrando, setRenombrando] = useState(false);
   const campoNombre = useRef<HTMLInputElement>(null);
   const idrubro = parseIdrubro(sp.get('rubro'));
@@ -154,10 +165,26 @@ export function DetalleQuodom() {
     setRenombrando(true);
     const campo = campoNombre.current;
     if (campo) { campo.focus(); campo.select(); }
+    if (onNombrado) { onNombrado(); return; }
     const resto = new URLSearchParams(sp);
     resto.delete('nombrar');
     setSp(resto, { replace: true });
-  }, [nombrar, server, sp, setSp]);
+  }, [nombrar, server, sp, setSp, onNombrado]);
+
+  // Escape cierra la ventana, salvo que haya otra encima (atributo o
+  // proveedores): esa se cierra sola y la de abajo tiene que seguir.
+  // El nombre se guarda al perder el foco, y Escape no lo saca: sin el blur,
+  // lo que se escribió se perdía al cerrar.
+  useEffect(() => {
+    if (!onCerrar || attr || selector) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      campoNombre.current?.blur();
+      onCerrar();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCerrar, attr, selector]);
 
   const saveDescripcion = useCallback(async (value: string) => {
     if (mode === 'guest') { if (idrubro !== null) setGuestDescripcion(idrubro, value); }
@@ -294,10 +321,24 @@ export function DetalleQuodom() {
   const bloqueo = yaEnviado ? null : bloqueoDeEnvioPorLineas(lines, tieneDireccion);
   const enviarDisabled = busy || lines.length === 0 || yaEnviado || !!bloqueo;
 
-  return (
+  const titulo = mode === 'server' ? (server?.quodom.nro ?? 'Quodom') : (idrubro !== null ? nombreRubro(idrubro) : 'Mi Quodom');
+
+  // En la ventana, el selector de proveedores la reemplaza en vez de apilarse
+  // encima: dos ventanas oscureciendo el fondo no se lee como un paso, se lee
+  // como un error. Al cerrarlo se vuelve al pedido, como en el historial.
+  if (enVentana && selector) {
+    return (
+      <DialogoProveedores
+        idquodom={selector.idquodom}
+        onCerrar={cerrarSelector}
+        onEnviado={avisarEnviado}
+        onEnviadoSinProveedor={cerrarSelector}
+      />
+    );
+  }
+
+  const cuerpo = (
     <>
-      <AppBarBack title={mode === 'server' ? (server?.quodom.nro ?? 'Quodom') : (idrubro !== null ? nombreRubro(idrubro) : 'Mi Quodom')} />
-      <section className="container detalle-quodom">
         {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
         {mode === 'server' && !server && !err && <Loader />}
 
@@ -377,7 +418,7 @@ export function DetalleQuodom() {
           <ProveedoresContactados idquodom={server.quodom.id} />
         )}
 
-        {selector && (
+        {selector && !enVentana && (
           <DialogoProveedores
             idquodom={selector.idquodom}
             onCerrar={cerrarSelector}
@@ -399,7 +440,36 @@ export function DetalleQuodom() {
             }}
           />
         )}
-      </section>
+    </>
+  );
+
+  if (enVentana) {
+    return (
+      <div className="vq-backdrop" onClick={onCerrar}>
+        <section
+          className="vq card hoja"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="vq-titulo"
+          onClick={e => e.stopPropagation()}
+        >
+          <header className="vq-cab">
+            <div className="vq-cab-texto">
+              {server && <p className="vq-rubro">{server.quodom.nombrerubro || nombreRubro(server.quodom.idrubro)}</p>}
+              <h2 id="vq-titulo" className="vq-titulo">{titulo}</h2>
+            </div>
+            <button type="button" className="vq-cerrar" aria-label="Cerrar" onClick={onCerrar}>×</button>
+          </header>
+          <div className="vq-cuerpo">{cuerpo}</div>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <AppBarBack title={titulo} />
+      <section className="container detalle-quodom">{cuerpo}</section>
     </>
   );
 }

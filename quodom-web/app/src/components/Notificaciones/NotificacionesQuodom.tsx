@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { notificaciones as notificacionesApi } from '../../api/oper_notificaciones';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Notificacion, Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
-import { AccionesNotificacion, repetirPedido, rutaRenombrar } from './AccionesNotificacion';
+import { AccionesNotificacion, repetirPedido } from './AccionesNotificacion';
+import { useAbrirQuodom } from '../../quodom/ventanaQuodom';
 import './NotificacionesQuodom.css';
 
 const CUANTAS = 5;
@@ -28,7 +29,7 @@ function haceCuanto(iso: string): string {
  */
 export function NotificacionesQuodom() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const abrirQuodom = useAbrirQuodom();
   const [sinLeer, setSinLeer] = useState(0);
   const [abierto, setAbierto] = useState(false);
   const [lista, setLista] = useState<Notificacion[] | null>(null);
@@ -98,7 +99,7 @@ export function NotificacionesQuodom() {
     try {
       const id = await repetirPedido(q);
       setAbierto(false);
-      navigate(rutaRenombrar(id));
+      abrirQuodom(id, { nombrar: true });
     } catch (e) {
       setError(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el pedido.');
     } finally {

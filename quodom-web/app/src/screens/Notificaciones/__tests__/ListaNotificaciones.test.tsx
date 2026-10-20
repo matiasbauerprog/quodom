@@ -80,7 +80,7 @@ describe('ListaNotificaciones', () => {
     fireEvent.click((await screen.findAllByRole('button', { name: /repetir pedido/i }))[0]);
     await waitFor(() => expect(abrirQuodom).toHaveBeenCalledWith(7, 'q-nuevo'));
     expect(repetir).toHaveBeenCalledWith('q-7');
-    await waitFor(() => expect(screen.getByTestId('ubicacion')).toHaveTextContent('/quodom?id=q-nuevo&nombrar=1'));
+    await waitFor(() => expect(screen.getByTestId('ubicacion')).toHaveTextContent('/notificaciones?quodom=q-nuevo&nombrar=1'));
   });
 
   it('si repetir falla lo dice', async () => {

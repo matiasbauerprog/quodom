@@ -11,7 +11,7 @@ import { ValidarEmail } from '../screens/Auth/ValidarEmail';
 import { SitioInicial } from '../screens/Home/SitioInicial';
 import { BusquedaScreen } from '../screens/Home/BusquedaScreen';
 import { RedirectRubro, RedirectSubcategoria } from '../screens/Home/RedirectCategoria';
-import { DetalleQuodom } from '../screens/Quodom/DetalleQuodom';
+import { RutaQuodom } from '../screens/Quodom/VentanaQuodom';
 import { ListaMisQuodoms } from '../screens/MisQuodoms/ListaMisQuodoms';
 import { ListaDirecciones } from '../screens/Direcciones/ListaDirecciones';
 import { AgregarDireccion } from '../screens/Direcciones/AgregarDireccion';
@@ -34,7 +34,7 @@ export const routes: RouteObject[] = [
       { path: '/', element: <SitioInicial /> },
       { path: '/categoria/:id', element: <RedirectRubro /> },
       { path: '/subcategoria/:id', element: <RedirectSubcategoria /> },
-      { path: '/quodom', element: <DetalleQuodom /> },
+      { path: '/quodom', element: <RutaQuodom /> },
       { path: '/mis-quodoms', element: <ProtectedRoute><ListaMisQuodoms /></ProtectedRoute> },
       { path: '/perfil', element: <ProtectedRoute><ProfileScreen /></ProtectedRoute> },
       { path: '/perfil/datos', element: <ProtectedRoute><DetalleUsuario /></ProtectedRoute> },

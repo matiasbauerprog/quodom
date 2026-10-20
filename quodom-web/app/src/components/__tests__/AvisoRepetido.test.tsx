@@ -35,7 +35,7 @@ describe('AvisoRepetido', () => {
     await act(async () => { await repetirPedido(ENVIADO as never); });
 
     expect(screen.getByRole('status')).toHaveTextContent('Repetiste Bebidas oficina: el pedido nuevo quedó en armado en Bebidas.');
-    expect(screen.getByRole('link', { name: 'Ver pedido' })).toHaveAttribute('href', '/quodom?id=q-nuevo');
+    expect(screen.getByRole('link', { name: 'Ver pedido' })).toHaveAttribute('href', '/?quodom=q-nuevo');
     expect(abrirQuodom).toHaveBeenCalledWith(7, 'q-nuevo');
   });
 
