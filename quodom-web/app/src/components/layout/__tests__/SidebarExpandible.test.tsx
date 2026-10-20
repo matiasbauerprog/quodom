@@ -85,7 +85,9 @@ describe('sidebar: mini editor', () => {
     fireEvent.click(screen.getByText('Bebidas oficina'));
     await screen.findByText('Coca Cola 2L');
 
-    fireEvent.click(screen.getByText('Bebidas oficina'));
+    // Abierto, el nombre es texto encima de un botón que cubre la cabecera:
+    // en el navegador el clic lo atraviesa, acá se toca el botón.
+    fireEvent.click(screen.getByRole('button', { name: 'Bebidas oficina', expanded: true }));
 
     await waitFor(() => expect(screen.queryByText('Coca Cola 2L')).toBeNull());
   });

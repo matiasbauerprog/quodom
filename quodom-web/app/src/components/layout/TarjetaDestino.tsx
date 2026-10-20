@@ -97,23 +97,22 @@ export function TarjetaDestino({ nombre, chip, cuenta, onActivar, expandido, dat
           {/* Se queda mientras se edita: sin esto la tarjeta saltaba de alto. */}
           {!err && meta}
         </div>
-      ) : (
-        <div className="tq-cab-fila">
+      ) : onRenombrar ? (
+        // El lápiz va pegado al nombre y no en la otra punta. Como un botón no
+        // puede ir adentro de otro, el que pliega se estira por debajo de toda
+        // la cabecera (tocar en cualquier lado sigue plegando) y el contenido
+        // queda encima sin recibir clics, salvo el lápiz.
+        <div className="tq-cab tq-cab-estirada">
           <button
             type="button"
-            className="tq-cab"
+            className="tq-cab-toggle"
+            aria-label={nombre}
             aria-expanded={expandido}
             onClick={onActivar}
-          >
-            <span className="tq-titulo">
-              <span className="tq-radio" aria-hidden="true" />
-              <span className="tq-nombre">{nombre}</span>
-              {onRenombrar && <span className="tq-lapiz-lugar" aria-hidden="true" />}
-              <span className="tq-chevron" aria-hidden="true">{expandido ? '⌃' : '→'}</span>
-            </span>
-            {meta}
-          </button>
-          {onRenombrar && (
+          />
+          <span className="tq-titulo">
+            <span className="tq-radio" aria-hidden="true" />
+            <span className="tq-nombre tq-nombre-ajustado" aria-hidden="true">{nombre}</span>
             <button
               type="button"
               className="tq-lapiz"
@@ -121,8 +120,24 @@ export function TarjetaDestino({ nombre, chip, cuenta, onActivar, expandido, dat
               title="Cambiar el nombre"
               onClick={empezar}
             >✎</button>
-          )}
+            <span className="tq-chevron" aria-hidden="true">{expandido ? '⌃' : '→'}</span>
+          </span>
+          {meta}
         </div>
+      ) : (
+        <button
+          type="button"
+          className="tq-cab"
+          aria-expanded={expandido}
+          onClick={onActivar}
+        >
+          <span className="tq-titulo">
+            <span className="tq-radio" aria-hidden="true" />
+            <span className="tq-nombre">{nombre}</span>
+            <span className="tq-chevron" aria-hidden="true">{expandido ? '⌃' : '→'}</span>
+          </span>
+          {meta}
+        </button>
       )}
       {children}
     </article>
