@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import {
@@ -37,8 +37,14 @@ function parseIdrubro(raw: string | null): number | null {
 }
 
 export function DetalleQuodom() {
-  const [sp] = useSearchParams();
+  const [sp, setSp] = useSearchParams();
   const id = sp.get('id');
+  // Viene de Repetir: el pedido nuevo nace con el nombre del original, así que
+  // se abre con el nombre listo para cambiar. Si no, quedan dos iguales en el
+  // árbol y no hay forma de saber cuál es cuál.
+  const nombrar = sp.get('nombrar') === '1';
+  const [renombrando, setRenombrando] = useState(false);
+  const campoNombre = useRef<HTMLInputElement>(null);
   const idrubro = parseIdrubro(sp.get('rubro'));
   const { user } = useAuth();
   const tieneDireccion = useTieneDireccion(!!user);
@@ -141,9 +147,31 @@ export function DetalleQuodom() {
     return () => { alive = false; };
   }, [mode, id, nonce, guest.descripcion]);
 
+  // Una sola vez, cuando ya cargó el nombre: el parámetro se saca de la URL para
+  // que volver a esta pantalla o recargarla no vuelva a seleccionarlo.
+  useEffect(() => {
+    if (!nombrar || !server) return;
+    setRenombrando(true);
+    const campo = campoNombre.current;
+    if (campo) { campo.focus(); campo.select(); }
+    const resto = new URLSearchParams(sp);
+    resto.delete('nombrar');
+    setSp(resto, { replace: true });
+  }, [nombrar, server, sp, setSp]);
+
   const saveDescripcion = useCallback(async (value: string) => {
     if (mode === 'guest') { if (idrubro !== null) setGuestDescripcion(idrubro, value); }
-    else if (server) { try { await quodomApi.update(server.quodom.id, { descripcion: value.trim() || 'Mi Quodom' }); } catch {} }
+    else if (server) {
+      const nuevo = value.trim() || 'Mi Quodom';
+      if (nuevo === server.quodom.descripcion) return;
+      try {
+        await quodomApi.update(server.quodom.id, { descripcion: nuevo });
+        setServer(s => s && { ...s, quodom: { ...s.quodom, descripcion: nuevo } });
+        // El árbol del panel muestra el nombre: sin esto seguía diciendo el
+        // viejo, que es justo lo que renombrar una copia quiere evitar.
+        window.dispatchEvent(new Event('quodom:changed'));
+      } catch {}
+    }
   }, [mode, idrubro, server]);
 
   async function cambiarCantidadServer(line: QuodomLine, cantidad: number) {
@@ -273,8 +301,16 @@ export function DetalleQuodom() {
         {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
         {mode === 'server' && !server && !err && <Loader />}
 
-        <label className="field"><span>Descripción</span>
-          <input className="input" value={descripcion} onChange={e => setDescripcion(e.target.value)} onBlur={() => saveDescripcion(descripcion)} />
+        <label className={'field' + (renombrando ? ' dq-renombrando' : '')}><span>Descripción</span>
+          <input
+            ref={campoNombre}
+            className="input"
+            value={descripcion}
+            onChange={e => setDescripcion(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            onBlur={() => { setRenombrando(false); saveDescripcion(descripcion); }}
+          />
+          {renombrando && <small className="dq-renombrar-ayuda">Es una copia de tu pedido. Ponele otro nombre para distinguirlo del original.</small>}
         </label>
 
         {lines.length === 0 && <p className="dq-empty">Tu Quodom está vacío. Sumá productos desde Inicio.</p>}

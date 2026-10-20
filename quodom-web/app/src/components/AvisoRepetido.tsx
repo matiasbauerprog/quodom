@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { Repetido } from '../quodom/repetirPedido';
 import './AvisoRepetido.css';
 
@@ -13,6 +13,7 @@ const DURA_MS = 6000;
  */
 export function AvisoRepetido() {
   const [ultimo, setUltimo] = useState<Repetido | null>(null);
+  const { pathname, search } = useLocation();
   useEffect(() => {
     const oir = (e: Event) => setUltimo((e as CustomEvent<Repetido>).detail);
     window.addEventListener('quodom:repetido', oir);
@@ -24,6 +25,8 @@ export function AvisoRepetido() {
     return () => clearTimeout(t);
   }, [ultimo]);
   if (!ultimo) return null;
+  // Repetir ya lleva al pedido nuevo: ahí el link sería a la misma pantalla.
+  const yaEsta = pathname === '/quodom' && new URLSearchParams(search).get('id') === ultimo.idquodom;
 
   return (
     <div className="aviso-repetido" role="status">
@@ -32,11 +35,13 @@ export function AvisoRepetido() {
         Repetiste <strong>{ultimo.nombre}</strong>: el pedido nuevo quedó en armado
         {ultimo.nombrerubro && <> en {ultimo.nombrerubro}</>}.
       </p>
-      <Link
-        className="aviso-repetido-ver"
-        to={'/quodom?id=' + encodeURIComponent(ultimo.idquodom)}
-        onClick={() => setUltimo(null)}
-      >Ver pedido</Link>
+      {!yaEsta && (
+        <Link
+          className="aviso-repetido-ver"
+          to={'/quodom?id=' + encodeURIComponent(ultimo.idquodom)}
+          onClick={() => setUltimo(null)}
+        >Ver pedido</Link>
+      )}
       <button type="button" className="aviso-repetido-cerrar" aria-label="Cerrar aviso" onClick={() => setUltimo(null)}>×</button>
     </div>
   );

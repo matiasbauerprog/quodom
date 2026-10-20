@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Quodom } from '../../api/types';
-export { repetirPedido } from '../../quodom/repetirPedido';
+export { repetirPedido, rutaRenombrar } from '../../quodom/repetirPedido';
 import './AccionesNotificacion.css';
 
 type Props = {

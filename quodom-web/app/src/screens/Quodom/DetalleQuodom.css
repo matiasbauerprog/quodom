@@ -28,3 +28,7 @@
   color: var(--color-texto-muted);
 }
 .dq-bloqueo a { color: var(--color-acento); }
+
+/* Recién repetido: el nombre es lo primero que hay que cambiar. */
+.dq-renombrando .input { border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15); }
+.dq-renombrar-ayuda { display: block; margin-top: var(--sp-1); color: var(--color-acento); font-size: var(--fs-tiny); }

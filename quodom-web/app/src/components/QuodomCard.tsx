@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Quodom } from '../api/types';
 import { quodom as quodomApi } from '../api/quodom';
 import { ApiError } from '../api/client';
-import { repetirPedido } from '../quodom/repetirPedido';
+import { repetirPedido, rutaRenombrar } from '../quodom/repetirPedido';
 import './QuodomCard.css';
 
 type Variant = 'sidebar' | 'page';
@@ -109,7 +109,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
     try {
       const id = await repetirPedido(quodom);
       onChange?.();
-      navigate('/quodom?id=' + encodeURIComponent(id));
+      navigate(rutaRenombrar(id));
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'No se pudo repetir.');
     } finally { setBusy(false); }

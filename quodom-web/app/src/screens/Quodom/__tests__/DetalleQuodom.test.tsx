@@ -429,3 +429,53 @@ describe('DetalleQuodom: el envío pasa por el selector de proveedores', () => {
     window.removeEventListener('quodom:changed', escuchado);
   });
 });
+
+// Repetir lleva acá con `nombrar=1`: el pedido nuevo nace con el nombre del
+// original y, sin cambiarlo, quedan dos iguales en el árbol.
+describe('DetalleQuodom recién repetido', () => {
+  const COPIA = { id: 'q-8', nro: 'QD-8', descripcion: 'Bebidas oficina', estado: 'CREADO', idrubro: 7 };
+
+  beforeEach(() => {
+    clearGuestQuodoms();
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({ user: USUARIO_LOGUEADO } as unknown as ReturnType<typeof useAuth>);
+    vi.mocked(categorias.raiz).mockResolvedValue(RUBROS_HABILITADOS);
+    vi.mocked(users.getDirecciones).mockResolvedValue([{ id: 1 } as never]);
+    vi.mocked(quodom.porId).mockResolvedValue(COPIA as never);
+    vi.mocked(quodom.update).mockResolvedValue({ res: true } as never);
+    vi.mocked(quodomLines.porQuodom).mockResolvedValue([] as never);
+  });
+
+  it('abre con el nombre seleccionado y dice por qué', async () => {
+    renderEn('/quodom?id=q-8&nombrar=1');
+    const campo = await screen.findByDisplayValue('Bebidas oficina') as HTMLInputElement;
+
+    await waitFor(() => expect(document.activeElement).toBe(campo));
+    expect(campo.selectionStart).toBe(0);
+    expect(campo.selectionEnd).toBe('Bebidas oficina'.length);
+    expect(screen.getByText(/ponele otro nombre/i)).toBeInTheDocument();
+  });
+
+  it('Enter guarda el nombre nuevo, saca la ayuda y avisa al panel', async () => {
+    const cambio = vi.fn();
+    window.addEventListener('quodom:changed', cambio);
+    renderEn('/quodom?id=q-8&nombrar=1');
+    const campo = await screen.findByDisplayValue('Bebidas oficina') as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(campo));
+
+    fireEvent.change(campo, { target: { value: 'Bebidas fiesta' } });
+    fireEvent.keyDown(campo, { key: 'Enter' });
+
+    await waitFor(() => expect(quodom.update).toHaveBeenCalledWith('q-8', { descripcion: 'Bebidas fiesta' }));
+    expect(screen.queryByText(/ponele otro nombre/i)).toBeNull();
+    await waitFor(() => expect(cambio).toHaveBeenCalled());
+    window.removeEventListener('quodom:changed', cambio);
+  });
+
+  it('sin el parámetro no toca el foco', async () => {
+    renderEn('/quodom?id=q-8');
+    const campo = await screen.findByDisplayValue('Bebidas oficina');
+    expect(document.activeElement).not.toBe(campo);
+    expect(screen.queryByText(/ponele otro nombre/i)).toBeNull();
+  });
+});
