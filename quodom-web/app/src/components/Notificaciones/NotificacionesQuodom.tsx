@@ -6,7 +6,7 @@ import { quodom as quodomApi } from '../../api/quodom';
 import type { Notificacion, Quodom } from '../../api/types';
 import { ApiError } from '../../api/client';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
-import { AccionesNotificacion, repetirPedido } from './AccionesNotificacion';
+import { AccionesNotificacion, queSePaso, repetirPedido } from './AccionesNotificacion';
 import { useAbrirQuodom } from '../../quodom/ventanaQuodom';
 import './NotificacionesQuodom.css';
 
@@ -137,7 +137,7 @@ export function NotificacionesQuodom() {
                 return (
                   <li key={n.id} className="notq-item">
                     <p className="notq-texto">
-                      {q ? <>Se envió <strong>{q.descripcion || q.nro}</strong></> : n.texto}
+                      {q ? <>{queSePaso(n)} <strong>{q.descripcion || q.nro}</strong></> : n.texto}
                     </p>
                     <p className="notq-meta">
                       {q && <>{q.nro} · {q.nombrerubro} · </>}{haceCuanto(n.createdAt)}

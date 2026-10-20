@@ -73,7 +73,7 @@ describe('whatsapp export', () => {
     expect(q.estado).toBe('ENVIADO');
     expect(q.fechaenvio).not.toBeNull();
 
-    const notifs = await db.oper_notificaciones.count({ where: { idquodom: idquodom } });
+    const notifs = await db.oper_notificaciones.count({ where: { idquodom: idquodom, tiponotificacion: 'QUODOMENVIADO' } });
     expect(notifs).toBe(1);
   });
 
@@ -92,7 +92,7 @@ describe('whatsapp export', () => {
     const res = await request(app).get('/quodom/whatsapp/' + idquodom)
       .set('Authorization', 'Bearer ' + token);
     expect(res.status).toBe(200);
-    const notifs = await db.oper_notificaciones.count({ where: { idquodom: idquodom } });
+    const notifs = await db.oper_notificaciones.count({ where: { idquodom: idquodom, tiponotificacion: 'QUODOMENVIADO' } });
     expect(notifs).toBe(1);
   });
 

@@ -157,7 +157,7 @@ describe('elegir un proveedor', () => {
     const q = await db.Quodom.findByPk(otro);
     expect(q.estado).toBe('CREADO');
     expect(q.fechaenvio).toBeNull();
-    expect(await db.oper_notificaciones.count({ where: { idquodom: otro } })).toBe(0);
+    expect(await db.oper_notificaciones.count({ where: { idquodom: otro, tiponotificacion: 'QUODOMENVIADO' } })).toBe(0);
   });
 
   // Medio par es siempre un bug del cliente, y es alcanzable de verdad: un
