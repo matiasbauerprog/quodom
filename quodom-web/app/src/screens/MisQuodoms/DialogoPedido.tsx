@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { Quodom, QuodomLine } from '../../api/types';
 import { repetirPedido } from '../../quodom/repetirPedido';
 import { useAbrirQuodom } from '../../quodom/ventanaQuodom';
@@ -42,9 +41,12 @@ function fecha(iso?: string | null) {
  *   deja abierto en el árbol de su rubro — eso es "volver al sidebar". El
  *   enviado **no se revierte**: revertirlo borraría la notificación y el
  *   historial de algo que sí pasó.
+ *
+ * Uno **en armado** no llega acá: el historial le abre la misma ventana que la
+ * campana (`VentanaQuodom`), que es donde se edita, se cotiza y se sigue en el
+ * rubro. Dos ventanas distintas para el mismo borrador se leían como dos cosas.
  */
 export function DialogoPedido({ quodom, onCerrar, onRepetido }: Props) {
-  const navigate = useNavigate();
   const abrirQuodom = useAbrirQuodom();
   const [lineas, setLineas] = useState<QuodomLine[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -145,7 +147,7 @@ export function DialogoPedido({ quodom, onCerrar, onRepetido }: Props) {
         )}
 
         <footer className="dpd-pie">
-          {enviado ? (
+          {enviado && (
             <>
               {/* No toca el pedido: le suma un proveedor contactado. */}
               <button type="button" className="btn dpd-otro" onClick={() => setSelector(true)}>
@@ -156,14 +158,6 @@ export function DialogoPedido({ quodom, onCerrar, onRepetido }: Props) {
                 {repitiendo ? 'Copiando…' : 'Volver a armado'}
               </button>
             </>
-          ) : (
-            <button
-              type="button"
-              className="btn"
-              onClick={() => { onCerrar(); navigate('/?rubro=' + quodom.idrubro); }}
-            >
-              Continuar en el rubro
-            </button>
           )}
           <button type="button" className="btn btn-ghost dpd-cerrar" onClick={cerrar} disabled={repitiendo}>
             Cerrar

@@ -31,7 +31,6 @@ const ENVIADO: Record<string, unknown> = {
   nombrerubro: 'Pintura', cantproductos: 2, createdBy: 'u-1', iddireccion: 1,
   fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString()
 };
-const EN_ARMADO = { ...ENVIADO, id: 'q-7', nro: 'QD-7', estado: 'CREADO', fechaenvio: null };
 
 const LINEAS = [
   { id: 1, idquodom: 'q-9', idproducto: 137, cantidad: 4, nombreProducto: 'Latex Interior Blanco Mate', nombreAtributo1: 'LITROS', atributo1: '4 litros' },
@@ -84,16 +83,6 @@ describe('DialogoPedido', () => {
     expect(screen.getByRole('button', { name: /otro proveedor/i })).toBeEnabled();
     expect(screen.getByRole('button', { name: /volver.*armado/i })).toBeEnabled();
     expect(screen.queryByRole('button', { name: /continuar/i })).toBeNull();
-  });
-
-  it('a un pedido en armado le ofrece seguir armándolo, y no los de enviado', async () => {
-    porId.mockResolvedValue(EN_ARMADO);
-    montar(EN_ARMADO);
-    await screen.findByText(/latex interior blanco mate/i);
-
-    expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
-    expect(screen.queryByRole('button', { name: /otro proveedor/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /volver.*armado/i })).toBeNull();
   });
 
   // "Enviar a otro proveedor" NO toca el pedido: sigue ENVIADO y en el
