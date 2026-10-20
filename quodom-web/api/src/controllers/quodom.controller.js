@@ -289,6 +289,7 @@ async function repetir(id, userId) {
 
     const nuevoId = await create({
         descripcion: source.descripcion,
+        detalle: source.detalle,
         idrubro: source.idrubro,
         iddireccion: source.iddireccion
     }, userId, source.nro);

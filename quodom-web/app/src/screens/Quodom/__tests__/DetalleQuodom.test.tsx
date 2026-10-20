@@ -321,7 +321,7 @@ describe('DetalleQuodom avisa al resto de la app', () => {
     await waitFor(() => expect(screen.getByText('Gaseosa 2L')).toBeInTheDocument());
     escuchado.mockClear();
 
-    fireEvent.click(screen.getByRole('button', { name: /LITROS/ }));
+    fireEvent.click(screen.getByRole('button', { name: /elegir litros/i }));
     const opcion = await screen.findByRole('button', { name: '2 litros' });
     fireEvent.click(opcion);
 

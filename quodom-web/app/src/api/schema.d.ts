@@ -1720,6 +1720,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         descripcion?: string;
+                        detalle?: string | null;
                         iddireccion?: number | null;
                     };
                 };
@@ -2652,6 +2653,7 @@ export interface components {
         VQuodom: {
             id: string;
             descripcion: string;
+            detalle?: string | null;
             createdBy?: string;
             /** @enum {string} */
             estado: "CREADO" | "ENVIADO";

@@ -173,6 +173,7 @@ components:
       properties:
         id: { type: string }
         descripcion: { type: string }
+        detalle: { type: string, nullable: true }
         createdBy: { type: string }
         estado: { type: string, enum: [CREADO, ENVIADO] }
         idrubro: { type: integer }
@@ -1042,6 +1043,7 @@ paths:
               type: object
               properties:
                 descripcion: { type: string, minLength: 1 }
+                detalle: { type: string, nullable: true, maxLength: 500 }
                 iddireccion: { type: integer, nullable: true }
       responses:
         '200': { description: 'OK (el cuerpo es true)', content: { application/json: { schema: { type: boolean } } } }

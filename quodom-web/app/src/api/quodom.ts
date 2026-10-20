@@ -10,7 +10,7 @@ export const quodom = {
   // Los Quodoms en armado de un rubro, del más nuevo al más viejo. Nunca crea.
   activosPorRubro: (idrubro: number) =>
     apiFetch<{ res: boolean; data: Quodom[] }>('/quodom/activos/' + idrubro).then(r => r.data),
-  update: (id: string, body: { descripcion?: string; iddireccion?: number | null }) =>
+  update: (id: string, body: { descripcion?: string; detalle?: string | null; iddireccion?: number | null }) =>
     apiFetch<Quodom>('/quodom/' + encodeURIComponent(id), { method: 'PUT', body }),
   eliminar: (id: string) =>
     apiFetch<{ res: boolean }>('/quodom/' + encodeURIComponent(id), { method: 'DELETE' }),
