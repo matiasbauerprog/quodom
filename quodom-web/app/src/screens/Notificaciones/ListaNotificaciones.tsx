@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { notificaciones } from '../../api/oper_notificaciones';
 import { quodom as quodomApi } from '../../api/quodom';
 import type { Notificacion, Quodom } from '../../api/types';
@@ -6,7 +7,7 @@ import { ApiError } from '../../api/client';
 import { Loader } from '../../components/Loader';
 import { ErrorState } from '../../components/ErrorState';
 import { EmptyState } from '../../components/EmptyState';
-import { AccionesNotificacion, repetirPedido } from '../../components/Notificaciones/AccionesNotificacion';
+import { AccionesNotificacion, repetirPedido, rutaRenombrar } from '../../components/Notificaciones/AccionesNotificacion';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
 import './ListaNotificaciones.css';
 
@@ -16,6 +17,7 @@ import './ListaNotificaciones.css';
  * pero la lista conserva cómo llegaron para que se vea cuáles eran nuevas.
  */
 export function ListaNotificaciones() {
+  const navigate = useNavigate();
   const [list, setList] = useState<Notificacion[] | null>(null);
   const [quodoms, setQuodoms] = useState<Record<string, Quodom>>({});
   const [err, setErr] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function ListaNotificaciones() {
     if (repitiendo) return;
     setRepitiendo(q.id); setErrorAccion(null);
     try {
-      await repetirPedido(q);
+      navigate(rutaRenombrar(await repetirPedido(q)));
     } catch (e) {
       setErrorAccion(e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo repetir el pedido.');
     } finally {

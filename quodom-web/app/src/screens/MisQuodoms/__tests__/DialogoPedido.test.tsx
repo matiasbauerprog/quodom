@@ -110,8 +110,9 @@ describe('DialogoPedido', () => {
 
   // "Volver a armado" crea un pedido NUEVO: el enviado no se revierte, porque
   // revertirlo borraría la notificación y el historial de algo que sí pasó.
-  // El nuevo queda abierto en el árbol de su rubro, que es "volver al sidebar".
-  it('repite el pedido, deja el nuevo abierto en su rubro y avisa, sin navegar', async () => {
+  // El nuevo queda abierto en el árbol de su rubro, que es "volver al sidebar",
+  // y se abre con el nombre listo para cambiar: nace igual que el original.
+  it('repite el pedido, deja el nuevo abierto en su rubro y lleva a nombrarlo', async () => {
     repetir.mockResolvedValue({ res: true, idquodom: 'q-nuevo' });
     const { onRepetido } = montar(ENVIADO);
     await screen.findByText(/latex interior blanco mate/i);
@@ -121,8 +122,7 @@ describe('DialogoPedido', () => {
     await waitFor(() => expect(repetir).toHaveBeenCalledWith('q-9'));
     expect(abrirQuodom).toHaveBeenCalledWith(5, 'q-nuevo');
     await waitFor(() => expect(onRepetido).toHaveBeenCalledWith('q-nuevo'));
-    // Confirmar no navega: deja al usuario donde estaba, con el acuse.
-    expect(navigate).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/quodom?id=q-nuevo&nombrar=1');
   });
 
   it('volver a armado abre el panel si estaba cerrado', async () => {

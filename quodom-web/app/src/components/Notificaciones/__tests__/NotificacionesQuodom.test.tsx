@@ -120,6 +120,8 @@ describe('NotificacionesQuodom', () => {
     await waitFor(() => expect(abrirQuodom).toHaveBeenCalledWith(7, 'q-nuevo'));
     expect(repetir).toHaveBeenCalledWith('q-7');
     expect(cambio).toHaveBeenCalled();
+    // Lleva al nuevo con el nombre listo para cambiar.
+    await waitFor(() => expect(screen.getByTestId('ubicacion')).toHaveTextContent('/quodom?id=q-nuevo&nombrar=1'));
     window.removeEventListener('quodom:changed', cambio);
   });
 
