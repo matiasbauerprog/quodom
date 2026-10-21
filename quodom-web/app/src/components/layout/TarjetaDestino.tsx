@@ -19,7 +19,7 @@ import './TarjetaDestino.css';
  * va **afuera** del botón de la cabecera: un campo no puede vivir adentro de un
  * botón, y tocar el nombre tiene que seguir plegando como siempre.
  */
-export function TarjetaDestino({ nombre, chip, cuenta, onActivar, expandido, dataDestino, dataRubro, onRenombrar, children }: {
+export function TarjetaDestino({ nombre, chip, cuenta, onActivar, expandido, dataDestino, dataRubro, onRenombrar, editarAlMontar, children }: {
   nombre: string;
   chip?: { texto: string; tono: 'ok' | 'alerta' };
   cuenta?: string;
@@ -29,9 +29,11 @@ export function TarjetaDestino({ nombre, chip, cuenta, onActivar, expandido, dat
   dataDestino?: string;
   dataRubro?: number;
   onRenombrar?: (nuevo: string) => Promise<void> | void;
+  /** Arranca con el nombre en edición, para un Quodom recién creado. */
+  editarAlMontar?: boolean;
   children?: ReactNode;
 }) {
-  const [editando, setEditando] = useState(false);
+  const [editando, setEditando] = useState(!!editarAlMontar && !!onRenombrar);
   const [valor, setValor] = useState(nombre);
   const [err, setErr] = useState<string | null>(null);
   const campo = useRef<HTMLInputElement>(null);
