@@ -227,14 +227,6 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
               </ul>
             )}
 
-            {/* Un rubro con Quodoms pero ninguno abierto no tiene destino: el
-                próximo `+` va a preguntar a cuál. Decirlo acá ahorra la sorpresa. */}
-            {desplegado && rama.quodoms.length > 0 && !abierto && (
-              <p className="arbol-sin-destino">
-                Sin destino: al agregar algo de {rama.nombre} te preguntamos a cuál va.
-              </p>
-            )}
-
             {/* Crear un Quodom nuevo soltando sólo se ofrece en el rubro del
                 producto que se está arrastrando: en cualquier otro, soltar es un
                 409 del servidor, así que ofrecerlo era ofrecer un error. */}
