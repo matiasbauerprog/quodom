@@ -120,7 +120,6 @@ describe('ArbolQuodoms', () => {
 
     expect(abiertoDe(5)).toBeNull();
     expect(screen.getByRole('button', { name: /Casa/ })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByText(/sin destino: al agregar algo de PINTURERÍA/i)).toBeInTheDocument();
   });
 
   it('plegar un rubro no le cierra el Quodom abierto', () => {
@@ -175,18 +174,6 @@ describe('ArbolQuodoms · la tarjeta del destino', () => {
     expect(tarjeta).toHaveTextContent('Recibe lo que agregás');
   });
 
-  it('un rubro con Quodoms pero sin destino lo avisa', () => {
-    montar();
-
-    expect(screen.getByText(/sin destino: al agregar algo de PINTURERÍA/i)).toBeInTheDocument();
-  });
-
-  it('con un destino abierto ese aviso no está', () => {
-    abrirQuodom(5, 'p1');
-    montar();
-
-    expect(screen.queryByText(/sin destino: al agregar algo de PINTURERÍA/i)).toBeNull();
-  });
 });
 
 // Entrar a un rubro deja el panel contestando por ese rubro: el resto plegado,

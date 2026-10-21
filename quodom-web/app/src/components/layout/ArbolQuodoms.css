@@ -16,8 +16,7 @@
   gap: var(--sp-2);
 }
 
-.arbol-vacio,
-.arbol-sin-destino {
+.arbol-vacio {
   margin: 0;
   font-family: var(--font-work);
   font-size: 13px;
@@ -30,7 +29,6 @@
   border-radius: var(--radius-input);
   text-align: center;
 }
-.arbol-sin-destino { padding-left: var(--sp-1); }
 
 .arbol-hijos {
   display: flex;
