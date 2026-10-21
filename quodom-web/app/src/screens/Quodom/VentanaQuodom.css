@@ -1,5 +1,5 @@
-/* En celular sube desde abajo y ocupa casi todo el alto; desde tablet se
-   centra. Debajo de los diálogos que abre (atributo, mapa) y del aviso de
+/* En móvil (celular y tablet) sube desde abajo, con un ancho máximo para que
+   en una tablet no vaya de punta a punta; en escritorio se centra. Debajo de los diálogos que abre (atributo, mapa) y del aviso de
    repetido, que tiene que verse encima. */
 .vq-backdrop {
   position: fixed;
@@ -73,7 +73,7 @@
   background: #FAFAFA;
 }
 
-@media (min-width: 601px) {
+@media (min-width: 1025px) {
   .vq-backdrop { align-items: center; padding: var(--sp-4); }
   .vq.card { max-height: 86dvh; }
 }

@@ -42,3 +42,10 @@
 @media (min-width: 1025px) {
   .subtabs { max-width: 720px; flex-wrap: wrap; overflow-x: visible; justify-content: center; }
 }
+
+/* En móvil las pestañas se deslizan con el dedo y la barra de scroll sólo
+   ocupa lugar (y en una compu angosta se veía debajo de ellas). */
+@media (max-width: 1024px) {
+  .subtabs { scrollbar-width: none; }
+  .subtabs::-webkit-scrollbar { display: none; }
+}

@@ -8,7 +8,7 @@
 .dirs-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; }
 .dirs-badge { background: rgba(45,171,102,.15); color: var(--color-exito); padding: 4px 10px; border-radius: 999px; font-size: var(--fs-tiny); font-weight: 500; }
 
-@media (min-width: 601px) { .dirs-item { grid-template-columns: 1fr auto; align-items: center; } }
+@media (min-width: 1025px) { .dirs-item { grid-template-columns: 1fr auto; align-items: center; } }
 
 /* Columna de contenido centrada: mas especifico que .container, que apunta a
    1120px para las grillas de producto. */

@@ -1,11 +1,10 @@
 .container {
   width: 100%;
-  max-width: 100%;
-  padding: 0 var(--sp-4);
+  /* En móvil el margen crece con la pantalla en vez de saltar en un corte de
+     tablet; los 720px sólo se notan en una tablet. */
+  max-width: 720px;
+  padding: 0 clamp(var(--sp-4), 3vw, var(--sp-5));
   margin: 0 auto;
-}
-@media (min-width: 601px) and (max-width: 1024px) {
-  .container { max-width: 720px; padding: 0 var(--sp-5); }
 }
 @media (min-width: 1025px) {
   .container { max-width: 1120px; padding: 0 var(--sp-6); }
@@ -121,4 +120,12 @@ label.field span { display: block; margin-bottom: var(--sp-1); }
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* Móvil: el contenido de una pantalla de sección arranca debajo del título.
+   Centrado en el alto que sobra, en un teléfono dejaba un hueco grande entre el
+   título y lo primero que hay que mirar (Historial, Perfil, Notificaciones). */
+@media (max-width: 1024px) {
+  :root { --pantalla-top: var(--sp-2); }
+  .pantalla-contenido { justify-content: flex-start; }
 }

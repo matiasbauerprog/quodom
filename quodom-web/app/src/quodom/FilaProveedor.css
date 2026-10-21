@@ -55,7 +55,7 @@
 }
 .dp-motivos-txt { color: #5C5C5C; }
 
-@media (min-width: 601px) {
+@media (min-width: 1025px) {
   .dp-wa { flex: 0 0 auto; }
 }
 

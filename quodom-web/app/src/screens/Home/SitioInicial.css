@@ -69,9 +69,9 @@
 .home-compacto .home-search .home-search-input { height: 42px; }
 
 .cat-grid {
-  /* Móvil: tres arriba y el resto abajo, centrados. Con flex la última fila
-     incompleta queda centrada sola, cosa que una grilla de columnas fijas no
-     hace. De 601px para arriba pasa a una sola fila (ver más abajo). */
+  /* Móvil: tantos por fila como entren (tres en un celular, todos en una
+     tablet) y la última fila incompleta centrada, cosa que una grilla de
+     columnas fijas no hace. Sin corte para tablet: lo decide el ancho. */
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -84,7 +84,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 0 0 calc((100% - 2 * var(--sp-3)) / 3);
+  flex: 1 0 96px;
+  max-width: calc((100% - 2 * var(--sp-3)) / 3);
   /* Sin esto una tarjeta no baja del ancho de su contenido y desborda la fila. */
   min-width: 0;
   gap: var(--sp-3);
@@ -127,10 +128,38 @@
   margin: 6px auto 0 auto;
 }
 
-@media (min-width: 601px) {
-  .home-wordmark img { height: 64px; }
-  /* Tablet y desktop: todos los rubros en una sola fila, sean los que sean —
-     cuando vuelvan los tres rubros apagados se reparten el ancho igual. */
+.home-wordmark img { height: clamp(52px, 10vw, 64px); }
+
+/* Móvil, adentro de un rubro: los cuadros grandes se vuelven una fila de
+   botones chicos que se desliza de costado. Con los cuadros, el primer
+   producto aparecía recién al pie de la pantalla. RubroSelector lleva el
+   elegido a la vista. */
+@media (max-width: 1024px) {
+  .home-compacto .cat-grid {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: var(--sp-2);
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 2px 2px var(--sp-1);
+    scrollbar-width: none;
+  }
+  .home-compacto .cat-grid::-webkit-scrollbar { display: none; }
+  .home-compacto .cat-card {
+    flex: 0 0 auto;
+    max-width: none;
+    flex-direction: row;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+  }
+  .home-compacto .cat-card .rubro-icon { width: 28px; max-width: 28px; }
+  .home-compacto .cat-card-name { font-size: 12px; white-space: nowrap; overflow-wrap: normal; }
+  .home-compacto .cat-card-name::after { display: none; }
+}
+
+@media (min-width: 1025px) {
+  /* Todos los rubros en una sola fila, sean los que sean — cuando vuelvan los
+     tres rubros apagados se reparten el ancho igual. */
   .cat-grid {
     display: grid;
     grid-auto-flow: column;
@@ -139,7 +168,9 @@
   }
   /* El piso del clamp era 8px/4px y apretaba los rubros contra el borde de la
      tarjeta justo donde entran en una sola fila. */
-  .cat-card { padding: clamp(var(--sp-3), 1.8vw, var(--sp-5)) clamp(var(--sp-2), 1.2vw, var(--sp-4)); }
+  /* En la grilla el tope de un tercio que usa la fila de móvil achicaría cada
+     cuadro a un tercio de su columna. */
+  .cat-card { max-width: none; padding: clamp(var(--sp-3), 1.8vw, var(--sp-5)) clamp(var(--sp-2), 1.2vw, var(--sp-4)); }
   .cat-card-name { font-size: clamp(10px, 1.6vw, 13px); }
 }
 @media (min-width: 1025px) {

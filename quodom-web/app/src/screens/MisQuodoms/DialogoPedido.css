@@ -71,7 +71,7 @@
 }
 .dpd-otro:hover:not(:disabled) { background: var(--color-whatsapp); filter: brightness(1.08); }
 
-@media (min-width: 601px) {
+@media (min-width: 1025px) {
   .dpd-backdrop { align-items: center; padding: var(--sp-4); }
   .dpd { max-height: 80dvh; }
   .dpd-pie { flex-direction: row; flex-wrap: wrap; }
