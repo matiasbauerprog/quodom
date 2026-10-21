@@ -91,8 +91,17 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
     }
   }, [enPantalla, ramas]);
 
+  // Desplegar un rubro plegado lo muestra con todos sus Quodoms cerrados (lo
+  // pidió el usuario: aparecía con uno abierto que no había elegido ahora). Como
+  // abierto y destino son lo mismo, el rubro queda sin destino y el próximo `+`
+  // pregunta a cuál va.
   function alternarRubro(idrubro: number) {
+    const desplegando = !!plegados[idrubro];
     setPlegados(p => ({ ...p, [idrubro]: !p[idrubro] }));
+    if (desplegando && abiertoDe(idrubro)) {
+      cerrarQuodom(idrubro);
+      onCambio();
+    }
   }
 
   function alternarQuodom(idrubro: number, idquodom: string) {
