@@ -28,6 +28,12 @@
 }
 .dq-nombre-input:hover { border-color: #E2E2E2; }
 .dq-nombre-input:focus { outline: none; border-color: var(--color-acento); background: #fff; }
+/* Enviado: se lee como título y nada más, sin pista de que se pueda editar. */
+.dq-nombre-input:read-only:hover,
+.dq-nombre-input:read-only:focus { border-color: transparent; background: none; }
+.dq-detalle:read-only,
+.dq-detalle:read-only:hover,
+.dq-detalle:read-only:focus { border-color: transparent; background: none; resize: none; padding-left: 0; }
 .dq-nombre-input::placeholder { color: var(--color-texto-muted); font-weight: 500; }
 
 /* Recién repetido: el nombre es lo primero que hay que cambiar. */

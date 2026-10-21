@@ -85,6 +85,12 @@ async function update(id, params, userId) {
     if (quodom.createdBy !== userId) {
         throw 'El Id Quodom no pertenece a el usuario.';
     }
+    // El proveedor cotiza sobre lo que recibió: renombrar un enviado lo deja al
+    // comprador creyendo que pidió otra cosa. La app ya no lo ofrece; esto es la
+    // red de seguridad.
+    if (quodom.estado !== 'CREADO') {
+        throw 'Un Quodom enviado no se puede modificar.';
+    }
     Object.assign(quodom, params);
     await quodom.save();
     return true;

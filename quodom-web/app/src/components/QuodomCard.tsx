@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Quodom } from '../api/types';
 import { quodom as quodomApi } from '../api/quodom';
@@ -76,6 +76,29 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   const info = estadoInfo(quodom);
   const fechaDisplay = quodom.estado === 'ENVIADO' ? formatDate(quodom.fechaenvio) : formatDate(quodom.createdAt);
   const nombre = quodom.descripcion || quodom.nro;
+  const menuRef = useRef<HTMLDivElement>(null);
+  const botonMenuRef = useRef<HTMLButtonElement>(null);
+  // Enter, Escape y el blur que sigue al desmontar el campo: el que llega
+  // primero decide, y los demás no vuelven a guardar ni guardan lo descartado.
+  const nombreResuelto = useRef(false);
+
+  // Un menú que sólo se cierra eligiendo algo obliga a elegir: tocar en
+  // cualquier otro lado lo cierra (lo pidió el usuario).
+  useEffect(() => {
+    if (!menuOpen) return;
+    const fuera = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (menuRef.current?.contains(t) || botonMenuRef.current?.contains(t)) return;
+      setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('pointerdown', fuera);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', fuera);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   async function openDetail() { abrirQuodom(quodom.id); }
 
@@ -83,9 +106,11 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
   // continuación es el catálogo del rubro, no la ficha del Quodom.
   function seguirEnElRubro() { navigate('/?rubro=' + quodom.idrubro); }
 
-  async function guardarNombre(e: React.FormEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+  // Guarda con Enter y también al salir del campo: antes sólo Enter, y tocar
+  // afuera dejaba el campo abierto sin guardar (lo reportó el usuario).
+  async function guardarNombre() {
+    if (nombreResuelto.current) return;
+    nombreResuelto.current = true;
     const limpio = nombreNuevo.trim();
     if (!limpio || limpio === (quodom.descripcion ?? '')) { setRenombrando(false); return; }
     setBusy(true); setErr(null);
@@ -95,10 +120,15 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
       onChange?.();
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'No se pudo cambiar el nombre.');
+      setRenombrando(false);
     } finally { setBusy(false); }
   }
 
   function activar() {
+    // Con el menú abierto, tocar la tarjeta es "cerrar el menú", no abrir el
+    // pedido; lo mismo mientras se escribe el nombre (el blur ya lo guarda).
+    if (menuOpen) { setMenuOpen(false); return; }
+    if (renombrando) return;
     if (onToggle) onToggle();
     else if (onAbrir) onAbrir();
     else openDetail();
@@ -143,23 +173,28 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
       aria-expanded={onToggle ? !!expandido : undefined}
       aria-label={quodom.nro + ' · ' + nombre}
     >
-      <button className="qc-menu" aria-label="Acciones" onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}>
+      <button ref={botonMenuRef} className="qc-menu" aria-label="Acciones" aria-expanded={menuOpen} onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}>
         <span /><span /><span />
       </button>
       {menuOpen && (
-        <div className="qc-menu-panel" onClick={e => e.stopPropagation()}>
+        <div ref={menuRef} className="qc-menu-panel" onClick={e => e.stopPropagation()}>
           {info.code === 'enviado' && (
             <button className="qc-menu-item" onClick={onRepetir}>Repetir</button>
           )}
-          <button
-            className="qc-menu-item"
-            onClick={e => {
-              e.stopPropagation();
-              setMenuOpen(false);
-              setNombreNuevo(quodom.descripcion ?? '');
-              setRenombrando(true);
-            }}
-          >Cambiar nombre</button>
+          {/* Un enviado no se renombra: el proveedor cotiza sobre lo que
+              recibió, con ese nombre. El servidor también lo rechaza. */}
+          {info.code === 'creado' && (
+            <button
+              className="qc-menu-item"
+              onClick={e => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                setNombreNuevo(quodom.descripcion ?? '');
+                nombreResuelto.current = false;
+                setRenombrando(true);
+              }}
+            >Cambiar nombre</button>
+          )}
           <button className="qc-menu-item qc-menu-danger" onClick={onEliminar}>Eliminar</button>
         </div>
       )}
@@ -168,7 +203,7 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
         {rubroLabel && <div className="qc-rubro">{rubroLabel}</div>}
         <div className="qc-fecha">{fechaDisplay}</div>
         {renombrando ? (
-          <form className="qc-rename" onSubmit={guardarNombre} onClick={e => e.stopPropagation()}>
+          <form className="qc-rename" onSubmit={e => { e.preventDefault(); e.stopPropagation(); guardarNombre(); }} onClick={e => e.stopPropagation()}>
             <input
               className="qc-rename-input"
               aria-label="Nombre del Quodom"
@@ -176,7 +211,8 @@ export function QuodomCard({ quodom, variant = 'sidebar', rubroLabel, onChange, 
               autoFocus
               disabled={busy}
               onChange={e => setNombreNuevo(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setRenombrando(false); } }}
+              onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); nombreResuelto.current = true; setRenombrando(false); } }}
+              onBlur={guardarNombre}
             />
           </form>
         ) : (

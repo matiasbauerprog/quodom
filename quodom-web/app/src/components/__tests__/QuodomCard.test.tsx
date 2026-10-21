@@ -110,6 +110,68 @@ describe('QuodomCard', () => {
     expect(screen.getByText('Bebidas oficina')).toBeInTheDocument();
   });
 
+  // Antes sólo Enter guardaba, y tocar afuera dejaba el campo abierto.
+  it('salir del campo guarda el nombre, igual que Enter', async () => {
+    const onChange = vi.fn();
+    montar({ onChange });
+
+    fireEvent.click(screen.getByRole('button', { name: /acciones/i }));
+    fireEvent.click(screen.getByRole('button', { name: /cambiar nombre/i }));
+
+    const input = screen.getByRole('textbox', { name: /nombre del quodom/i });
+    fireEvent.change(input, { target: { value: 'Bebidas del viernes' } });
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(update).toHaveBeenCalledWith('q-7', { descripcion: 'Bebidas del viernes' }));
+    await waitFor(() => expect(screen.queryByRole('textbox')).toBeNull());
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  it('Escape no guarda aunque después llegue el blur', async () => {
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: /acciones/i }));
+    fireEvent.click(screen.getByRole('button', { name: /cambiar nombre/i }));
+
+    const input = screen.getByRole('textbox', { name: /nombre del quodom/i });
+    fireEvent.change(input, { target: { value: 'otro nombre' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(screen.queryByRole('textbox')).toBeNull());
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('tocar afuera cierra el menú sin abrir el pedido', () => {
+    const onAbrir = vi.fn();
+    montar({ onAbrir });
+
+    fireEvent.click(screen.getByRole('button', { name: /acciones/i }));
+    expect(screen.getByRole('button', { name: /eliminar/i })).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('button', { name: /eliminar/i })).toBeNull();
+    expect(onAbrir).not.toHaveBeenCalled();
+  });
+
+  it('tocar la tarjeta con el menú abierto lo cierra en vez de abrir el pedido', () => {
+    const onAbrir = vi.fn();
+    montar({ onAbrir });
+
+    fireEvent.click(screen.getByRole('button', { name: /acciones/i }));
+    fireEvent.click(screen.getByRole('button', { name: /QD-7/ }));
+
+    expect(screen.queryByRole('button', { name: /eliminar/i })).toBeNull();
+    expect(onAbrir).not.toHaveBeenCalled();
+  });
+
+  // El proveedor cotiza sobre lo que recibió, con ese nombre.
+  it('un enviado no ofrece cambiar el nombre', () => {
+    montar({ quodom: { ...BEBIDAS, estado: 'ENVIADO', fechaenvio: new Date(Date.now() - 60 * 60 * 1000).toISOString() } as unknown as Quodom });
+
+    fireEvent.click(screen.getByRole('button', { name: /acciones/i }));
+    expect(screen.queryByRole('button', { name: /cambiar nombre/i })).toBeNull();
+  });
+
   it('un nombre vacío no se guarda', async () => {
     montar();
 
