@@ -229,7 +229,7 @@
 /* Móvil: tantas columnas como entren (dos en un celular, cuatro en una tablet)
    y el nombre en hasta tres renglones, que con dos se cortaba a mitad. */
 @media (max-width: 1024px) {
-  .prod-list { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-width: 720px; }
+  .prod-list { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); max-width: 720px; }
   .prod-name { -webkit-line-clamp: 3; line-clamp: 3; }
 }
 @media (min-width: 1025px) {
