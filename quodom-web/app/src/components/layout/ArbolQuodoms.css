@@ -103,6 +103,23 @@
   outline-offset: 2px;
 }
 
+/* Crear uno nuevo: texto tenue, sin caja, para que no compita con los Quodoms. */
+.arbol-crear {
+  align-self: flex-start;
+  padding: 2px var(--sp-1);
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--font-work);
+  font-size: 13px;
+  cursor: pointer;
+}
+.arbol-crear:hover:not(:disabled),
+.arbol-crear:focus-visible { color: #fff; text-decoration: underline; }
+.arbol-crear:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.arbol-crear:disabled { cursor: default; }
+.arbol-crear-err { margin: 0; padding-left: var(--sp-1); font-size: 13px; color: #FF9AA2; }
+
 /* Soltar un producto: la zona de "Quodom nuevo" sólo existe mientras se arrastra. */
 .arbol-nuevo {
   padding: var(--sp-3);

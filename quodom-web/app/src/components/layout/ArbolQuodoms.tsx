@@ -7,6 +7,7 @@ import { RotuloRubro } from './RotuloRubro';
 import { TarjetaDestino } from './TarjetaDestino';
 import { quodom as quodomApi } from '../../api/quodom';
 import { ApiError } from '../../api/client';
+import { nombreRubro } from '../../quodom/rubros';
 import './ArbolQuodoms.css';
 
 export type RamaRubro = { idrubro: number; nombre: string; quodoms: Quodom[] };
@@ -74,6 +75,17 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
   // Sólo en el cambio de rubro, no en cada render: si corriera siempre, cerrar
   // el único Quodom a mano lo volvería a abrir en el acto.
   const rubroAcomodado = useRef<number | null>(null);
+
+  // El recién creado arranca con el nombre en edición: el que se le pone por
+  // defecto sirve para que exista, no para distinguirlo de los otros.
+  const [recienCreado, setRecienCreado] = useState<string | null>(null);
+  const [creando, setCreando] = useState<number | null>(null);
+  const [errCrear, setErrCrear] = useState<{ idrubro: number; texto: string } | null>(null);
+  // Una sola vez: en cuanto la tarjeta se montó editando, se olvida, así
+  // plegarla y desplegarla después no la vuelve a abrir en edición.
+  useEffect(() => {
+    if (recienCreado && ramas.some(r => r.quodoms.some(q => q.id === recienCreado))) setRecienCreado(null);
+  }, [ramas, recienCreado]);
   useEffect(() => {
     // `ramas` vacío es "todavía no cargó": acomodar ahora daría por hecho que el
     // rubro no tiene Quodoms, y no se volvería a intentar cuando lleguen.
@@ -115,6 +127,24 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
   const ordenadas = enPantalla === null
     ? ramas
     : [...ramas].sort((a, b) => Number(b.idrubro === enPantalla) - Number(a.idrubro === enPantalla));
+
+  // Uno nuevo y vacío, que queda como el abierto del rubro (el que recibe el
+  // próximo `+`).
+  async function crearEn(idrubro: number) {
+    if (creando !== null) return;
+    setCreando(idrubro); setErrCrear(null);
+    try {
+      const r = await quodomApi.create({ descripcion: 'Nuevo Quodom de ' + nombreRubro(idrubro), idrubro });
+      setRecienCreado(r.idquodom);
+      abrirQuodom(idrubro, r.idquodom);
+      window.dispatchEvent(new Event('quodom:changed'));
+      onCambio();
+    } catch (e) {
+      setErrCrear({ idrubro, texto: e instanceof ApiError ? e.message : 'No se pudo crear el Quodom.' });
+    } finally {
+      setCreando(null);
+    }
+  }
 
   // El evento recarga el árbol, la barra de celular y la ventana del detalle,
   // que muestran el mismo nombre.
@@ -171,6 +201,7 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
                         dataDestino={q.id}
                         dataRubro={rama.idrubro}
                         onRenombrar={nuevo => renombrar(q.id, nuevo)}
+                        editarAlMontar={q.id === recienCreado}
                       >
                         {renderAbierto && renderAbierto(q)}
                       </TarjetaDestino>
@@ -207,6 +238,23 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
             {/* Crear un Quodom nuevo soltando sólo se ofrece en el rubro del
                 producto que se está arrastrando: en cualquier otro, soltar es un
                 409 del servidor, así que ofrecerlo era ofrecer un error. */}
+            {/* Discreto a propósito: es una acción de vez en cuando, y en el
+                panel lo que manda es el trabajo en curso. Mientras se arrastra
+                lo reemplaza la zona de soltar, que hace lo mismo. */}
+            {desplegado && !arrastrando && (
+              <button
+                type="button"
+                className="arbol-crear"
+                disabled={creando !== null}
+                onClick={() => crearEn(rama.idrubro)}
+              >
+                {creando === rama.idrubro ? 'Creando…' : '+ Nuevo Quodom'}
+              </button>
+            )}
+            {errCrear?.idrubro === rama.idrubro && (
+              <p className="arbol-crear-err" role="alert">{errCrear.texto}</p>
+            )}
+
             {desplegado && destinoDelArrastre && (
               <div className="arbol-nuevo" data-nuevo={rama.idrubro} data-rubro={rama.idrubro}>
                 + Soltar en un Quodom nuevo

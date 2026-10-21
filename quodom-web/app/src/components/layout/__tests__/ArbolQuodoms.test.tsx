@@ -7,7 +7,7 @@ import { ramasDeQuodoms } from '../../../quodom/ramas';
 import type { Quodom } from '../../../api/types';
 import { quodom as quodomApi } from '../../../api/quodom';
 
-vi.mock('../../../api/quodom', () => ({ quodom: { update: vi.fn() } }));
+vi.mock('../../../api/quodom', () => ({ quodom: { update: vi.fn(), create: vi.fn() } }));
 
 function q(id: string, descripcion: string, idrubro: number, estado = 'CREADO'): Quodom {
   return { id, descripcion, estado, nro: 'QD-' + id, idrubro, cantproductos: 2, porccompletado: 100 } as unknown as Quodom;
@@ -417,5 +417,54 @@ describe('ArbolQuodoms: renombrar desde el panel', () => {
   it('los Quodoms plegados no muestran el lápiz', () => {
     montar();
     expect(screen.getAllByRole('button', { name: 'Cambiar el nombre' })).toHaveLength(1);
+  });
+});
+
+// Crear uno nuevo sin salir del panel; antes había que ir a Mis Quodoms.
+describe('ArbolQuodoms: crear un Quodom desde el rubro', () => {
+  beforeEach(() => {
+    vi.mocked(quodomApi.create).mockReset().mockResolvedValue({ res: true, idquodom: 'p3' } as never);
+  });
+
+  it('cada rubro desplegado lo ofrece, y uno plegado no', () => {
+    montar();
+    expect(screen.getAllByRole('button', { name: '+ Nuevo Quodom' })).toHaveLength(3);
+
+    fireEvent.click(screen.getByRole('button', { name: /PINTURERÍA/ }));
+    expect(screen.getAllByRole('button', { name: '+ Nuevo Quodom' })).toHaveLength(2);
+  });
+
+  it('mientras se arrastra no está: lo reemplaza la zona de soltar', () => {
+    montar();
+    empezarArrastre(5);
+    expect(screen.queryByRole('button', { name: '+ Nuevo Quodom' })).toBeNull();
+  });
+
+  it('lo crea en su rubro, lo deja abierto y con el nombre para cambiar', async () => {
+    const onCambio = vi.fn();
+    const { rerender } = render(<MemoryRouter><ArbolQuodoms ramas={RAMAS} onCambio={onCambio} /></MemoryRouter>);
+    const [, enPintura] = screen.getAllByRole('button', { name: '+ Nuevo Quodom' });
+
+    await act(async () => { fireEvent.click(enPintura); });
+
+    expect(quodomApi.create).toHaveBeenCalledWith({ descripcion: 'Nuevo Quodom de Pintura', idrubro: 5 });
+    expect(abiertoDe(5)).toBe('p3');
+    expect(onCambio).toHaveBeenCalled();
+
+    // La recarga trae el nuevo, que aparece como destino y editando el nombre.
+    const conNuevo = RAMAS.map(r => r.idrubro === 5
+      ? { ...r, quodoms: [...r.quodoms, q('p3', 'Nuevo Quodom de Pintura', 5)] } : r);
+    rerender(<MemoryRouter><ArbolQuodoms ramas={conNuevo} onCambio={onCambio} /></MemoryRouter>);
+    expect(screen.getByRole('textbox', { name: 'Nombre del Quodom' })).toHaveValue('Nuevo Quodom de Pintura');
+  });
+
+  it('si el servidor falla lo dice en ese rubro', async () => {
+    vi.mocked(quodomApi.create).mockRejectedValue(new Error('x'));
+    montar();
+    const [, enPintura] = screen.getAllByRole('button', { name: '+ Nuevo Quodom' });
+    await act(async () => { fireEvent.click(enPintura); });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('No se pudo crear el Quodom.');
+    expect(abiertoDe(5)).toBeNull();
   });
 });
