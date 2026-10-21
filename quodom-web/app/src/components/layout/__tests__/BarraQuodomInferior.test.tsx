@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BarraQuodomInferior } from '../BarraQuodomInferior';
@@ -249,5 +249,114 @@ describe('BarraQuodomInferior for guests', () => {
     act(() => { window.dispatchEvent(new Event('quodom:changed')); });
 
     await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
+  });
+});
+
+// En celular la barra es lo que en escritorio es el panel oculto: dice adónde
+// soltar mientras se arrastra y avisa lo que entró.
+describe('BarraQuodomInferior · como el panel oculto', () => {
+  const ARRASTRE = { idrubro: 5, nombre: 'Latex', nombreRubro: 'Pintura' };
+  const empezar = () => act(() => { window.dispatchEvent(new CustomEvent('arrastre:inicio', { detail: ARRASTRE })); });
+  const terminar = () => act(() => { window.dispatchEvent(new Event('arrastre:fin')); });
+
+  beforeEach(() => {
+    reiniciar();
+    login();
+    misQuodom.mockResolvedValue([CASA, DEPTO]);
+  });
+  afterEach(() => {
+    terminar();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('mientras se arrastra muestra dónde soltar', async () => {
+    abrirQuodom(5, 'p1');
+    montar('/?rubro=5');
+    await findToggle();
+    empezar();
+
+    const destino = document.querySelector('.barra-quodom-soltar[data-destino="p1"][data-rubro="5"]');
+    expect(destino).not.toBeNull();
+    expect(destino).toHaveTextContent('Soltá para sumar a Casa');
+  });
+
+  it('sin abierto en el rubro ofrece un Quodom nuevo', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    empezar();
+
+    expect(document.querySelector('.barra-quodom-soltar[data-nuevo="5"]')).not.toBeNull();
+  });
+
+  // La barra existe también en escritorio, escondida por CSS: un segundo
+  // destino ahí duplicaría el de la pestaña del panel cerrado.
+  it('en escritorio no monta el destino', async () => {
+    vi.spyOn(window, 'matchMedia').mockReturnValue({
+      matches: false, addEventListener: () => {}, removeEventListener: () => {}
+    } as unknown as MediaQueryList);
+    abrirQuodom(5, 'p1');
+    montar('/?rubro=5');
+    await findToggle();
+    empezar();
+
+    expect(document.querySelector('.barra-quodom-soltar')).toBeNull();
+  });
+
+  it('avisa lo que se agregó', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    act(() => {
+      window.dispatchEvent(new CustomEvent('quodom:agregado', { detail: { nombre: 'Latex', idrubro: 5, idquodom: 'p1' } }));
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Latex agregado a Casa');
+  });
+
+  it('tocar afuera la cierra', async () => {
+    montar();
+    fireEvent.click(await findToggle());
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(document.body);
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('la hoja que abrió el arrastre se cierra al terminar', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(toggle());
+    vi.useFakeTimers();
+    empezar();
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 780 })); });
+    act(() => { vi.advanceTimersByTime(800); });
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+    terminar();
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('pasar de largo sobre la barra no la abre', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    const elementFromPoint = vi.spyOn(document, 'elementFromPoint').mockReturnValue(toggle());
+    vi.useFakeTimers();
+    empezar();
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 780 })); });
+    act(() => { vi.advanceTimersByTime(300); });
+    elementFromPoint.mockReturnValue(document.body);
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 300 })); });
+    act(() => { vi.advanceTimersByTime(1000); });
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('la que abrió el usuario se queda abierta', async () => {
+    montar('/?rubro=5');
+    fireEvent.click(await findToggle());
+    empezar();
+    terminar();
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
   });
 });

@@ -13,7 +13,9 @@
 /* La barra inferior es fija y está siempre: sin reservarle el lugar, lo último
    de cada pantalla queda abajo de ella y no hay forma de llegar. */
 @media (max-width: 1024px) {
-  .layout-main > main { padding-bottom: 72px; }
+  /* El alto real de la barra lo escribe BarraQuodomInferior; 72px es el de
+     una barra de un renglón, mientras no se midió. */
+  .layout-main > main { padding-bottom: var(--alto-barra, 72px); }
 }
 
 @media (min-width: 1025px) {

@@ -27,7 +27,16 @@
   font-family: var(--font-prompt); font-weight: 500;
 }
 .barra-quodom-prefijo { opacity: .7; }
-.barra-quodom-destino { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Hasta dos renglones: en un celular chico, en uno solo "Sumando a: Pintura
+   living" quedaba cortado justo en el nombre, que es lo que importa. */
+.barra-quodom-destino {
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
 .barra-quodom:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
 .barra-quodom-arrow { font-size: 22px; }
 
@@ -62,4 +71,58 @@
   padding: 0 var(--sp-3) env(safe-area-inset-bottom, 0px) 0;
 }
 
-@media (min-width: 1025px) { .barra-quodom-fila, .barra-quodom-panel { display: none; } }
+/* Lo mismo que el panel oculto de escritorio: mientras se arrastra, la barra
+   es el lugar donde se suelta (tapa la fila, del mismo alto o más), y lo que
+   entra se avisa arriba de ella. */
+.barra-quodom-soltar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  min-height: var(--alto-barra, 72px);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--sp-3) var(--sp-4);
+  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--color-panel-oscuro);
+  border-top: 2px dashed rgba(255, 255, 255, 0.45);
+  color: #fff;
+  font-family: var(--font-prompt);
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.barra-quodom-soltar strong { margin-left: .3em; }
+.barra-quodom-soltar.arrastre-encima { background: #1F4D36; border-color: var(--color-exito); }
+
+.barra-quodom-agregado {
+  position: absolute;
+  left: var(--sp-3); right: var(--sp-3);
+  bottom: calc(100% + var(--sp-2));
+  z-index: 3;
+  display: flex; align-items: flex-start; gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-tarjeta);
+  color: var(--color-texto);
+  font-size: var(--fs-small);
+  line-height: 1.3;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+  animation: barra-agregado-entra 0.2s ease-out;
+}
+.barra-quodom-agregado-ok {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  background: var(--color-exito); color: #fff;
+  border-radius: 50%;
+  font-size: 11px; font-weight: 700;
+}
+@keyframes barra-agregado-entra {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .barra-quodom-agregado { animation: none; } }
+
+@media (min-width: 1025px) {
+  .barra-quodom-fila, .barra-quodom-panel, .barra-quodom-soltar, .barra-quodom-agregado { display: none; }
+}
