@@ -139,6 +139,18 @@ describe('VentanaQuodom', () => {
     expect(JSON.parse(localStorage.getItem('quodom.abierto') ?? '{}')).toEqual({ 7: 'q-8' });
   });
 
+  it('un enviado muestra el nombre sin dejarlo cambiar', async () => {
+    vi.mocked(quodom.porId).mockResolvedValue({ ...COPIA, estado: 'ENVIADO' } as never);
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: 'abrir' }));
+    await screen.findByText('Gaseosa 2L');
+
+    const campo = screen.getByRole('textbox', { name: 'Nombre del Quodom' });
+    expect(campo).toHaveAttribute('readonly');
+    // Sin descripción no queda una caja vacía que invite a escribir.
+    expect(screen.queryByRole('textbox', { name: 'Descripción' })).toBeNull();
+  });
+
   it('un link viejo a /quodom?id= abre la ventana sobre el inicio', async () => {
     montar('/quodom?id=q-8');
     expect(await screen.findByRole('dialog', { name: 'Bebidas oficina' })).toBeInTheDocument();

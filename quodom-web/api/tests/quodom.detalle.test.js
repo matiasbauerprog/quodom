@@ -56,6 +56,20 @@ describe('detalle del Quodom', () => {
     expect(res.body.detalle).toBeNull();
   });
 
+  it('un enviado no se puede renombrar', async () => {
+    const otro = await request(app).post('/quodom/create')
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Ya salió', idrubro: 5 });
+    await db.Quodom.update({ estado: 'ENVIADO' }, { where: { id: otro.body.idquodom } });
+
+    const put = await request(app).put('/quodom/' + otro.body.idquodom)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ descripcion: 'Otro nombre' });
+    expect(put.status).toBe(400);
+    const res = await request(app).get('/quodom/' + otro.body.idquodom).set('Authorization', 'Bearer ' + token);
+    expect(res.body.descripcion).toBe('Ya salió');
+  });
+
   it('repetir la copia', async () => {
     await request(app).put('/quodom/' + idquodom)
       .set('Authorization', 'Bearer ' + token)

@@ -374,6 +374,8 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
         className="dq-nombre-input"
         aria-label="Nombre del Quodom"
         placeholder="Ponele un nombre"
+        // Un enviado no se renombra: el proveedor cotiza sobre lo que recibió.
+        readOnly={yaEnviado}
         value={descripcion}
         onChange={e => setDescripcion(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
@@ -392,7 +394,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
 
         {/* Opcional y sólo en el servidor: el carrito de invitado no tiene
             dónde guardarlo y la migración no lo llevaría. */}
-        {mode === 'server' && server && (
+        {mode === 'server' && server && !(yaEnviado && !detalle) && (
           <textarea
             ref={campoDetalle}
             className="dq-detalle"
@@ -400,6 +402,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
             placeholder="Agregá una descripción (opcional)"
             rows={2}
             maxLength={500}
+            readOnly={yaEnviado}
             value={detalle}
             onChange={e => setDetalle(e.target.value)}
             onBlur={() => saveDetalle(detalle)}
