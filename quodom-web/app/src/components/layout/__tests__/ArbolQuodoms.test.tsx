@@ -111,6 +111,27 @@ describe('ArbolQuodoms', () => {
     expect(abiertoDe(5)).toBeNull();
   });
 
+  it('desplegar un rubro plegado lo muestra sin ningún Quodom abierto', () => {
+    abrirQuodom(5, 'p1');
+    montar();
+
+    fireEvent.click(screen.getByRole('button', { name: /PINTURERÍA/ }));
+    fireEvent.click(screen.getByRole('button', { name: /PINTURERÍA/ }));
+
+    expect(abiertoDe(5)).toBeNull();
+    expect(screen.getByRole('button', { name: /Casa/ })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText(/sin destino: al agregar algo de PINTURERÍA/i)).toBeInTheDocument();
+  });
+
+  it('plegar un rubro no le cierra el Quodom abierto', () => {
+    abrirQuodom(5, 'p1');
+    montar();
+
+    fireEvent.click(screen.getByRole('button', { name: /PINTURERÍA/ }));
+
+    expect(abiertoDe(5)).toBe('p1');
+  });
+
   it('un rubro sin Quodoms lo dice, y sigue estando', () => {
     montar();
 
