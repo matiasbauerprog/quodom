@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { resumenCarritosInvitado } from '../../guest/resumenInvitado';
@@ -14,6 +14,7 @@ import { useArrastreActivo } from '../../quodom/useArrastreActivo';
 import { AvisoAgregado } from './AvisoAgregado';
 import { DestinoCompacto } from './DestinoCompacto';
 import { useEsMovil } from './useEsMovil';
+import { useHojaDeslizable } from './useHojaDeslizable';
 import './BarraQuodomInferior.css';
 
 // A guest cart left over after a declined ('cancelar') migration, or one
@@ -55,6 +56,10 @@ export function BarraQuodomInferior() {
   // el panel cerrado también sigue cerrado después de soltar. Una que abrió el
   // usuario a mano no se toca.
   const abiertaPorArrastre = useRef(false);
+  const panel = useRef<HTMLDivElement>(null);
+  const altoHoja = useCallback(() => panel.current?.offsetHeight || window.innerHeight * 0.7, []);
+  const cambiarConGesto = useCallback((a: boolean) => { abiertaPorArrastre.current = false; setAbierto(a); }, []);
+  const hoja = useHojaDeslizable({ abierta: abierto, onCambio: cambiarConGesto, alto: altoHoja });
 
   useEffect(() => {
     const releerInvitados = () => setInvitados(itemsCarritosInvitado());
@@ -161,11 +166,28 @@ export function BarraQuodomInferior() {
     return { prefijo: null, texto: total === 1 ? '1 Quodom en armado' : total + ' Quodoms en armado' };
   })();
 
+  // Durante el gesto la hoja sigue al dedo desde donde estaba: abierta, baja
+  // con él; cerrada, arranca escondida detrás de la barra y sube.
+  function desplazamientoHoja(): number {
+    const d = hoja.desplazamiento;
+    return abierto ? Math.max(0, d) : Math.max(0, altoHoja() + d);
+  }
+
   return (
     <div className="barra-quodom-wrap" ref={contenedor}>
       <AvisoAgregado ramas={ramas} className="barra-quodom-agregado" />
-      {abierto && (
-        <div className="barra-quodom-panel" id="barra-quodom-panel" role="region" aria-label="Quodoms activos">
+      {(abierto || hoja.arrastrando) && (
+        <div
+          ref={panel}
+          className={'barra-quodom-panel' + (hoja.arrastrando ? ' barra-quodom-panel-moviendo' : '')}
+          id="barra-quodom-panel"
+          role="region"
+          aria-label="Quodoms activos"
+          style={hoja.arrastrando ? { transform: 'translateY(' + desplazamientoHoja() + 'px)' } : undefined}
+        >
+          {/* Lo que se agarra para bajarla: el contenido scrollea, así que el
+              gesto de cerrar necesita un lugar propio. */}
+          <div className="barra-quodom-manija" data-testid="barra-manija" aria-hidden="true" onPointerDown={hoja.onPointerDown} />
           {total === 0 && <PanelVacio />}
           {ramas.length > 0 && (
             <ArbolQuodoms ramas={ramas} onCambio={refresh} />
@@ -191,7 +213,8 @@ export function BarraQuodomInferior() {
         data-testid="barra-toggle"
         aria-expanded={abierto}
         aria-controls={abierto ? 'barra-quodom-panel' : undefined}
-        onClick={() => setAbierto(a => !a)}
+        onPointerDown={hoja.onPointerDown}
+        onClick={() => { if (!hoja.consumirClic()) setAbierto(a => !a); }}
       >
         {total > 0 && <span className="barra-quodom-count">{total}</span>}
         <span className="barra-quodom-label">

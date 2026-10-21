@@ -15,6 +15,8 @@
   cursor: pointer;
   font: inherit;
   text-align: left;
+  /* Deslizar la barra abre la hoja: el gesto es de la página, no del scroll. */
+  touch-action: none;
 }
 .barra-quodom-count {
   display: inline-flex; align-items: center; justify-content: center;
@@ -52,15 +54,51 @@
   gap: var(--sp-4);
   /* Aire propio: sin esto el árbol arranca pegado a los dos bordes de la
      pantalla. En escritorio lo da el padding de `.mq-sidebar`. */
-  padding: var(--sp-4);
+  padding: 0 var(--sp-4) var(--sp-4);
   background: var(--color-panel-oscuro);
-  max-height: 60vh;
+  /* svh: el alto con la barra del navegador a la vista, así no salta cuando
+     aparece o se esconde. La línea con vh es la reserva. */
+  max-height: 70vh;
+  max-height: 70svh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  transition: transform .2s ease-out;
+}
+/* Siguiendo al dedo, sin transición: si no, la hoja queda atrás. */
+.barra-quodom-panel-moviendo { transition: none; }
+@media (prefers-reduced-motion: reduce) { .barra-quodom-panel { transition: none; } }
+
+/* La rayita de las hojas: lo que se agarra para bajarla. Pegada arriba
+   mientras el contenido scrollea. */
+.barra-quodom-manija {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  flex-shrink: 0;
+  margin: 0 calc(-1 * var(--sp-4));
+  padding: 10px 0 6px;
+  background: var(--color-panel-oscuro);
+  touch-action: none;
+  cursor: grab;
+}
+.barra-quodom-manija::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 /* La barra y la campanita comparten la franja oscura. */
 .barra-quodom-fila {
+  /* Encima de la hoja: mientras sube desde atrás de la barra, la barra la tapa. */
+  position: relative;
+  z-index: 1;
   display: flex;
   background: var(--color-panel-oscuro);
   box-shadow: 0 -2px 8px rgba(0,0,0,.2);

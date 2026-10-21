@@ -360,3 +360,53 @@ describe('BarraQuodomInferior · como el panel oculto', () => {
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
   });
 });
+
+// La hoja se abre y se cierra con el dedo, además de con un toque.
+describe('BarraQuodomInferior · deslizar', () => {
+  beforeEach(() => {
+    reiniciar();
+    login();
+    misQuodom.mockResolvedValue([CASA]);
+  });
+
+  const deslizar = (el: Element, desde: number, hasta: number, clic = false) => {
+    fireEvent.pointerDown(el, { clientX: 100, clientY: desde, pointerType: 'touch' });
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: hasta, pointerType: 'touch' })); });
+    act(() => { window.dispatchEvent(new PointerEvent('pointerup', { clientX: 100, clientY: hasta, pointerType: 'touch' })); });
+    if (clic) fireEvent.click(el);
+  };
+
+  it('deslizar la barra hacia arriba la abre', async () => {
+    montar();
+    deslizar(await findToggle(), 780, 300);
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  // El navegador manda un clic al final del gesto: no tiene que deshacerlo.
+  it('el clic que sigue al gesto no lo deshace', async () => {
+    montar();
+    deslizar(await findToggle(), 780, 300, true);
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('deslizar la manija hacia abajo la cierra', async () => {
+    montar();
+    fireEvent.click(await findToggle());
+    deslizar(screen.getByTestId('barra-manija'), 200, 700);
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('un toque sigue abriendo y cerrando', async () => {
+    montar();
+    fireEvent.pointerDown(await findToggle(), { clientX: 100, clientY: 780, pointerType: 'touch' });
+    act(() => { window.dispatchEvent(new PointerEvent('pointerup', { clientX: 101, clientY: 779, pointerType: 'touch' })); });
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+});
