@@ -162,6 +162,14 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     }
   }
 
+  // Tocar el producto: lo que hace el clic en `.prod-info`, y también un toque
+  // lento con el dedo, que el arrastre devuelve como toque.
+  function tocar(info: HTMLElement, p: Product) {
+    if (!user) { setSelected(p); return; }
+    setOrigen(tarjetaDe(info));
+    agregarEnOtro(p);
+  }
+
   function agarrar(ev: React.PointerEvent, p: Product) {
     // Sin sesión no hay Quodoms en el árbol a dónde soltar. Y un clic que nace en
     // un botón es del botón (+, los selectores): si no, dejarían de funcionar.
@@ -170,11 +178,18 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     // toda la tarjeta, y el umbral del arrastre deja pasar el clic.
     const boton = (ev.target as HTMLElement).closest('button, select, a, input');
     if (boton && !boton.classList.contains('prod-info')) return;
+    // React suelta `currentTarget` al terminar el manejador, y el toque lento
+    // llega después.
+    const tarjeta = ev.currentTarget as HTMLElement;
     iniciarArrastre(ev.nativeEvent, {
       idrubro: p.categoriaPadre,
       nombre: p.nombreproducto,
       nombreRubro: nombreRubro(p.categoriaPadre),
-      onSoltar: blanco => { void soltarEn(p, blanco); }
+      onSoltar: blanco => { void soltarEn(p, blanco); },
+      onToqueLento: () => {
+        const info = tarjeta.querySelector<HTMLElement>('.prod-info');
+        if (info) tocar(info, p);
+      }
     });
   }
 
@@ -216,11 +231,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
               <button
                 className="prod-info"
                 aria-label={(user ? 'Elegir el Quodom de ' : 'Ver ') + p.nombreproducto}
-                onClick={ev => {
-                  if (!user) { setSelected(p); return; }
-                  setOrigen(tarjetaDe(ev.currentTarget));
-                  agregarEnOtro(p);
-                }}
+                onClick={ev => tocar(ev.currentTarget, p)}
               >
                 <span className="prod-media">
                   <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />

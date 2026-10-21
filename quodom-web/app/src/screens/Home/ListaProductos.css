@@ -262,7 +262,9 @@
   text-transform: uppercase;
   color: var(--color-acento);
 }
-.prod-item { touch-action: pan-y; }
+/* Dejar el dedo apretado es lo que levanta el producto: sin esto el navegador
+   abre su propio menú (copiar imagen) o selecciona el nombre en ese momento. */
+.prod-item { touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .prod-item img { -webkit-user-drag: none; }
 @media (prefers-reduced-motion: reduce) {
   .arrastre-interior { transition: none; }
