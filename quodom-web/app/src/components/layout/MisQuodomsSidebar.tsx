@@ -17,70 +17,9 @@ import { useArrastreActivo } from '../../quodom/useArrastreActivo';
 import { DialogoProveedores } from '../../quodom/DialogoProveedores';
 import { NotificacionesQuodom } from '../Notificaciones/NotificacionesQuodom';
 import { guardarPanel, usePanelCerrado } from './panelLateral';
-import { abiertoDe } from '../../quodom/quodomAbierto';
-import type { ArrastreActivo } from '../../quodom/useArrastreActivo';
-import type { RamaRubro } from './ArbolQuodoms';
-import type { Agregado } from '../../quodom/agregarProducto';
-import { nombreRubro } from '../../quodom/rubros';
+import { AvisoAgregado } from './AvisoAgregado';
+import { DestinoCompacto } from './DestinoCompacto';
 
-/**
- * Says what went in and where, for a few seconds, floating under the header.
- * Closed, adding something — with +, the destination dialog or a drop — left
- * no trace on screen at all; open, the new line shows up in the tree but among
- * several rubros and Quodoms it doesn't register on its own (user's call).
- */
-function AvisoAgregado({ ramas }: { ramas: RamaRubro[] }) {
-  const [ultimo, setUltimo] = useState<Agregado | null>(null);
-  useEffect(() => {
-    const oir = (e: Event) => setUltimo((e as CustomEvent<Agregado>).detail);
-    window.addEventListener('quodom:agregado', oir);
-    return () => window.removeEventListener('quodom:agregado', oir);
-  }, []);
-  useEffect(() => {
-    if (!ultimo) return;
-    const t = setTimeout(() => setUltimo(null), 3500);
-    return () => clearTimeout(t);
-  }, [ultimo]);
-  if (!ultimo) return null;
-
-  const q = ramas.find(r => r.idrubro === ultimo.idrubro)?.quodoms.find(x => x.id === ultimo.idquodom);
-  const destino = q
-    ? q.descripcion || q.nro
-    : ultimo.idquodom === null
-      ? 'tu carrito de ' + nombreRubro(ultimo.idrubro)
-      : 'tu Quodom de ' + nombreRubro(ultimo.idrubro);
-  return (
-    <p className="mq-sidebar-agregado" role="status" aria-label={'Agregado: ' + ultimo.nombre + ' a ' + destino}>
-      <span className="mq-sidebar-agregado-ok" aria-hidden="true">✓</span>
-      <span><strong>{ultimo.nombre}</strong> agregado a {destino}</span>
-    </p>
-  );
-}
-
-/**
- * With the panel closed, the only drop target left: a small box under the tab.
- * It goes to the open Quodom of the product's rubro — the same one `+` would
- * use — or, with none open, to a new one. It's only mounted closed: open, the
- * tree has the real targets, and a hidden duplicate would still be in the DOM. Being a `data-destino`/`data-nuevo` like the
- * tree's, the drop goes through the same path and the panel stays closed.
- */
-function DestinoCompacto({ arrastrando, ramas }: { arrastrando: ArrastreActivo; ramas: RamaRubro[] }) {
-  const { idrubro, nombreRubro } = arrastrando;
-  const id = abiertoDe(idrubro);
-  const abierto = ramas.find(r => r.idrubro === idrubro)?.quodoms.find(q => q.id === id);
-  if (abierto) {
-    return (
-      <div className="mq-sidebar-soltar" data-destino={abierto.id} data-rubro={idrubro}>
-        Soltá para sumar a <strong>{abierto.descripcion || abierto.nro}</strong>
-      </div>
-    );
-  }
-  return (
-    <div className="mq-sidebar-soltar" data-nuevo={idrubro} data-rubro={idrubro}>
-      Soltá para crear un Quodom de <strong>{nombreRubro}</strong>
-    </div>
-  );
-}
 import './MisQuodomsSidebar.css';
 
 export function MisQuodomsSidebar() {
