@@ -4,6 +4,7 @@ import { ListaProductos } from '../ListaProductos';
 import { productos } from '../../../api/productos';
 import { useAgregarProducto } from '../../../quodom/useAgregarProducto';
 import { agregarADestino, crearYAgregar } from '../../../quodom/agregarProducto';
+import { ESPERA_TOQUE_MS } from '../../../quodom/arrastre';
 
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({ useAgregarProducto: vi.fn() }));
@@ -554,6 +555,44 @@ describe('ListaProductos · arrastrar con el dedo', () => {
     vi.advanceTimersByTime(600);
 
     expect(document.body.classList.contains('arrastrando')).toBe(false);
+  });
+
+  // Safari de iOS decide al apoyar el dedo si un touchmove se puede frenar,
+  // mirando los oyentes que ya existen: uno que se agrega en el pointerdown
+  // llega tarde y el arrastre termina scrolleando la página.
+  it('el freno del scroll está puesto en la lista antes de apoyar el dedo', async () => {
+    const agregar = vi.spyOn(HTMLElement.prototype, 'addEventListener');
+    await info();
+
+    const lista = document.querySelector('.prod-list');
+    const freno = agregar.mock.calls.find((c, i) => c[0] === 'touchmove' && (agregar.mock.instances[i] as unknown) === lista);
+    expect(freno?.[2]).toEqual({ passive: false });
+  });
+
+  it('el freno sólo frena con el producto levantado', async () => {
+    const el = await info();
+    const lista = document.querySelector('.prod-list')!;
+    expect(fireEvent.touchMove(lista)).toBe(true);
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS);
+
+    expect(fireEvent.touchMove(lista)).toBe(false);
+  });
+
+  // Chrome en Android dispara su "mantener apretado" (contextmenu) a los
+  // 400ms y desde ahí no manda el clic: si el arrastre levantara después, un
+  // toque soltado en ese hueco no haría nada.
+  it('el mantener apretado del navegador levanta el producto en el acto', async () => {
+    const el = await info();
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS - 50);
+    window.dispatchEvent(new Event('contextmenu'));
+    expect(document.body.classList.contains('arrastrando')).toBe(true);
+
+    soltar(100, 100);
+    expect(pedirDestino).toHaveBeenCalledTimes(1);
   });
 
   it('con mouse arranca al moverse, como siempre', async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { productos } from '../../api/productos';
 import type { Product } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -10,7 +10,7 @@ import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
 import { agregarADestino, crearYAgregar } from '../../quodom/agregarProducto';
-import { iniciarArrastre, type Blanco } from '../../quodom/arrastre';
+import { frenoDeScroll, iniciarArrastre, type Blanco } from '../../quodom/arrastre';
 import { DetalleProducto } from './DetalleProducto';
 import { useNombresQuodom } from '../../quodom/useNombresQuodom';
 import { abiertoDe } from '../../quodom/quodomAbierto';
@@ -73,6 +73,13 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   function tarjetaDe(el: Element): DOMRect | null {
     return el.closest('.prod-item')?.getBoundingClientRect() ?? null;
   }
+  // El freno del scroll del arrastre con el dedo va puesto desde que la lista
+  // existe (ver frenoDeScroll): agregado al apoyar el dedo, iOS no lo respeta.
+  const sacarFreno = useRef<(() => void) | null>(null);
+  const refLista = useCallback((el: HTMLUListElement | null) => {
+    sacarFreno.current?.();
+    sacarFreno.current = el ? frenoDeScroll(el) : null;
+  }, []);
   const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, pedirDestino, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
@@ -219,7 +226,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       {!err && !prods && <GrillaEsqueleto />}
       {prods && prods.length === 0 && <p className="prods-empty">No hay productos en esta subcategoría.</p>}
       {prods && prods.length > 0 && (
-        <ul className="prod-list">
+        <ul className="prod-list" ref={refLista}>
           {prods.map(p => (
             <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()}>
               {/* Tocar el producto abre lo mismo que abría el "···": a qué Quodom

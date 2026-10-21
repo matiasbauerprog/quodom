@@ -10,6 +10,24 @@ export const TOLERANCIA_TOQUE = 8;
 /** El fantasma va por encima del dedo: debajo, el dedo lo tapa a él y al destino. */
 const SOBRE_EL_DEDO = 48;
 
+// Si hay un producto levantado con el dedo: lo lee el freno del scroll.
+let frenando = false;
+
+/**
+ * El freno del scroll del arrastre con el dedo, puesto en la lista **al
+ * montarla** y no al apoyar el dedo: Safari de iOS decide en el `touchstart` si
+ * un `touchmove` se puede frenar, mirando los oyentes que ya existen, así que
+ * uno agregado en el `pointerdown` llega tarde y el arrastre scrollea la página.
+ * `touch-action` tampoco sirve (se lee al apoyar el dedo, y cambiarlo a mitad
+ * termina en `pointercancel`). Frena sólo con un producto levantado: antes, el
+ * scroll es del usuario. Devuelve con qué sacarlo.
+ */
+export function frenoDeScroll(el: HTMLElement): () => void {
+  const frenar = (e: TouchEvent) => { if (frenando) e.preventDefault(); };
+  el.addEventListener('touchmove', frenar, { passive: false });
+  return () => el.removeEventListener('touchmove', frenar);
+}
+
 /**
  * Qué destino del árbol hay bajo el puntero, si hay alguno.
  *
@@ -101,7 +119,6 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   // próximo clic en cualquier lado soltaría el producto.
   function limpiar() {
     if (espera !== null) { clearTimeout(espera); espera = null; }
-    window.removeEventListener('touchmove', frenarScroll);
     window.removeEventListener('contextmenu', sinMenu);
     window.removeEventListener('pointermove', mover);
     window.removeEventListener('pointerup', terminar);
@@ -110,6 +127,7 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     window.removeEventListener('keydown', alTeclear);
     window.removeEventListener('arrastre:abortar', abortar);
     document.body.classList.remove('arrastrando');
+    frenando = false;
     fantasma?.remove();
     limpiarResaltados();
     // Sólo si de verdad se había levantado: sin esto un clic que no llegó al
@@ -120,14 +138,26 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
 
   function abortar() { limpiar(); }
 
-  // Levantado el producto, el dedo arrastra y no scrollea. `touch-action` no
-  // sirve para esto: el navegador lo lee al apoyar el dedo, y cambiarlo a
-  // mitad del gesto termina en un `pointercancel`. Antes de levantar no frena
-  // nada: el scroll es del usuario.
-  function frenarScroll(e: TouchEvent) { if (vivo) e.preventDefault(); }
-
   // Dejar el dedo apretado abre el menú del navegador (copiar imagen, etc.).
-  function sinMenu(e: Event) { e.preventDefault(); }
+  // Además, Chrome en Android lo dispara a los 400ms y desde ahí ya no manda el
+  // clic: si todavía no levantamos, se levanta en el acto, o un toque soltado
+  // en ese hueco no haría nada.
+  function sinMenu(e: Event) {
+    e.preventDefault();
+    if (dedo && !vivo && espera !== null) {
+      clearTimeout(espera);
+      espera = null;
+      levantarConDedo();
+    }
+  }
+
+  function levantarConDedo() {
+    levantar();
+    frenando = true;
+    fantasma!.style.left = x0 + 'px';
+    fantasma!.style.top = y0 - SOBRE_EL_DEDO + 'px';
+    navigator.vibrate?.(15);
+  }
 
   function alTeclear(e: KeyboardEvent) { if (e.key === 'Escape') abortar(); }
 
@@ -202,12 +232,8 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   if (dedo) {
     espera = setTimeout(() => {
       espera = null;
-      levantar();
-      fantasma!.style.left = x0 + 'px';
-      fantasma!.style.top = y0 - SOBRE_EL_DEDO + 'px';
-      navigator.vibrate?.(15);
+      levantarConDedo();
     }, ESPERA_TOQUE_MS);
-    window.addEventListener('touchmove', frenarScroll, { passive: false });
     window.addEventListener('contextmenu', sinMenu);
   }
   window.addEventListener('pointermove', mover);

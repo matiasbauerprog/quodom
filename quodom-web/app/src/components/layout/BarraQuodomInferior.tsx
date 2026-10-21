@@ -78,16 +78,18 @@ export function BarraQuodomInferior() {
   useEffect(() => {
     if (!abierto) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false); };
-    // `pointerdown` y no `mousedown`: con el dedo, el mouse se simula recién
-    // al final del toque, y no siempre.
-    const onClickFuera = (e: PointerEvent) => {
+    // Con el clic y no al apoyar el dedo (`pointerdown`): apretar un producto
+    // para arrastrarlo también es tocar afuera, y cerraba la hoja que el usuario
+    // abrió justo para apuntar a un Quodom. Un arrastre no termina en clic (se
+    // lo traga), y un scroll tampoco: sólo un toque de verdad la cierra.
+    const onClickFuera = (e: MouseEvent) => {
       if (contenedor.current && !contenedor.current.contains(e.target as Node)) setAbierto(false);
     };
     window.addEventListener('keydown', onKey);
-    document.addEventListener('pointerdown', onClickFuera);
+    document.addEventListener('click', onClickFuera);
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.removeEventListener('pointerdown', onClickFuera);
+      document.removeEventListener('click', onClickFuera);
     };
   }, [abierto]);
 
@@ -200,10 +202,13 @@ export function BarraQuodomInferior() {
           )}
         </div>
       )}
-      {/* Mientras se arrastra, la barra cerrada es donde se suelta: lo mismo que
-          la pestaña del panel oculto en escritorio. Abierta, el árbol tiene los
-          destinos de verdad; en escritorio no se monta (ver useEsMovil). */}
-      {user && arrastrando && esMovil && !abierto && (
+      {/* Mientras se arrastra, la barra es donde se suelta: lo mismo que la
+          pestaña del panel oculto en escritorio. Sigue aunque la hoja se abra
+          (sola o a mano): quedarse quieto sobre el destino antes de soltar es lo
+          natural, y abrirse la hoja no puede llevárselo de abajo del dedo. Está
+          a la vista, así que no es un duplicado escondido del árbol. En
+          escritorio no se monta (ver useEsMovil). */}
+      {user && arrastrando && esMovil && (
         <DestinoCompacto arrastrando={arrastrando} ramas={ramas} className="barra-quodom-soltar" />
       )}
       <div className="barra-quodom-fila" ref={fila}>

@@ -319,7 +319,25 @@ describe('BarraQuodomInferior · como el panel oculto', () => {
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
 
     fireEvent.pointerDown(document.body);
+    fireEvent.click(document.body);
     expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // Apretar un producto para arrastrarlo es tocar afuera de la hoja: si eso la
+  // cerrara, la que el usuario abrió para apuntar a un Quodom no sobreviviría
+  // al arrastre.
+  it('apretar un producto para arrastrarlo no cierra la hoja abierta a mano', async () => {
+    const producto = document.createElement('button');
+    document.body.appendChild(producto);
+    montar('/?rubro=5');
+    fireEvent.click(await findToggle());
+
+    fireEvent.pointerDown(producto);
+    empezar();
+    terminar();
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+    producto.remove();
   });
 
   it('la hoja que abrió el arrastre se cierra al terminar', async () => {
@@ -334,6 +352,22 @@ describe('BarraQuodomInferior · como el panel oculto', () => {
 
     terminar();
     expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // Quedarse quieto sobre "Soltá para sumar a…" es lo natural antes de soltar:
+  // que la hoja se abra no puede llevarse el destino de abajo del dedo.
+  it('el destino de la barra sigue mientras la hoja se abrió sola', async () => {
+    abrirQuodom(5, 'p1');
+    montar('/?rubro=5');
+    await findToggle();
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(toggle());
+    vi.useFakeTimers();
+    empezar();
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 780 })); });
+    act(() => { vi.advanceTimersByTime(800); });
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+    expect(document.querySelector('.barra-quodom-soltar[data-destino="p1"]')).not.toBeNull();
   });
 
   it('pasar de largo sobre la barra no la abre', async () => {
