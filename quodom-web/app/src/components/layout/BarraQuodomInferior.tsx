@@ -14,6 +14,9 @@ import { AvisoAgregado } from './AvisoAgregado';
 import { DestinoCompacto } from './DestinoCompacto';
 import { useEsMovil } from './useEsMovil';
 import { useHojaDeslizable } from './useHojaDeslizable';
+import { CuerpoQuodomAbierto } from './CuerpoQuodomAbierto';
+import { useTieneDireccion } from '../../quodom/useTieneDireccion';
+import { DialogoProveedores } from '../../quodom/DialogoProveedores';
 import './BarraQuodomInferior.css';
 
 // A guest cart left over after a declined ('cancelar') migration, or one
@@ -56,9 +59,13 @@ export function BarraQuodomInferior() {
   // usuario a mano no se toca.
   const abiertaPorArrastre = useRef(false);
   const panel = useRef<HTMLDivElement>(null);
-  const altoHoja = useCallback(() => panel.current?.offsetHeight || window.innerHeight * 0.7, []);
+  const altoHoja = useCallback(() => panel.current?.offsetHeight || window.innerHeight * 0.4, []);
   const cambiarConGesto = useCallback((a: boolean) => { abiertaPorArrastre.current = false; setAbierto(a); }, []);
   const hoja = useHojaDeslizable({ abierta: abierto, onCambio: cambiarConGesto, alto: altoHoja });
+  const tieneDireccion = useTieneDireccion(!!user);
+  // Como en el panel de escritorio: vive acá y no en la tarjeta, porque el envío
+  // saca al Quodom del árbol y el diálogo se iría con él.
+  const [proveedoresDe, setProveedoresDe] = useState<string | null>(null);
 
   useEffect(() => {
     const releerInvitados = () => setInvitados(itemsCarritosInvitado());
@@ -76,20 +83,40 @@ export function BarraQuodomInferior() {
 
   useEffect(() => {
     if (!abierto) return;
+    // Tocar afuera NO la cierra (2026-10-21, lo pidió el usuario): abierta ocupa
+    // la mitad de abajo y la de arriba es para usar el catálogo — tocar `+` y ver
+    // la línea aparecer en el Quodom. Se cierra con la flecha o deslizando.
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false); };
-    // Con el clic y no al apoyar el dedo (`pointerdown`): apretar un producto
-    // para arrastrarlo también es tocar afuera, y cerraba la hoja que el usuario
-    // abrió justo para apuntar a un Quodom. Un arrastre no termina en clic (se
-    // lo traga), y un scroll tampoco: sólo un toque de verdad la cierra.
-    const onClickFuera = (e: MouseEvent) => {
-      if (contenedor.current && !contenedor.current.contains(e.target as Node)) setAbierto(false);
-    };
     window.addEventListener('keydown', onKey);
-    document.addEventListener('click', onClickFuera);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.removeEventListener('click', onClickFuera);
-    };
+    return () => window.removeEventListener('keydown', onKey);
+  }, [abierto]);
+
+  // Abierta, el catálogo le reserva abajo su alto además del de la barra: si
+  // no, los últimos productos quedan tapados por la hoja y no hay cómo llegar.
+  useEffect(() => {
+    const el = panel.current;
+    if (!abierto || !el || typeof ResizeObserver === 'undefined') return;
+    const raiz = document.documentElement;
+    const medir = () => raiz.style.setProperty('--alto-hoja', el.offsetHeight + 'px');
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    medir();
+    return () => { ro.disconnect(); raiz.style.removeProperty('--alto-hoja'); };
+  }, [abierto]);
+
+  // Abrirla a mano acomoda el catálogo: las subcategorías suben hasta debajo
+  // del nav (lo pidió el usuario), así lo que queda a la vista arriba de la
+  // hoja es lo que se usa para buscar. Corre después del efecto de arriba, con
+  // el espacio de la hoja ya reservado al pie, que es lo que deja scrollear
+  // hasta ahí en una página corta. No si la abrió un arrastre: movería la
+  // página debajo del dedo.
+  useEffect(() => {
+    if (!abierto || abiertaPorArrastre.current) return;
+    const tabs = document.querySelector('.subtabs');
+    if (!tabs) return;
+    const nav = document.querySelector('.appbar')?.getBoundingClientRect().height ?? 0;
+    const top = window.scrollY + tabs.getBoundingClientRect().top - nav - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   }, [abierto]);
 
   // Con el producto quieto sobre la barra un rato, la hoja se abre sola para
@@ -126,7 +153,6 @@ export function BarraQuodomInferior() {
 
   // El alto real de la barra, para que el contenido le reserve justo eso: con
   // el texto en dos renglones mide más que los 72px fijos de antes.
-  const hayFila = list !== null;
   useEffect(() => {
     const el = fila.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -136,16 +162,16 @@ export function BarraQuodomInferior() {
     ro.observe(el);
     medir();
     return () => { ro.disconnect(); raiz.style.removeProperty('--alto-barra'); };
-  }, [hayFila]);
+  }, []);
 
   const enArmado = ramas.reduce((n, r) => n + r.quodoms.length, 0);
   const total = enArmado + invitados.length;
 
-  // La barra está siempre, con Quodoms o sin ellos: es la única entrada al panel
-  // en celular, y esconderla justo cuando no hay nada deja al que recién llega
-  // sin ver que el panel existe. Lo único que espera es la primera respuesta,
-  // para no mostrar "ninguno" un instante antes de mostrar los que hay.
-  if (list === null) return null;
+  // La barra está siempre, con Quodoms o sin ellos y desde el primer momento: es
+  // la única entrada al panel en celular. Antes esperaba la primera respuesta,
+  // y con Render dormido eso era medio minuto sin barra —el usuario no entendía
+  // qué hacía para que apareciera—. Mientras carga dice eso, y no "ninguno".
+  const cargando = list === null;
 
   // A qué Quodom suma **el rubro que estoy mirando**. Antes listaba el abierto
   // de todos los rubros, así que en celular decía "Sumando a: Limpieza" todo el
@@ -156,6 +182,7 @@ export function BarraQuodomInferior() {
   const abiertoAcá = rama?.quodoms.find(q => q.id === abiertoDe(rama.idrubro)) ?? null;
 
   const etiqueta = (() => {
+    if (cargando) return { prefijo: null, texto: 'Cargando tus Quodoms…' };
     if (enPantalla !== null) {
       // El nombre sale de la rama; si ese rubro no tiene rama (retirado, o la
       // lista de rubros no cargó), del catálogo local.
@@ -189,9 +216,17 @@ export function BarraQuodomInferior() {
           {/* Lo que se agarra para bajarla: el contenido scrollea, así que el
               gesto de cerrar necesita un lugar propio. */}
           <div className="barra-quodom-manija" data-testid="barra-manija" aria-hidden="true" onPointerDown={hoja.onPointerDown} />
-          {total === 0 && <PanelVacio />}
+          {cargando
+            ? <p className="barra-quodom-cargando">Cargando tus Quodoms…</p>
+            : total === 0 && <PanelVacio />}
           {ramas.length > 0 && (
-            <ArbolQuodoms ramas={ramas} onCambio={refresh} />
+            <ArbolQuodoms
+              ramas={ramas}
+              onCambio={refresh}
+              renderAbierto={q => (
+                <CuerpoQuodomAbierto q={q} tieneDireccion={tieneDireccion} onCambio={refresh} onCotizar={x => setProveedoresDe(x.id)} />
+              )}
+            />
           )}
           {invitados.length > 0 && (
             <PanelQuodomsActivos items={invitados} onNavegar={() => setAbierto(false)} />
@@ -221,13 +256,29 @@ export function BarraQuodomInferior() {
         onClick={() => { if (!hoja.consumirClic()) setAbierto(a => !a); }}
       >
         {total > 0 && <span className="barra-quodom-count">{total}</span>}
+        {/* Abierta, el destino ya está a la vista en la tarjeta blanca de la
+            hoja: repetirlo acá le saca lugar al catálogo. */}
         <span className="barra-quodom-label">
-          {etiqueta.prefijo && <span className="barra-quodom-prefijo">{etiqueta.prefijo}</span>}
-          <span className="barra-quodom-destino">{etiqueta.texto}</span>
+          {abierto ? (
+            <span className="barra-quodom-destino">Mis Quodoms</span>
+          ) : (
+            <>
+              {etiqueta.prefijo && <span className="barra-quodom-prefijo">{etiqueta.prefijo}</span>}
+              <span className="barra-quodom-destino">{etiqueta.texto}</span>
+            </>
+          )}
         </span>
         <span className="barra-quodom-arrow" aria-hidden="true">{abierto ? '⌄' : '⌃'}</span>
       </button>
       </div>
+      {proveedoresDe && (
+        <DialogoProveedores
+          idquodom={proveedoresDe}
+          onCerrar={() => setProveedoresDe(null)}
+          onEnviado={() => { window.dispatchEvent(new Event('quodom:changed')); refresh(); }}
+          onEnviadoSinProveedor={() => setProveedoresDe(null)}
+        />
+      )}
     </div>
   );
 }

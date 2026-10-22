@@ -115,6 +115,33 @@
 .arbol-crear:hover:not(:disabled),
 .arbol-crear:focus-visible { color: #fff; text-decoration: underline; }
 .arbol-crear:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Lo que ocupa el lugar del Quodom nuevo mientras el servidor contesta y la
+   lista se recarga: con la forma de un Quodom del árbol, para que se lea como
+   "ya está, llegando" y no como un botón trabado. */
+.arbol-creando {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border-top-left-radius: var(--radius-hoja-tl);
+  border-bottom-right-radius: var(--radius-hoja-br);
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-work);
+  font-size: 13px;
+}
+.arbol-creando-punto {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-exito);
+  animation: arbol-creando 0.9s ease-in-out infinite alternate;
+}
+@keyframes arbol-creando { from { opacity: 0.25; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .arbol-creando-punto { animation: none; } }
 .arbol-crear:disabled { cursor: default; }
 .arbol-crear-err { margin: 0; padding-left: var(--sp-1); font-size: 13px; color: #FF9AA2; }
 

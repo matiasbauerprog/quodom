@@ -58,8 +58,10 @@
   background: var(--color-panel-oscuro);
   /* svh: el alto con la barra del navegador a la vista, así no salta cuando
      aparece o se esconde. La línea con vh es la reserva. */
-  max-height: 70vh;
-  max-height: 70svh;
+  /* El 40% (lo pidió el usuario; con la mitad no quedaba lugar para buscar): el
+     resto es para seguir usando el catálogo con la hoja abierta. */
+  max-height: 40vh;
+  max-height: 40svh;
   overflow-y: auto;
   overscroll-behavior: contain;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
@@ -67,6 +69,9 @@
   border-top-right-radius: 14px;
   transition: transform .2s ease-out;
 }
+/* Hasta la primera respuesta del servidor, que con Render dormido tarda. */
+.barra-quodom-cargando { margin: 0; padding: var(--sp-3) 0; color: rgba(255, 255, 255, 0.7); font-size: var(--fs-small); }
+
 /* Siguiendo al dedo, sin transición: si no, la hoja queda atrás. */
 .barra-quodom-panel-moviendo { transition: none; }
 @media (prefers-reduced-motion: reduce) { .barra-quodom-panel { transition: none; } }
@@ -159,3 +164,45 @@
 @media (min-width: 1025px) {
   .barra-quodom-fila, .barra-quodom-panel, .barra-quodom-soltar, .barra-quodom-agregado { display: none; }
 }
+
+/* Compacta (2026-10-21, lo pidió el usuario: "hay que hacer rendir al máximo el
+   espacio del celular"). El árbol es el mismo del panel de escritorio, con sus
+   medidas pensadas para una columna de 360px a la vista entera; acá comparte la
+   pantalla con el catálogo, así que todo baja más o menos un 20%: aire, letra y
+   alto de cada fila. Los botones que se tocan (+ / − / quitar) no bajan de 28px. */
+.barra-quodom-panel { gap: var(--sp-2); padding: 0 var(--sp-3) var(--sp-3); }
+.barra-quodom-panel .barra-quodom-manija { margin: 0 calc(-1 * var(--sp-3)); padding: 8px 0 4px; }
+.barra-quodom-panel .arbol { gap: var(--sp-3); }
+.barra-quodom-panel .arbol-rama { gap: 6px; }
+.barra-quodom-panel .arbol-rama-foco { padding: var(--sp-2); }
+.barra-quodom-panel .rr { min-height: 26px; font-size: 12px; }
+.barra-quodom-panel .arbol-quodom { min-height: 40px; padding: 6px var(--sp-3); gap: var(--sp-2); }
+.barra-quodom-panel .arbol-nombre { font-size: 13px; }
+.barra-quodom-panel .arbol-radio { width: 14px; height: 14px; }
+.barra-quodom-panel .tq-cab { padding: var(--sp-2) var(--sp-3) 6px; gap: 4px; }
+.barra-quodom-panel .tq-nombre,
+.barra-quodom-panel .tq-nombre-input { font-size: 14px; }
+.barra-quodom-panel .tq-radio { width: 14px; height: 14px; }
+.barra-quodom-panel .tq-meta { padding-left: 24px; }
+.barra-quodom-panel .tq-chip { padding: 2px 6px; font-size: 10px; }
+.barra-quodom-panel .tq-cuenta { font-size: 12px; }
+.barra-quodom-panel .lqs-lista { padding: 0 var(--sp-3); }
+.barra-quodom-panel .lqs-linea { gap: 6px; padding: 5px 0; }
+.barra-quodom-panel .lqs-nombre { font-size: 12px; gap: 3px; }
+.barra-quodom-panel .lqs-falta { min-height: 24px; padding: 0 8px; }
+.barra-quodom-panel .lqs-btn,
+.barra-quodom-panel .lqs-quitar { width: 28px; height: 28px; font-size: 15px; }
+.barra-quodom-panel .lqs-cant { min-width: 18px; font-size: 12px; }
+.barra-quodom-panel .mq-sidebar-enviar { gap: 6px; padding: var(--sp-2) var(--sp-3); }
+.barra-quodom-panel .mq-sidebar-enviar .btn { min-height: 40px; font-size: var(--fs-small); }
+.barra-quodom-panel .mq-sidebar-motivo { gap: 6px; font-size: 12px; }
+.barra-quodom-panel .mq-sidebar-icono { width: 16px; height: 16px; }
+.barra-quodom-panel .arbol-crear,
+.barra-quodom-panel .arbol-creando { font-size: 12px; }
+.barra-quodom-panel .arbol-creando { padding: 6px var(--sp-3); }
+
+/* La barra misma, también un escalón más baja. */
+.barra-quodom { gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); padding-bottom: calc(var(--sp-2) + env(safe-area-inset-bottom, 0px)); }
+.barra-quodom-count { width: 26px; height: 26px; font-size: 13px; }
+.barra-quodom-label { font-size: 14px; }
+.barra-quodom-arrow { font-size: 18px; }

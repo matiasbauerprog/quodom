@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import type { Quodom } from '../../api/types';
 import { LineasQuodomSidebar } from './LineasQuodomSidebar';
+import { CuerpoQuodomAbierto } from './CuerpoQuodomAbierto';
 import { ArbolQuodoms, cuentaProductos } from './ArbolQuodoms';
 import { RotuloRubro } from './RotuloRubro';
 import { TarjetaDestino } from './TarjetaDestino';
@@ -10,7 +11,6 @@ import { AvisoSinGuardar } from '../AvisoSinGuardar';
 import { PanelVacio } from './PanelVacio';
 import { resumenCarritosInvitado, type ResumenInvitado } from '../../guest/resumenInvitado';
 import { setGuestDescripcion } from '../../guest/guestQuodom';
-import { bloqueoDeEnvio, conFaltaConcreta, type FaltaAtributo } from '../../quodom/bloqueosEnvio';
 import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
 import { useTieneDireccion } from '../../quodom/useTieneDireccion';
 import { useArrastreActivo } from '../../quodom/useArrastreActivo';
@@ -32,23 +32,9 @@ export function MisQuodomsSidebar() {
   // adentro, el diálogo se desmontaría justo cuando el comprador va por el
   // segundo proveedor.
   const [proveedoresDe, setProveedoresDe] = useState<string | null>(null);
-  // Qué línea frena el envío de cada Quodom, para nombrarla en el motivo. La
-  // reportan las listas abiertas, que son las únicas que tienen las líneas.
-  const [faltas, setFaltas] = useState<Record<string, FaltaAtributo | null>>({});
   const { list, ramas, refresh } = useQuodomsEnArmado(user?.id);
   const arrastrando = useArrastreActivo();
   const panelCerrado = usePanelCerrado();
-
-  // Devolver `prev` cuando no cambió nada es lo que corta el ciclo: la lista
-  // reporta en un efecto, así que un objeto nuevo en cada pasada volvería a
-  // renderizar al padre para siempre.
-  const reportarFalta = useCallback((idquodom: string, falta: FaltaAtributo | null) => {
-    setFaltas(prev => {
-      const antes = prev[idquodom] ?? null;
-      if (antes?.producto === falta?.producto && antes?.atributo === falta?.atributo) return prev;
-      return { ...prev, [idquodom]: falta };
-    });
-  }, []);
 
   // Los carritos de invitado se releen siempre: sobreviven a un login que
   // canceló la migración, así que también hay que mostrarlos con sesión.
@@ -162,47 +148,9 @@ export function MisQuodomsSidebar() {
         <ArbolQuodoms
           ramas={ramas}
           onCambio={refresh}
-          renderAbierto={q => {
-            // El bloqueo lo decide el resumen (es el que coincide con lo que va
-            // a contestar el backend); las líneas sólo le ponen nombre.
-            const bloqueo = conFaltaConcreta(bloqueoDeEnvio(q, tieneDireccion), faltas[q.id] ?? null);
-            return (
-              <>
-                <LineasQuodomSidebar
-                  modo="servidor"
-                  idquodom={q.id}
-                  onChange={refresh}
-                  onFalta={falta => reportarFalta(q.id, falta)}
-                />
-                <div className="mq-sidebar-enviar">
-                  {bloqueo ? (
-                    <p className="mq-sidebar-motivo">
-                      <span className="mq-sidebar-icono" aria-hidden="true">!</span>
-                      <span>
-                        {bloqueo.texto}{' '}
-                        {bloqueo.motivo === 'direccion'
-                          ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
-                          : <span>{bloqueo.accion}</span>}
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="mq-sidebar-motivo mq-sidebar-motivo-listo">
-                      <span className="mq-sidebar-icono mq-sidebar-icono-ok" aria-hidden="true">✓</span>
-                      <span>Listo para pedir presupuesto.</span>
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-block btn-whatsapp"
-                    disabled={!!bloqueo}
-                    onClick={() => { if (!bloqueo) enviar(q); }}
-                  >
-                    Cotizar por WhatsApp
-                  </button>
-                </div>
-              </>
-            );
-          }}
+          renderAbierto={q => (
+            <CuerpoQuodomAbierto q={q} tieneDireccion={tieneDireccion} onCambio={refresh} onCotizar={enviar} />
+          )}
         />
       )}
 

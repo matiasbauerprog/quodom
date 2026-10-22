@@ -226,11 +226,33 @@
 .prod-item-row .prod-otro { align-self: center; }
 .prod-item-row .prod-botones { align-items: center; }
 
-/* Móvil: tantas columnas como entren (dos en un celular, cuatro en una tablet)
-   y el nombre en hasta tres renglones, que con dos se cortaba a mitad. */
+/* Móvil: filas, foto chica a la izquierda (2026-10-21, lo pidió el usuario).
+   Con la hoja de Quodoms abierta el catálogo tiene media pantalla, y la tarjeta
+   con la foto arriba dejaba ver uno y medio; en fila entran cuatro o cinco. Una
+   columna en el celular, dos en una tablet. La foto va fuera del flujo, contra
+   el borde izquierdo, para que el nombre y el pie (medida y +) queden los dos a
+   su derecha: si fuera parte de la fila del botón, el pie bajaría debajo de ella. */
 @media (max-width: 1024px) {
-  .prod-list { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); max-width: 720px; }
-  .prod-name { -webkit-line-clamp: 3; line-clamp: 3; }
+  .prod-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); max-width: 720px; }
+  .prod-item:not(.prod-item-row) {
+    --foto-fila: 56px;
+    gap: var(--sp-1);
+    min-height: calc(var(--foto-fila) + 2 * var(--sp-2));
+    padding-left: calc(var(--foto-fila) + var(--sp-2) + var(--sp-3));
+  }
+  .prod-item:not(.prod-item-row) .prod-media {
+    position: absolute;
+    left: var(--sp-2);
+    top: var(--sp-2);
+    width: var(--foto-fila);
+  }
+  .prod-item:not(.prod-item-row) .prod-name { min-height: 0; font-size: 13px; }
+  /* Los dos atributos (litros y marca, color y litros) en el mismo renglón que
+     el +: uno debajo del otro, cada producto con dos sumaba una fila entera. */
+  .prod-item:not(.prod-item-row) .prod-foot { align-items: center; }
+  .prod-item:not(.prod-item-row) .prod-attrs { flex-direction: row; }
+  .prod-item:not(.prod-item-row) .prod-attr { flex: 1 1 0; }
+  .prod-item:hover { transform: none; }
 }
 @media (min-width: 1025px) {
   .prod-list { gap: var(--sp-3); }

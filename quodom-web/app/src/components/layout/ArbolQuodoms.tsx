@@ -79,13 +79,18 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
   // El recién creado arranca con el nombre en edición: el que se le pone por
   // defecto sirve para que exista, no para distinguirlo de los otros.
   const [recienCreado, setRecienCreado] = useState<string | null>(null);
-  const [creando, setCreando] = useState<number | null>(null);
+  // El que se está creando, desde el toque hasta que la recarga lo trae: en
+  // celular eso tarda, y sin nada en pantalla parecía que no había andado.
+  const [creando, setCreando] = useState<{ idrubro: number; idquodom: string | null } | null>(null);
   const [errCrear, setErrCrear] = useState<{ idrubro: number; texto: string } | null>(null);
   // Una sola vez: en cuanto la tarjeta se montó editando, se olvida, así
   // plegarla y desplegarla después no la vuelve a abrir en edición.
   useEffect(() => {
     if (recienCreado && ramas.some(r => r.quodoms.some(q => q.id === recienCreado))) setRecienCreado(null);
   }, [ramas, recienCreado]);
+  useEffect(() => {
+    if (creando?.idquodom && ramas.some(r => r.quodoms.some(q => q.id === creando.idquodom))) setCreando(null);
+  }, [ramas, creando]);
   useEffect(() => {
     // `ramas` vacío es "todavía no cargó": acomodar ahora daría por hecho que el
     // rubro no tiene Quodoms, y no se volvería a intentar cuando lleguen.
@@ -107,8 +112,19 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
   // pidió el usuario: aparecía con uno abierto que no había elegido ahora). Como
   // abierto y destino son lo mismo, el rubro queda sin destino y el próximo `+`
   // pregunta a cuál va.
+  // Desplegar uno también lo trae a la vista, con su "+ Nuevo Quodom": en la
+  // hoja de celular el último rubro se abría fuera de pantalla.
+  const aTraer = useRef<number | null>(null);
+  const secciones = useRef<Record<number, HTMLElement | null>>({});
+  useEffect(() => {
+    if (aTraer.current === null) return;
+    secciones.current[aTraer.current]?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    aTraer.current = null;
+  }, [plegados]);
+
   function alternarRubro(idrubro: number) {
     const desplegando = !!plegados[idrubro];
+    if (desplegando) aTraer.current = idrubro;
     setPlegados(p => ({ ...p, [idrubro]: !p[idrubro] }));
     if (desplegando && abiertoDe(idrubro)) {
       cerrarQuodom(idrubro);
@@ -132,16 +148,17 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
   // próximo `+`).
   async function crearEn(idrubro: number) {
     if (creando !== null) return;
-    setCreando(idrubro); setErrCrear(null);
+    setCreando({ idrubro, idquodom: null }); setErrCrear(null);
     try {
       const r = await quodomApi.create({ descripcion: 'Nuevo Quodom de ' + nombreRubro(idrubro), idrubro });
+      // Queda a la vista hasta que la recarga lo traiga (ver el efecto de arriba).
+      setCreando({ idrubro, idquodom: r.idquodom });
       setRecienCreado(r.idquodom);
       abrirQuodom(idrubro, r.idquodom);
       window.dispatchEvent(new Event('quodom:changed'));
       onCambio();
     } catch (e) {
       setErrCrear({ idrubro, texto: e instanceof ApiError ? e.message : 'No se pudo crear el Quodom.' });
-    } finally {
       setCreando(null);
     }
   }
@@ -170,6 +187,7 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
         return (
           <section
             key={rama.idrubro}
+            ref={el => { secciones.current[rama.idrubro] = el; }}
             className={'arbol-rama'
               + (destinoDelArrastre ? ' arbol-rama-destino' : '')
               + (ajeno ? ' arbol-rama-ajena' : '')
@@ -233,14 +251,20 @@ export function ArbolQuodoms({ ramas, onCambio, renderAbierto }: {
             {/* Discreto a propósito: es una acción de vez en cuando, y en el
                 panel lo que manda es el trabajo en curso. Mientras se arrastra
                 lo reemplaza la zona de soltar, que hace lo mismo. */}
-            {desplegado && !arrastrando && (
+            {desplegado && creando?.idrubro === rama.idrubro && (
+              <p className="arbol-creando" role="status">
+                <span className="arbol-creando-punto" aria-hidden="true" />
+                Creando {'Nuevo Quodom de ' + nombreRubro(rama.idrubro)}…
+              </p>
+            )}
+            {desplegado && !arrastrando && creando?.idrubro !== rama.idrubro && (
               <button
                 type="button"
                 className="arbol-crear"
                 disabled={creando !== null}
                 onClick={() => crearEn(rama.idrubro)}
               >
-                {creando === rama.idrubro ? 'Creando…' : '+ Nuevo Quodom'}
+                + Nuevo Quodom
               </button>
             )}
             {errCrear?.idrubro === rama.idrubro && (

@@ -84,11 +84,24 @@ describe('BarraQuodomInferior', () => {
     expect(screen.getByText(/armá tu primer quodom/i)).toBeInTheDocument();
   });
 
-  it('no parpadea: espera la primera respuesta antes de mostrarse', () => {
+  // Antes esperaba la primera respuesta para no mostrar "ninguno" un instante
+  // antes de los que hay. Con Render dormido esa respuesta tarda medio minuto,
+  // y en todo ese rato el celular no tenía barra: parecía que no existía.
+  it('está desde el primer momento, cargando, sin decir "ninguno"', () => {
     misQuodom.mockReturnValue(new Promise(() => {}));
-    const { container } = montar();
+    montar();
 
-    expect(container.querySelector('.barra-quodom')).toBeNull();
+    expect(toggle()).toHaveTextContent(/cargando tus quodoms/i);
+    expect(screen.queryByText(/ningún quodom/i)).toBeNull();
+  });
+
+  it('abierta mientras carga, lo dice en vez de ofrecer armar el primero', () => {
+    misQuodom.mockReturnValue(new Promise(() => {}));
+    montar();
+    fireEvent.click(toggle());
+
+    expect(screen.getByRole('region', { name: /Quodoms activos/i })).toHaveTextContent(/cargando/i);
+    expect(screen.queryByText(/armá tu primer quodom/i)).toBeNull();
   });
 
   it('shows the number of quodoms in armado, collapsed', async () => {
@@ -318,16 +331,6 @@ describe('BarraQuodomInferior · como el panel oculto', () => {
     });
 
     expect(screen.getByRole('status')).toHaveTextContent('Latex agregado a Casa');
-  });
-
-  it('tocar afuera la cierra', async () => {
-    montar();
-    fireEvent.click(await findToggle());
-    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
-
-    fireEvent.pointerDown(document.body);
-    fireEvent.click(document.body);
-    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
   });
 
   // Apretar un producto para arrastrarlo es tocar afuera de la hoja: si eso la
