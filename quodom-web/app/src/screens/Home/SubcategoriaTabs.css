@@ -1,4 +1,6 @@
+.subtabs-marco { position: relative; width: 100%; max-width: 640px; }
 .subtabs {
+  position: relative;
   display: flex;
   gap: var(--sp-2);
   width: 100%;
@@ -40,6 +42,7 @@
 }
 
 @media (min-width: 1025px) {
+  .subtabs-marco { max-width: 720px; }
   .subtabs { max-width: 720px; flex-wrap: wrap; overflow-x: visible; justify-content: center; }
 }
 
@@ -49,3 +52,26 @@
   .subtabs { scrollbar-width: none; }
   .subtabs::-webkit-scrollbar { display: none; }
 }
+
+/* La flecha de "hay más": ocupa el lugar de la pestaña que quedó cortada contra
+   el borde (ver SubcategoriaTabs), así nunca se ve una partida a la mitad. */
+.subtabs-mas {
+  position: absolute;
+  right: 2px;
+  top: var(--sp-1);
+  width: 30px;
+  height: 37px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-tarjeta);
+  box-shadow: var(--shadow-card);
+  color: var(--color-texto);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.subtabs-mas:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 2px; }
