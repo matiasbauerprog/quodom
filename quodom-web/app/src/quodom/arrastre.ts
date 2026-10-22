@@ -58,6 +58,9 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   /** Con el dedo: se levantó y se soltó sin moverlo. Es un toque lento, no un
    *  soltado en el vacío, y tiene que hacer lo que hace el toque. */
   onToqueLento?: () => void;
+  /** La tarjeta que se levanta: se marca mientras el dedo espera y queda como
+   *  hueco mientras se arrastra, y de ahí sale la foto del fantasma. */
+  origen?: HTMLElement;
 }): void {
   if (ev.button !== 0) return;
   // Con el dedo el arrastre arranca dejándolo apretado (ESPERA_TOQUE_MS). Hasta
@@ -83,6 +86,8 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   function levantar() {
     vivo = true;
     document.body.classList.add('arrastrando');
+    opts.origen?.classList.remove('arrastre-cargando');
+    opts.origen?.classList.add('arrastre-origen');
     // El panel necesita saber qué se arrastra para nombrarlo y para apagar los
     // rubros donde no se puede soltar. Se avisa al levantar y no al apretar: un
     // clic sin movimiento no es un arrastre y no tiene que mover nada de lugar.
@@ -98,7 +103,18 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     rubro.textContent = opts.nombreRubro;
     const nombre = document.createElement('span');
     nombre.textContent = opts.nombre;
-    interior.append(rubro, nombre);
+    const texto = document.createElement('span');
+    texto.className = 'arrastre-texto';
+    texto.append(rubro, nombre);
+    const src = opts.origen?.querySelector('img')?.getAttribute('src');
+    if (src) {
+      const foto = document.createElement('img');
+      foto.className = 'arrastre-foto';
+      foto.src = src;
+      foto.alt = '';
+      interior.appendChild(foto);
+    }
+    interior.appendChild(texto);
     fantasma.appendChild(interior);
     document.body.appendChild(fantasma);
   }
@@ -127,6 +143,7 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     window.removeEventListener('keydown', alTeclear);
     window.removeEventListener('arrastre:abortar', abortar);
     document.body.classList.remove('arrastrando');
+    opts.origen?.classList.remove('arrastre-cargando', 'arrastre-origen');
     frenando = false;
     fantasma?.remove();
     limpiarResaltados();
@@ -230,6 +247,9 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   }
 
   if (dedo) {
+    // Mientras el dedo espera, la tarjeta se hunde de a poco: así se ve que
+    // dejarlo apretado está haciendo algo antes de que el producto se levante.
+    opts.origen?.classList.add('arrastre-cargando');
     espera = setTimeout(() => {
       espera = null;
       levantarConDedo();

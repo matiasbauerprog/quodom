@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { blancoBajo, iniciarArrastre } from '../arrastre';
+import { blancoBajo, iniciarArrastre, ESPERA_TOQUE_MS } from '../arrastre';
 
 function evento(x: number, y: number) {
   return new PointerEvent('pointerdown', { clientX: x, clientY: y, button: 0, bubbles: true });
@@ -272,5 +272,67 @@ describe('soltar con el DOM que cambia bajo el puntero', () => {
     expect(onSoltar).not.toHaveBeenCalled();
     expect(document.body.classList.contains('arrastrando')).toBe(false);
     expect(document.querySelector('.arrastre-fantasma')).toBeNull();
+  });
+});
+
+// La tarjeta que se levanta tiene que verse levantada: antes el único rastro era
+// un rectángulo chico que aparecía de golpe y la tarjeta seguía igual, así que
+// con el dedo no se notaba cuándo ya se podía arrastrar.
+describe('la tarjeta de origen', () => {
+  function tarjeta() {
+    document.body.innerHTML = '<li id="t"><img src="/img/producto/137" alt="" /></li>';
+    return document.getElementById('t')!;
+  }
+  function conDedo(x = 100, y = 100) {
+    return new PointerEvent('pointerdown', { clientX: x, clientY: y, button: 0, pointerType: 'touch', bubbles: true });
+  }
+
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { window.dispatchEvent(new Event('arrastre:abortar')); vi.useRealTimers(); });
+
+  it('con el dedo apretado se marca como cargando, y al levantar queda como hueco', () => {
+    const origen = tarjeta();
+    iniciarArrastre(conDedo(), { idrubro: 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar: vi.fn(), origen });
+    expect(origen).toHaveClass('arrastre-cargando');
+
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS);
+    expect(origen).not.toHaveClass('arrastre-cargando');
+    expect(origen).toHaveClass('arrastre-origen');
+  });
+
+  it('si el dedo se mueve antes de tiempo, era scroll: no queda marcada', () => {
+    const origen = tarjeta();
+    iniciarArrastre(conDedo(), { idrubro: 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar: vi.fn(), origen });
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 140, pointerType: 'touch' }));
+
+    expect(origen).not.toHaveClass('arrastre-cargando');
+    expect(origen).not.toHaveClass('arrastre-origen');
+  });
+
+  it('al soltar vuelve a la normalidad', () => {
+    const origen = tarjeta();
+    iniciarArrastre(conDedo(), { idrubro: 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar: vi.fn(), origen });
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS);
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 100, clientY: 100, pointerType: 'touch' }));
+
+    expect(origen).not.toHaveClass('arrastre-origen');
+  });
+
+  it('el fantasma lleva la foto del producto', () => {
+    const origen = tarjeta();
+    iniciarArrastre(conDedo(), { idrubro: 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar: vi.fn(), origen });
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS);
+
+    const foto = document.querySelector<HTMLImageElement>('.arrastre-fantasma img');
+    expect(foto?.getAttribute('src')).toBe('/img/producto/137');
+  });
+
+  it('con el mouse no hay espera: se marca al levantar', () => {
+    const origen = tarjeta();
+    iniciarArrastre(evento(100, 100), { idrubro: 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar: vi.fn(), origen });
+    expect(origen).not.toHaveClass('arrastre-cargando');
+
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 140, clientY: 160 }));
+    expect(origen).toHaveClass('arrastre-origen');
   });
 });
