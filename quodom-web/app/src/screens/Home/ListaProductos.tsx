@@ -192,6 +192,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       idrubro: p.categoriaPadre,
       nombre: p.nombreproducto,
       nombreRubro: nombreRubro(p.categoriaPadre),
+      origen: tarjeta,
       onSoltar: blanco => { void soltarEn(p, blanco); },
       onToqueLento: () => {
         const info = tarjeta.querySelector<HTMLElement>('.prod-info');
