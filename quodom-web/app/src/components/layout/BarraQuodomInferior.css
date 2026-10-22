@@ -69,6 +69,9 @@
   border-top-right-radius: 14px;
   transition: transform .2s ease-out;
 }
+/* Hasta la primera respuesta del servidor, que con Render dormido tarda. */
+.barra-quodom-cargando { margin: 0; padding: var(--sp-3) 0; color: rgba(255, 255, 255, 0.7); font-size: var(--fs-small); }
+
 /* Siguiendo al dedo, sin transición: si no, la hoja queda atrás. */
 .barra-quodom-panel-moviendo { transition: none; }
 @media (prefers-reduced-motion: reduce) { .barra-quodom-panel { transition: none; } }

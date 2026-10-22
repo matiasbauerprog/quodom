@@ -138,7 +138,6 @@ export function BarraQuodomInferior() {
 
   // El alto real de la barra, para que el contenido le reserve justo eso: con
   // el texto en dos renglones mide más que los 72px fijos de antes.
-  const hayFila = list !== null;
   useEffect(() => {
     const el = fila.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -148,16 +147,16 @@ export function BarraQuodomInferior() {
     ro.observe(el);
     medir();
     return () => { ro.disconnect(); raiz.style.removeProperty('--alto-barra'); };
-  }, [hayFila]);
+  }, []);
 
   const enArmado = ramas.reduce((n, r) => n + r.quodoms.length, 0);
   const total = enArmado + invitados.length;
 
-  // La barra está siempre, con Quodoms o sin ellos: es la única entrada al panel
-  // en celular, y esconderla justo cuando no hay nada deja al que recién llega
-  // sin ver que el panel existe. Lo único que espera es la primera respuesta,
-  // para no mostrar "ninguno" un instante antes de mostrar los que hay.
-  if (list === null) return null;
+  // La barra está siempre, con Quodoms o sin ellos y desde el primer momento: es
+  // la única entrada al panel en celular. Antes esperaba la primera respuesta,
+  // y con Render dormido eso era medio minuto sin barra —el usuario no entendía
+  // qué hacía para que apareciera—. Mientras carga dice eso, y no "ninguno".
+  const cargando = list === null;
 
   // A qué Quodom suma **el rubro que estoy mirando**. Antes listaba el abierto
   // de todos los rubros, así que en celular decía "Sumando a: Limpieza" todo el
@@ -168,6 +167,7 @@ export function BarraQuodomInferior() {
   const abiertoAcá = rama?.quodoms.find(q => q.id === abiertoDe(rama.idrubro)) ?? null;
 
   const etiqueta = (() => {
+    if (cargando) return { prefijo: null, texto: 'Cargando tus Quodoms…' };
     if (enPantalla !== null) {
       // El nombre sale de la rama; si ese rubro no tiene rama (retirado, o la
       // lista de rubros no cargó), del catálogo local.
@@ -201,7 +201,9 @@ export function BarraQuodomInferior() {
           {/* Lo que se agarra para bajarla: el contenido scrollea, así que el
               gesto de cerrar necesita un lugar propio. */}
           <div className="barra-quodom-manija" data-testid="barra-manija" aria-hidden="true" onPointerDown={hoja.onPointerDown} />
-          {total === 0 && <PanelVacio />}
+          {cargando
+            ? <p className="barra-quodom-cargando">Cargando tus Quodoms…</p>
+            : total === 0 && <PanelVacio />}
           {ramas.length > 0 && (
             <ArbolQuodoms
               ramas={ramas}
