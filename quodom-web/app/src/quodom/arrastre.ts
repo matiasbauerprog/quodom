@@ -169,6 +169,9 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   }
 
   function levantarConDedo() {
+    // Si el navegador llegó a seleccionar el texto bajo el dedo, se borra: el
+    // usuario quería levantar el producto, no copiar su nombre.
+    window.getSelection()?.removeAllRanges();
     levantar();
     frenando = true;
     fantasma!.style.left = x0 + 'px';

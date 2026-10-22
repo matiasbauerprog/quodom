@@ -336,3 +336,23 @@ describe('la tarjeta de origen', () => {
     expect(origen).toHaveClass('arrastre-origen');
   });
 });
+
+// Dejar el dedo apretado sobre un texto lo selecciona (Android lo marca en
+// azul con sus manijas): al levantar el producto, esa selección no es del usuario.
+describe('al levantar con el dedo', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { window.dispatchEvent(new Event('arrastre:abortar')); vi.useRealTimers(); });
+
+  it('borra el texto que el navegador haya seleccionado', () => {
+    document.body.innerHTML = '<li id="t"><span>Latex Interior Blanco Mate</span></li>';
+    const rango = document.createRange();
+    rango.selectNodeContents(document.querySelector('span')!);
+    window.getSelection()!.addRange(rango);
+
+    iniciarArrastre(new PointerEvent('pointerdown', { clientX: 100, clientY: 100, button: 0, pointerType: 'touch', bubbles: true }),
+      { idrubro: 5, nombre: 'Látex', nombreRubro: 'PINTURERÍA', onSoltar: vi.fn(), origen: document.getElementById('t')! });
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS);
+
+    expect(window.getSelection()!.toString()).toBe('');
+  });
+});

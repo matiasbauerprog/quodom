@@ -214,8 +214,15 @@ export function BarraQuodomInferior() {
           style={hoja.arrastrando ? { transform: 'translateY(' + desplazamientoHoja() + 'px)' } : undefined}
         >
           {/* Lo que se agarra para bajarla: el contenido scrollea, así que el
-              gesto de cerrar necesita un lugar propio. */}
-          <div className="barra-quodom-manija" data-testid="barra-manija" aria-hidden="true" onPointerDown={hoja.onPointerDown} />
+              gesto de cerrar necesita un lugar propio. Tocarla también la
+              cierra, de una (lo pidió el usuario): es donde va el dedo. */}
+          <div
+            className="barra-quodom-manija"
+            data-testid="barra-manija"
+            aria-hidden="true"
+            onPointerDown={hoja.onPointerDown}
+            onClick={() => { if (!hoja.consumirClic()) setAbierto(false); }}
+          />
           {cargando
             ? <p className="barra-quodom-cargando">Cargando tus Quodoms…</p>
             : total === 0 && <PanelVacio />}

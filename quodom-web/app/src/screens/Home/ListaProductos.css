@@ -31,6 +31,17 @@
   border-bottom-right-radius: var(--radius-hoja-br);
   transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
 }
+/* Dejar el dedo apretado es levantar el producto, y el navegador lo tomaba
+   también como "seleccionar texto": el nombre quedaba marcado en azul, con sus
+   manijas y el menú de copiar. Nadie copia el nombre de un producto desde acá. */
+.prod-item {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  /* Toda la fila se toca (tocarFila), no sólo la foto y el nombre. */
+  cursor: pointer;
+}
 .prod-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0,0,0,0.10);
