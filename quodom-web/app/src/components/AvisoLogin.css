@@ -36,7 +36,7 @@
 }
 .aviso-login-acciones .btn { width: 100%; }
 
-@media (min-width: 601px) {
+@media (min-width: 1025px) {
   .aviso-login-acciones { flex-direction: row-reverse; }
   .aviso-login-acciones .btn { width: auto; flex: 1; }
 }

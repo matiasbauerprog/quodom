@@ -4,6 +4,7 @@ import { ListaProductos } from '../ListaProductos';
 import { productos } from '../../../api/productos';
 import { useAgregarProducto } from '../../../quodom/useAgregarProducto';
 import { agregarADestino, crearYAgregar } from '../../../quodom/agregarProducto';
+import { ESPERA_TOQUE_MS } from '../../../quodom/arrastre';
 
 vi.mock('../../../api/productos', () => ({ productos: { porCategoria: vi.fn() } }));
 vi.mock('../../../quodom/useAgregarProducto', () => ({ useAgregarProducto: vi.fn() }));
@@ -454,29 +455,149 @@ describe('ListaProductos · arrastrar al árbol', () => {
   });
 });
 
-// En celular no hay árbol a la vista donde soltar: el panel es la barra inferior
-// plegada. Lo único que lograba el gesto era comerse el scroll de la lista.
-describe('ListaProductos · arrastrar es de escritorio', () => {
-  it('un toque no levanta el arrastre', async () => {
+// Con el dedo, arrastrar arranca dejándolo apretado: si se mueve antes, es el
+// scroll de la lista, que es lo que el gesto se comía cuando era inmediato.
+describe('ListaProductos · arrastrar con el dedo', () => {
+  async function info() {
     porCategoria.mockResolvedValue([COCA]);
     render(<ListaProductos idsubcategoria={70} />);
     await screen.findByText('Coca Cola 2L');
-    const info = document.querySelector('.prod-info')!;
+    return document.querySelector('.prod-info')!;
+  }
+  function apoyar(el: Element, x = 100, y = 100) {
+    fireEvent.pointerDown(el, { clientX: x, clientY: y, button: 0, pointerType: 'touch' });
+  }
+  const mover = (x: number, y: number) =>
+    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: x, clientY: y, pointerType: 'touch' }));
+  const soltar = (x: number, y: number) =>
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: x, clientY: y, pointerType: 'touch' }));
 
-    fireEvent.pointerDown(info, { clientX: 100, clientY: 100, button: 0, pointerType: 'touch' });
-    window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 300, clientY: 300 }));
+  beforeEach(() => {
+    vi.mocked(agregarADestino).mockReset().mockResolvedValue(undefined);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    window.dispatchEvent(new Event('arrastre:abortar'));
+    document.getElementById('destinos')?.remove();
+  });
+
+  it('el dedo que se mueve antes de tiempo es scroll', async () => {
+    const el = await info();
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(100);
+    mover(100, 140);
+    vi.advanceTimersByTime(1000);
 
     expect(document.body.classList.contains('arrastrando')).toBe(false);
     expect(document.querySelector('.arrastre-fantasma')).toBeNull();
   });
 
-  it('con mouse sí', async () => {
-    porCategoria.mockResolvedValue([COCA]);
-    render(<ListaProductos idsubcategoria={70} />);
-    await screen.findByText('Coca Cola 2L');
-    const info = document.querySelector('.prod-info')!;
+  it('mantener apretado levanta el producto, por encima del dedo', async () => {
+    const el = await info();
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(450);
+    expect(document.body.classList.contains('arrastrando')).toBe(true);
 
-    fireEvent.pointerDown(info, { clientX: 100, clientY: 100, button: 0, pointerType: 'mouse' });
+    mover(300, 300);
+    const fantasma = document.querySelector<HTMLElement>('.arrastre-fantasma')!;
+    expect(fantasma.style.top).toBe(300 - 48 + 'px');
+  });
+
+  // Mucha gente toca despacio: que vibre y no haga nada sería romper el toque.
+  it('un toque lento sin mover abre el destino como un toque', async () => {
+    const el = await info();
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(500);
+    soltar(102, 101);
+    fireEvent.click(el);
+
+    expect(pedirDestino).toHaveBeenCalledTimes(1);
+    expect(agregarADestino).not.toHaveBeenCalled();
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+  });
+
+  it('soltar con el dedo sobre un destino agrega', async () => {
+    const el = await info();
+    const host = document.createElement('div');
+    host.id = 'destinos';
+    host.innerHTML = '<button data-destino="q-7" data-rubro="7"></button>';
+    document.body.appendChild(host);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(host.firstElementChild);
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(450);
+    mover(300, 300);
+    soltar(300, 300);
+
+    expect(agregarADestino).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 700 }), 7, 'q-7');
+  });
+
+  it('pointercancel antes de levantar no levanta ni agrega', async () => {
+    const el = await info();
+    vi.useFakeTimers();
+    apoyar(el);
+    window.dispatchEvent(new PointerEvent('pointercancel', { pointerType: 'touch' }));
+    vi.advanceTimersByTime(1000);
+
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+    expect(agregarADestino).not.toHaveBeenCalled();
+  });
+
+  it('sin sesión el dedo no arrastra', async () => {
+    auth.user = null;
+    const el = await info();
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(600);
+
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+  });
+
+  // Safari de iOS decide al apoyar el dedo si un touchmove se puede frenar,
+  // mirando los oyentes que ya existen: uno que se agrega en el pointerdown
+  // llega tarde y el arrastre termina scrolleando la página.
+  it('el freno del scroll está puesto en la lista antes de apoyar el dedo', async () => {
+    const agregar = vi.spyOn(HTMLElement.prototype, 'addEventListener');
+    await info();
+
+    const lista = document.querySelector('.prod-list');
+    const freno = agregar.mock.calls.find((c, i) => c[0] === 'touchmove' && (agregar.mock.instances[i] as unknown) === lista);
+    expect(freno?.[2]).toEqual({ passive: false });
+  });
+
+  it('el freno sólo frena con el producto levantado', async () => {
+    const el = await info();
+    const lista = document.querySelector('.prod-list')!;
+    expect(fireEvent.touchMove(lista)).toBe(true);
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS);
+
+    expect(fireEvent.touchMove(lista)).toBe(false);
+  });
+
+  // Chrome en Android dispara su "mantener apretado" (contextmenu) a los
+  // 400ms y desde ahí no manda el clic: si el arrastre levantara después, un
+  // toque soltado en ese hueco no haría nada.
+  it('el mantener apretado del navegador levanta el producto en el acto', async () => {
+    const el = await info();
+    vi.useFakeTimers();
+    apoyar(el);
+    vi.advanceTimersByTime(ESPERA_TOQUE_MS - 50);
+    window.dispatchEvent(new Event('contextmenu'));
+    expect(document.body.classList.contains('arrastrando')).toBe(true);
+
+    soltar(100, 100);
+    expect(pedirDestino).toHaveBeenCalledTimes(1);
+  });
+
+  it('con mouse arranca al moverse, como siempre', async () => {
+    const el = await info();
+    fireEvent.pointerDown(el, { clientX: 100, clientY: 100, button: 0, pointerType: 'mouse' });
     window.dispatchEvent(new PointerEvent('pointermove', { buttons: 1, clientX: 300, clientY: 300 }));
 
     expect(document.body.classList.contains('arrastrando')).toBe(true);

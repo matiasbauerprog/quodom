@@ -1,3 +1,8 @@
+/* Dos cortes, y nada más: móvil hasta 1024px (celular y tablet son una sola
+   versión: barra de abajo, arrastre con el dedo) y escritorio desde 1025px.
+   Dentro de móvil los tamaños se ajustan solos (auto-fill, clamp) en vez de un
+   tercer corte. Se escriben a mano en cada media query porque CSS no deja
+   usar una variable ahí; el mismo número vive en useEsMovil.ts. */
 :root {
   --color-fondo: #F1F1F1;
   --color-acento: #E63946;

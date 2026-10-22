@@ -6,6 +6,7 @@ import { BarraQuodomInferior } from './BarraQuodomInferior';
 import { MisQuodomsSidebar } from './MisQuodomsSidebar';
 import { ManijaPanel } from './ManijaPanel';
 import { AvisoRepetido } from '../AvisoRepetido';
+import { VolverArriba } from './VolverArriba';
 import { VentanaQuodom } from '../../screens/Quodom/VentanaQuodom';
 import './Layout.css';
 
@@ -13,6 +14,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   return (
     <div className="layout">
+      <VolverArriba />
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <div className="layout-main">
         <AppBar onOpenDrawer={() => setDrawerOpen(true)} />

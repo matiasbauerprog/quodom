@@ -1,5 +1,7 @@
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Logo } from '../Logo';
+import { NotificacionesQuodom } from '../Notificaciones/NotificacionesQuodom';
+import { useEsMovil } from './useEsMovil';
 import './AppBar.css';
 
 export function AppBar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
@@ -10,6 +12,7 @@ export function AppBar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   // camino de vuelta al inicio desde cualquier pantalla. En el home pelado
   // sobra: ya está el grande.
   const enHomePelado = pathname === '/' && !params.get('rubro') && !params.get('ia');
+  const esMovil = useEsMovil();
 
   return (
     <header className="appbar">
@@ -19,6 +22,9 @@ export function AppBar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
       {!enHomePelado && (
         <Link to="/" className="appbar-marca" aria-label="Volver al inicio"><Logo /></Link>
       )}
+      {/* En celular la campanita va acá, arriba a la derecha; en escritorio ya
+          está en la cabecera del panel y montarla dos veces pediría dos cuentas. */}
+      {esMovil && <div className="appbar-notif"><NotificacionesQuodom /></div>}
     </header>
   );
 }

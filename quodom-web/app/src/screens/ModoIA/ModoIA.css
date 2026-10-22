@@ -133,3 +133,13 @@
 @media (min-width: 1025px) {
   .mia-messages { max-height: 60dvh; }
 }
+
+/* Móvil: con la conversación larga, el campo para escribir queda pegado arriba
+   de la barra de abajo en vez de irse de pantalla con los mensajes. */
+@media (max-width: 1024px) {
+  .mia-inputbar {
+    position: sticky;
+    bottom: var(--alto-barra, 72px);
+    z-index: 2;
+  }
+}

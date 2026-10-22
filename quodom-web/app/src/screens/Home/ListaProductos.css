@@ -197,18 +197,26 @@
   padding: var(--sp-3);
 }
 .prod-item-row:hover { transform: none; }
-.prod-item-row /* Las tarjetas fantasma mientras carga la grilla: misma forma y misma cantidad
-   que las de verdad, así la página no se mueve cuando llegan. */
-.prod-item-esqueleto { pointer-events: none; box-shadow: none; }
-.prod-linea { height: 12px; border-radius: 4px; }
-.prod-linea-corta { width: 60%; }
-
-.prod-info {
+.prod-item-row .prod-info {
   flex: 1;
   flex-direction: row;
   align-items: center;
   gap: var(--sp-3);
   min-width: 0;
+}
+/* Una edición vieja dejó un comentario metido en el medio de un selector, y la
+   regla de arriba quedó suelta: puso la foto al lado del nombre en todas las
+   tarjetas de la grilla, y en una columna angosta el nombre se cortaba a dos
+   palabras. En móvil se arregló (la tarjeta vuelve a ser foto arriba, nombre
+   abajo); en escritorio se dejó como se ve hoy hasta que el usuario lo decida. */
+@media (min-width: 1025px) {
+  .prod-info {
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 0;
+  }
 }
 .prod-item-row .prod-name {
   min-height: 0;
@@ -218,8 +226,14 @@
 .prod-item-row .prod-otro { align-self: center; }
 .prod-item-row .prod-botones { align-items: center; }
 
-@media (min-width: 601px) {
-  .prod-list { grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); max-width: 720px; }
+/* Móvil: tantas columnas como entren (dos en un celular, cuatro en una tablet)
+   y el nombre en hasta tres renglones, que con dos se cortaba a mitad. */
+@media (max-width: 1024px) {
+  .prod-list { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); max-width: 720px; }
+  .prod-name { -webkit-line-clamp: 3; line-clamp: 3; }
+}
+@media (min-width: 1025px) {
+  .prod-list { gap: var(--sp-3); }
   .prod-item { padding: var(--sp-3); }
   .prod-name { font-size: 13px; }
 }
@@ -262,7 +276,9 @@
   text-transform: uppercase;
   color: var(--color-acento);
 }
-.prod-item { touch-action: pan-y; }
+/* Dejar el dedo apretado es lo que levanta el producto: sin esto el navegador
+   abre su propio menú (copiar imagen) o selecciona el nombre en ese momento. */
+.prod-item { touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .prod-item img { -webkit-user-drag: none; }
 @media (prefers-reduced-motion: reduce) {
   .arrastre-interior { transition: none; }

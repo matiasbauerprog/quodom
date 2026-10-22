@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { productos } from '../../api/productos';
 import type { Product } from '../../api/types';
 import { ApiError } from '../../api/client';
@@ -10,7 +10,7 @@ import { useAgregarProducto } from '../../quodom/useAgregarProducto';
 import { DialogoDestino } from '../../quodom/DialogoDestino';
 import { nombreRubro } from '../../quodom/rubros';
 import { agregarADestino, crearYAgregar } from '../../quodom/agregarProducto';
-import { iniciarArrastre, type Blanco } from '../../quodom/arrastre';
+import { frenoDeScroll, iniciarArrastre, type Blanco } from '../../quodom/arrastre';
 import { DetalleProducto } from './DetalleProducto';
 import { useNombresQuodom } from '../../quodom/useNombresQuodom';
 import { abiertoDe } from '../../quodom/quodomAbierto';
@@ -73,6 +73,13 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   function tarjetaDe(el: Element): DOMRect | null {
     return el.closest('.prod-item')?.getBoundingClientRect() ?? null;
   }
+  // El freno del scroll del arrastre con el dedo va puesto desde que la lista
+  // existe (ver frenoDeScroll): agregado al apoyar el dedo, iOS no lo respeta.
+  const sacarFreno = useRef<(() => void) | null>(null);
+  const refLista = useCallback((el: HTMLUListElement | null) => {
+    sacarFreno.current?.();
+    sacarFreno.current = el ? frenoDeScroll(el) : null;
+  }, []);
   const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir: elegirDestino, pedirDestino, crear, cancelar } = useAgregarProducto();
 
   useEffect(() => {
@@ -162,6 +169,14 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     }
   }
 
+  // Tocar el producto: lo que hace el clic en `.prod-info`, y también un toque
+  // lento con el dedo, que el arrastre devuelve como toque.
+  function tocar(info: HTMLElement, p: Product) {
+    if (!user) { setSelected(p); return; }
+    setOrigen(tarjetaDe(info));
+    agregarEnOtro(p);
+  }
+
   function agarrar(ev: React.PointerEvent, p: Product) {
     // Sin sesión no hay Quodoms en el árbol a dónde soltar. Y un clic que nace en
     // un botón es del botón (+, los selectores): si no, dejarían de funcionar.
@@ -170,11 +185,18 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     // toda la tarjeta, y el umbral del arrastre deja pasar el clic.
     const boton = (ev.target as HTMLElement).closest('button, select, a, input');
     if (boton && !boton.classList.contains('prod-info')) return;
+    // React suelta `currentTarget` al terminar el manejador, y el toque lento
+    // llega después.
+    const tarjeta = ev.currentTarget as HTMLElement;
     iniciarArrastre(ev.nativeEvent, {
       idrubro: p.categoriaPadre,
       nombre: p.nombreproducto,
       nombreRubro: nombreRubro(p.categoriaPadre),
-      onSoltar: blanco => { void soltarEn(p, blanco); }
+      onSoltar: blanco => { void soltarEn(p, blanco); },
+      onToqueLento: () => {
+        const info = tarjeta.querySelector<HTMLElement>('.prod-info');
+        if (info) tocar(info, p);
+      }
     });
   }
 
@@ -204,7 +226,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       {!err && !prods && <GrillaEsqueleto />}
       {prods && prods.length === 0 && <p className="prods-empty">No hay productos en esta subcategoría.</p>}
       {prods && prods.length > 0 && (
-        <ul className="prod-list">
+        <ul className="prod-list" ref={refLista}>
           {prods.map(p => (
             <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()}>
               {/* Tocar el producto abre lo mismo que abría el "···": a qué Quodom
@@ -216,11 +238,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
               <button
                 className="prod-info"
                 aria-label={(user ? 'Elegir el Quodom de ' : 'Ver ') + p.nombreproducto}
-                onClick={ev => {
-                  if (!user) { setSelected(p); return; }
-                  setOrigen(tarjetaDe(ev.currentTarget));
-                  agregarEnOtro(p);
-                }}
+                onClick={ev => tocar(ev.currentTarget, p)}
               >
                 <span className="prod-media">
                   <ProductImage idproducto={p.id} alt={p.nombreproducto} size="md" />

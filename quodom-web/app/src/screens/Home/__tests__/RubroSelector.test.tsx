@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RubroSelector } from '../RubroSelector';
@@ -25,5 +25,28 @@ describe('RubroSelector', () => {
     // Volver a tocarlo vuelve al home completo.
     expect(elegido).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: /limpieza/i })).not.toHaveAttribute('aria-current');
+  });
+
+  // En celular, adentro de un rubro los rubros son una fila que se desliza: el
+  // elegido puede quedar fuera de vista, y es el que dice dónde está uno.
+  describe('el elegido a la vista', () => {
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    it('lleva el rubro elegido a la vista', () => {
+      const scroll = vi.fn();
+      Element.prototype.scrollIntoView = scroll;
+      render(<MemoryRouter><RubroSelector rubros={RUBROS} idSeleccionado={1} /></MemoryRouter>);
+
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll.mock.instances[0]).toBe(screen.getByRole('link', { name: /limpieza/i }));
+    });
+
+    it('sin elegido no mueve nada', () => {
+      const scroll = vi.fn();
+      Element.prototype.scrollIntoView = scroll;
+      render(<MemoryRouter><RubroSelector rubros={RUBROS} idSeleccionado={null} /></MemoryRouter>);
+
+      expect(scroll).not.toHaveBeenCalled();
+    });
   });
 });

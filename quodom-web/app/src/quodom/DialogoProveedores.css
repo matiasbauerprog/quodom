@@ -51,6 +51,6 @@
 .dp-linea-corta { width: 55%; }
 .dp-boton-esqueleto { display: block; height: 44px; width: 100%; border-radius: 4px; }
 
-@media (min-width: 601px) {
+@media (min-width: 1025px) {
   .dp { max-width: 520px; }
 }

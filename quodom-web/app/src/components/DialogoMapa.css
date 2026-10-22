@@ -47,7 +47,7 @@
 
 .dmapa-pie { display: flex; flex-direction: column; gap: var(--sp-2); }
 
-@media (min-width: 601px) {
+@media (min-width: 1025px) {
   .dmapa-backdrop { align-items: center; padding: var(--sp-4); }
   .dmapa-pie { flex-direction: row; }
   .dmapa-pie > .btn { flex: 1 1 auto; }

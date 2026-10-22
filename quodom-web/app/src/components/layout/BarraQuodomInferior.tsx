@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { resumenCarritosInvitado } from '../../guest/resumenInvitado';
@@ -9,7 +9,11 @@ import { abiertoDe } from '../../quodom/quodomAbierto';
 import { nombreRubro } from '../../quodom/rubros';
 import { PanelVacio } from './PanelVacio';
 import { useQuodomsEnArmado } from '../../quodom/useQuodomsEnArmado';
-import { NotificacionesQuodom } from '../Notificaciones/NotificacionesQuodom';
+import { useArrastreActivo } from '../../quodom/useArrastreActivo';
+import { AvisoAgregado } from './AvisoAgregado';
+import { DestinoCompacto } from './DestinoCompacto';
+import { useEsMovil } from './useEsMovil';
+import { useHojaDeslizable } from './useHojaDeslizable';
 import './BarraQuodomInferior.css';
 
 // A guest cart left over after a declined ('cancelar') migration, or one
@@ -17,6 +21,10 @@ import './BarraQuodomInferior.css';
 // the tree only lists server Quodoms, so without this it becomes unreachable
 // except by typing /quodom?rubro=<id> or signing out.
 // Labelled distinctly ('sin guardar') so it doesn't read as a server Quodom.
+/** Cuánto tiene que quedarse el producto arrastrado sobre la barra para que la
+ *  hoja se abra sola: pasar de largo no la abre. */
+export const ESPERA_ABRIR_MS = 800;
+
 function itemsCarritosInvitado(): ItemActivo[] {
   return resumenCarritosInvitado().map(r => ({
     key: 'g-' + r.idrubro,
@@ -39,6 +47,18 @@ export function BarraQuodomInferior() {
   // de la barra cerrada no se repintaría al cambiarlo desde el árbol.
   const [, setVersion] = useState(0);
   const contenedor = useRef<HTMLDivElement>(null);
+  const fila = useRef<HTMLDivElement>(null);
+  const arrastrando = useArrastreActivo();
+  const esMovil = useEsMovil();
+  // Quién abrió la hoja. Una que abrió el arrastre se vuelve a cerrar al
+  // terminarlo: abierta tapa la lista de la que vino el usuario, y en escritorio
+  // el panel cerrado también sigue cerrado después de soltar. Una que abrió el
+  // usuario a mano no se toca.
+  const abiertaPorArrastre = useRef(false);
+  const panel = useRef<HTMLDivElement>(null);
+  const altoHoja = useCallback(() => panel.current?.offsetHeight || window.innerHeight * 0.7, []);
+  const cambiarConGesto = useCallback((a: boolean) => { abiertaPorArrastre.current = false; setAbierto(a); }, []);
+  const hoja = useHojaDeslizable({ abierta: abierto, onCambio: cambiarConGesto, alto: altoHoja });
 
   useEffect(() => {
     const releerInvitados = () => setInvitados(itemsCarritosInvitado());
@@ -57,16 +77,66 @@ export function BarraQuodomInferior() {
   useEffect(() => {
     if (!abierto) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false); };
+    // Con el clic y no al apoyar el dedo (`pointerdown`): apretar un producto
+    // para arrastrarlo también es tocar afuera, y cerraba la hoja que el usuario
+    // abrió justo para apuntar a un Quodom. Un arrastre no termina en clic (se
+    // lo traga), y un scroll tampoco: sólo un toque de verdad la cierra.
     const onClickFuera = (e: MouseEvent) => {
       if (contenedor.current && !contenedor.current.contains(e.target as Node)) setAbierto(false);
     };
     window.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onClickFuera);
+    document.addEventListener('click', onClickFuera);
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.removeEventListener('mousedown', onClickFuera);
+      document.removeEventListener('click', onClickFuera);
     };
   }, [abierto]);
+
+  // Con el producto quieto sobre la barra un rato, la hoja se abre sola para
+  // soltarlo en un Quodom puntual. Se mide con el hit-test del arrastre, porque
+  // el fantasma que sigue al dedo no deja llegar los eventos a la barra.
+  useEffect(() => {
+    if (!arrastrando || !esMovil || abierto) return;
+    let espera: ReturnType<typeof setTimeout> | null = null;
+    const mover = (e: PointerEvent) => {
+      const bajo = document.elementFromPoint(e.clientX, e.clientY);
+      const encima = !!bajo && !!contenedor.current?.contains(bajo);
+      if (encima && espera === null) {
+        espera = setTimeout(() => {
+          abiertaPorArrastre.current = true;
+          setAbierto(true);
+        }, ESPERA_ABRIR_MS);
+      } else if (!encima && espera !== null) {
+        clearTimeout(espera);
+        espera = null;
+      }
+    };
+    window.addEventListener('pointermove', mover);
+    return () => {
+      window.removeEventListener('pointermove', mover);
+      if (espera !== null) clearTimeout(espera);
+    };
+  }, [arrastrando, esMovil, abierto]);
+
+  useEffect(() => {
+    if (arrastrando || !abiertaPorArrastre.current) return;
+    abiertaPorArrastre.current = false;
+    setAbierto(false);
+  }, [arrastrando]);
+
+  // El alto real de la barra, para que el contenido le reserve justo eso: con
+  // el texto en dos renglones mide más que los 72px fijos de antes.
+  const hayFila = list !== null;
+  useEffect(() => {
+    const el = fila.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const raiz = document.documentElement;
+    const medir = () => raiz.style.setProperty('--alto-barra', el.offsetHeight + 'px');
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    medir();
+    return () => { ro.disconnect(); raiz.style.removeProperty('--alto-barra'); };
+  }, [hayFila]);
 
   const enArmado = ramas.reduce((n, r) => n + r.quodoms.length, 0);
   const total = enArmado + invitados.length;
@@ -97,10 +167,28 @@ export function BarraQuodomInferior() {
     return { prefijo: null, texto: total === 1 ? '1 Quodom en armado' : total + ' Quodoms en armado' };
   })();
 
+  // Durante el gesto la hoja sigue al dedo desde donde estaba: abierta, baja
+  // con él; cerrada, arranca escondida detrás de la barra y sube.
+  function desplazamientoHoja(): number {
+    const d = hoja.desplazamiento;
+    return abierto ? Math.max(0, d) : Math.max(0, altoHoja() + d);
+  }
+
   return (
     <div className="barra-quodom-wrap" ref={contenedor}>
-      {abierto && (
-        <div className="barra-quodom-panel" id="barra-quodom-panel" role="region" aria-label="Quodoms activos">
+      <AvisoAgregado ramas={ramas} className="barra-quodom-agregado" />
+      {(abierto || hoja.arrastrando) && (
+        <div
+          ref={panel}
+          className={'barra-quodom-panel' + (hoja.arrastrando ? ' barra-quodom-panel-moviendo' : '')}
+          id="barra-quodom-panel"
+          role="region"
+          aria-label="Quodoms activos"
+          style={hoja.arrastrando ? { transform: 'translateY(' + desplazamientoHoja() + 'px)' } : undefined}
+        >
+          {/* Lo que se agarra para bajarla: el contenido scrollea, así que el
+              gesto de cerrar necesita un lugar propio. */}
+          <div className="barra-quodom-manija" data-testid="barra-manija" aria-hidden="true" onPointerDown={hoja.onPointerDown} />
           {total === 0 && <PanelVacio />}
           {ramas.length > 0 && (
             <ArbolQuodoms ramas={ramas} onCambio={refresh} />
@@ -113,14 +201,24 @@ export function BarraQuodomInferior() {
           )}
         </div>
       )}
-      <div className="barra-quodom-fila">
+      {/* Mientras se arrastra, la barra es donde se suelta: lo mismo que la
+          pestaña del panel oculto en escritorio. Sigue aunque la hoja se abra
+          (sola o a mano): quedarse quieto sobre el destino antes de soltar es lo
+          natural, y abrirse la hoja no puede llevárselo de abajo del dedo. Está
+          a la vista, así que no es un duplicado escondido del árbol. En
+          escritorio no se monta (ver useEsMovil). */}
+      {user && arrastrando && esMovil && (
+        <DestinoCompacto arrastrando={arrastrando} ramas={ramas} className="barra-quodom-soltar" />
+      )}
+      <div className="barra-quodom-fila" ref={fila}>
       <button
         type="button"
         className="barra-quodom"
         data-testid="barra-toggle"
         aria-expanded={abierto}
         aria-controls={abierto ? 'barra-quodom-panel' : undefined}
-        onClick={() => setAbierto(a => !a)}
+        onPointerDown={hoja.onPointerDown}
+        onClick={() => { if (!hoja.consumirClic()) setAbierto(a => !a); }}
       >
         {total > 0 && <span className="barra-quodom-count">{total}</span>}
         <span className="barra-quodom-label">
@@ -129,9 +227,6 @@ export function BarraQuodomInferior() {
         </span>
         <span className="barra-quodom-arrow" aria-hidden="true">{abierto ? '⌄' : '⌃'}</span>
       </button>
-      {/* Al lado y no adentro del botón de la barra: un botón no puede llevar
-          otro adentro, y tocar la campanita no tiene que desplegar el árbol. */}
-      {user && <div className="barra-quodom-notif"><NotificacionesQuodom /></div>}
       </div>
     </div>
   );

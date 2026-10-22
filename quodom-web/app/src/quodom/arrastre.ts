@@ -3,6 +3,30 @@ export type Blanco =
   | { tipo: 'nuevo'; idrubro: number };
 
 const UMBRAL = 6;
+/** Con el dedo, cuánto hay que dejarlo apretado para levantar el producto. */
+export const ESPERA_TOQUE_MS = 450;
+/** Cuánto se puede mover el dedo sin que deje de ser "quieto". */
+export const TOLERANCIA_TOQUE = 8;
+/** El fantasma va por encima del dedo: debajo, el dedo lo tapa a él y al destino. */
+const SOBRE_EL_DEDO = 48;
+
+// Si hay un producto levantado con el dedo: lo lee el freno del scroll.
+let frenando = false;
+
+/**
+ * El freno del scroll del arrastre con el dedo, puesto en la lista **al
+ * montarla** y no al apoyar el dedo: Safari de iOS decide en el `touchstart` si
+ * un `touchmove` se puede frenar, mirando los oyentes que ya existen, así que
+ * uno agregado en el `pointerdown` llega tarde y el arrastre scrollea la página.
+ * `touch-action` tampoco sirve (se lee al apoyar el dedo, y cambiarlo a mitad
+ * termina en `pointercancel`). Frena sólo con un producto levantado: antes, el
+ * scroll es del usuario. Devuelve con qué sacarlo.
+ */
+export function frenoDeScroll(el: HTMLElement): () => void {
+  const frenar = (e: TouchEvent) => { if (frenando) e.preventDefault(); };
+  el.addEventListener('touchmove', frenar, { passive: false });
+  return () => el.removeEventListener('touchmove', frenar);
+}
 
 /**
  * Qué destino del árbol hay bajo el puntero, si hay alguno.
@@ -31,17 +55,22 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   nombre: string;
   nombreRubro: string;
   onSoltar: (blanco: Blanco) => void;
+  /** Con el dedo: se levantó y se soltó sin moverlo. Es un toque lento, no un
+   *  soltado en el vacío, y tiene que hacer lo que hace el toque. */
+  onToqueLento?: () => void;
 }): void {
   if (ev.button !== 0) return;
-  // Sólo con mouse. El árbol donde se suelta es el panel de escritorio (desde
-  // 1025px); en celular el panel es la barra inferior plegada, así que no hay
-  // dónde soltar y lo único que lograba el gesto era comerse el scroll de la
-  // lista de productos. Todo lo que hace arrastrar se puede hacer con el `+` y
-  // con el clic en el producto, que es lo que hay en celular.
-  if (ev.pointerType && ev.pointerType !== 'mouse') return;
+  // Con el dedo el arrastre arranca dejándolo apretado (ESPERA_TOQUE_MS). Hasta
+  // entonces el gesto es del navegador: si el dedo se mueve, es scroll y el
+  // arrastre no existe. Cuando era inmediato, como con el mouse, lo único que
+  // lograba en celular era comerse el scroll de la lista de productos.
+  const dedo = !!ev.pointerType && ev.pointerType !== 'mouse';
   const x0 = ev.clientX;
   const y0 = ev.clientY;
   let vivo = false;
+  let espera: ReturnType<typeof setTimeout> | null = null;
+  // Levantado sin mover y soltado ahí mismo es un toque lento.
+  let movioDespues = false;
   let fantasma: HTMLDivElement | null = null;
   let interior: HTMLDivElement | null = null;
   let rubroAvisado: string | null = null;
@@ -89,6 +118,8 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   // de `window`, un arrastre al que nunca le llegó el `pointerup` seguiría vivo y el
   // próximo clic en cualquier lado soltaría el producto.
   function limpiar() {
+    if (espera !== null) { clearTimeout(espera); espera = null; }
+    window.removeEventListener('contextmenu', sinMenu);
     window.removeEventListener('pointermove', mover);
     window.removeEventListener('pointerup', terminar);
     window.removeEventListener('pointercancel', abortar);
@@ -96,6 +127,7 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     window.removeEventListener('keydown', alTeclear);
     window.removeEventListener('arrastre:abortar', abortar);
     document.body.classList.remove('arrastrando');
+    frenando = false;
     fantasma?.remove();
     limpiarResaltados();
     // Sólo si de verdad se había levantado: sin esto un clic que no llegó al
@@ -106,17 +138,48 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
 
   function abortar() { limpiar(); }
 
+  // Dejar el dedo apretado abre el menú del navegador (copiar imagen, etc.).
+  // Además, Chrome en Android lo dispara a los 400ms y desde ahí ya no manda el
+  // clic: si todavía no levantamos, se levanta en el acto, o un toque soltado
+  // en ese hueco no haría nada.
+  function sinMenu(e: Event) {
+    e.preventDefault();
+    if (dedo && !vivo && espera !== null) {
+      clearTimeout(espera);
+      espera = null;
+      levantarConDedo();
+    }
+  }
+
+  function levantarConDedo() {
+    levantar();
+    frenando = true;
+    fantasma!.style.left = x0 + 'px';
+    fantasma!.style.top = y0 - SOBRE_EL_DEDO + 'px';
+    navigator.vibrate?.(15);
+  }
+
   function alTeclear(e: KeyboardEvent) { if (e.key === 'Escape') abortar(); }
 
   function mover(e: PointerEvent) {
-    // Ya no hay botón apretado: el pointerup se perdió (otra ventana, un menú).
-    if (e.buttons === 0) { abortar(); return; }
-    if (!vivo) {
-      if (Math.abs(e.clientX - x0) < UMBRAL && Math.abs(e.clientY - y0) < UMBRAL) return;
-      levantar();
+    if (dedo) {
+      if (!vivo) {
+        // Movió antes de tiempo: era scroll.
+        if (Math.abs(e.clientX - x0) > TOLERANCIA_TOQUE || Math.abs(e.clientY - y0) > TOLERANCIA_TOQUE) abortar();
+        return;
+      }
+      if (Math.abs(e.clientX - x0) > TOLERANCIA_TOQUE || Math.abs(e.clientY - y0) > TOLERANCIA_TOQUE) movioDespues = true;
+    } else {
+      // Ya no hay botón apretado: el pointerup se perdió (otra ventana, un menú).
+      // Sólo con mouse: con el dedo, algunos navegadores mandan `buttons` en 0.
+      if (e.buttons === 0) { abortar(); return; }
+      if (!vivo) {
+        if (Math.abs(e.clientX - x0) < UMBRAL && Math.abs(e.clientY - y0) < UMBRAL) return;
+        levantar();
+      }
     }
     fantasma!.style.left = e.clientX + 'px';
-    fantasma!.style.top = e.clientY + 'px';
+    fantasma!.style.top = (dedo ? e.clientY - SOBRE_EL_DEDO : e.clientY) + 'px';
 
     limpiarResaltados();
     interior!.classList.remove('entrando');
@@ -148,6 +211,13 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
 
   function terminar(e: PointerEvent) {
     const habiaLevantado = vivo;
+    // Levantado y soltado sin moverlo: el toque de siempre, hecho despacio.
+    if (dedo && habiaLevantado && !movioDespues) {
+      limpiar();
+      tragarClic();
+      opts.onToqueLento?.();
+      return;
+    }
     // El destino se resuelve ANTES de limpiar: sacar `arrastrando` del body
     // esconde las zonas "Quodom nuevo" y el árbol se reacomoda bajo el puntero.
     const blanco = habiaLevantado ? blancoBajo(e.clientX, e.clientY) : null;
@@ -159,6 +229,13 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     if (blanco && blanco.idrubro === opts.idrubro) opts.onSoltar(blanco);
   }
 
+  if (dedo) {
+    espera = setTimeout(() => {
+      espera = null;
+      levantarConDedo();
+    }, ESPERA_TOQUE_MS);
+    window.addEventListener('contextmenu', sinMenu);
+  }
   window.addEventListener('pointermove', mover);
   window.addEventListener('pointerup', terminar);
   // Cancelar (el sistema interrumpe el gesto) no es soltar: se aborta sin agregar.

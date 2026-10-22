@@ -41,3 +41,4 @@
   border-radius: 2px;
 }
 .appbar-marca img { height: 24px; width: auto; }
+.appbar-notif { margin-left: auto; display: flex; align-items: center; }

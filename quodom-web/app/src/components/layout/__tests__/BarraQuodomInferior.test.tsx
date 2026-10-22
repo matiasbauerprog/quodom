@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BarraQuodomInferior } from '../BarraQuodomInferior';
@@ -60,6 +60,13 @@ describe('BarraQuodomInferior', () => {
 
   // Es la única entrada al panel en celular: esconderla justo cuando no hay nada
   // deja al que recién llega sin ver que el panel existe.
+  it('la campanita ya no vive en la barra: está arriba, en el nav', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS]);
+    montar();
+    await findToggle();
+    expect(screen.queryByRole('button', { name: /notificaciones/i })).toBeNull();
+  });
+
   it('sin Quodoms sigue estando, y lo dice', async () => {
     misQuodom.mockResolvedValue([]);
     montar();
@@ -249,5 +256,198 @@ describe('BarraQuodomInferior for guests', () => {
     act(() => { window.dispatchEvent(new Event('quodom:changed')); });
 
     await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
+  });
+});
+
+// En celular la barra es lo que en escritorio es el panel oculto: dice adónde
+// soltar mientras se arrastra y avisa lo que entró.
+describe('BarraQuodomInferior · como el panel oculto', () => {
+  const ARRASTRE = { idrubro: 5, nombre: 'Latex', nombreRubro: 'Pintura' };
+  const empezar = () => act(() => { window.dispatchEvent(new CustomEvent('arrastre:inicio', { detail: ARRASTRE })); });
+  const terminar = () => act(() => { window.dispatchEvent(new Event('arrastre:fin')); });
+
+  beforeEach(() => {
+    reiniciar();
+    login();
+    misQuodom.mockResolvedValue([CASA, DEPTO]);
+  });
+  afterEach(() => {
+    terminar();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('mientras se arrastra muestra dónde soltar', async () => {
+    abrirQuodom(5, 'p1');
+    montar('/?rubro=5');
+    await findToggle();
+    empezar();
+
+    const destino = document.querySelector('.barra-quodom-soltar[data-destino="p1"][data-rubro="5"]');
+    expect(destino).not.toBeNull();
+    expect(destino).toHaveTextContent('Soltá para sumar a Casa');
+  });
+
+  it('sin abierto en el rubro ofrece un Quodom nuevo', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    empezar();
+
+    expect(document.querySelector('.barra-quodom-soltar[data-nuevo="5"]')).not.toBeNull();
+  });
+
+  // La barra existe también en escritorio, escondida por CSS: un segundo
+  // destino ahí duplicaría el de la pestaña del panel cerrado.
+  it('en escritorio no monta el destino', async () => {
+    vi.spyOn(window, 'matchMedia').mockReturnValue({
+      matches: false, addEventListener: () => {}, removeEventListener: () => {}
+    } as unknown as MediaQueryList);
+    abrirQuodom(5, 'p1');
+    montar('/?rubro=5');
+    await findToggle();
+    empezar();
+
+    expect(document.querySelector('.barra-quodom-soltar')).toBeNull();
+  });
+
+  it('avisa lo que se agregó', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    act(() => {
+      window.dispatchEvent(new CustomEvent('quodom:agregado', { detail: { nombre: 'Latex', idrubro: 5, idquodom: 'p1' } }));
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Latex agregado a Casa');
+  });
+
+  it('tocar afuera la cierra', async () => {
+    montar();
+    fireEvent.click(await findToggle());
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(document.body);
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // Apretar un producto para arrastrarlo es tocar afuera de la hoja: si eso la
+  // cerrara, la que el usuario abrió para apuntar a un Quodom no sobreviviría
+  // al arrastre.
+  it('apretar un producto para arrastrarlo no cierra la hoja abierta a mano', async () => {
+    const producto = document.createElement('button');
+    document.body.appendChild(producto);
+    montar('/?rubro=5');
+    fireEvent.click(await findToggle());
+
+    fireEvent.pointerDown(producto);
+    empezar();
+    terminar();
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+    producto.remove();
+  });
+
+  it('la hoja que abrió el arrastre se cierra al terminar', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(toggle());
+    vi.useFakeTimers();
+    empezar();
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 780 })); });
+    act(() => { vi.advanceTimersByTime(800); });
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+    terminar();
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // Quedarse quieto sobre "Soltá para sumar a…" es lo natural antes de soltar:
+  // que la hoja se abra no puede llevarse el destino de abajo del dedo.
+  it('el destino de la barra sigue mientras la hoja se abrió sola', async () => {
+    abrirQuodom(5, 'p1');
+    montar('/?rubro=5');
+    await findToggle();
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(toggle());
+    vi.useFakeTimers();
+    empezar();
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 780 })); });
+    act(() => { vi.advanceTimersByTime(800); });
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+    expect(document.querySelector('.barra-quodom-soltar[data-destino="p1"]')).not.toBeNull();
+  });
+
+  it('pasar de largo sobre la barra no la abre', async () => {
+    montar('/?rubro=5');
+    await findToggle();
+    const elementFromPoint = vi.spyOn(document, 'elementFromPoint').mockReturnValue(toggle());
+    vi.useFakeTimers();
+    empezar();
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 780 })); });
+    act(() => { vi.advanceTimersByTime(300); });
+    elementFromPoint.mockReturnValue(document.body);
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 300 })); });
+    act(() => { vi.advanceTimersByTime(1000); });
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('la que abrió el usuario se queda abierta', async () => {
+    montar('/?rubro=5');
+    fireEvent.click(await findToggle());
+    empezar();
+    terminar();
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+// La hoja se abre y se cierra con el dedo, además de con un toque.
+describe('BarraQuodomInferior · deslizar', () => {
+  beforeEach(() => {
+    reiniciar();
+    login();
+    misQuodom.mockResolvedValue([CASA]);
+  });
+
+  const deslizar = (el: Element, desde: number, hasta: number, clic = false) => {
+    fireEvent.pointerDown(el, { clientX: 100, clientY: desde, pointerType: 'touch' });
+    act(() => { window.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: hasta, pointerType: 'touch' })); });
+    act(() => { window.dispatchEvent(new PointerEvent('pointerup', { clientX: 100, clientY: hasta, pointerType: 'touch' })); });
+    if (clic) fireEvent.click(el);
+  };
+
+  it('deslizar la barra hacia arriba la abre', async () => {
+    montar();
+    deslizar(await findToggle(), 780, 300);
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  // El navegador manda un clic al final del gesto: no tiene que deshacerlo.
+  it('el clic que sigue al gesto no lo deshace', async () => {
+    montar();
+    deslizar(await findToggle(), 780, 300, true);
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('deslizar la manija hacia abajo la cierra', async () => {
+    montar();
+    fireEvent.click(await findToggle());
+    deslizar(screen.getByTestId('barra-manija'), 200, 700);
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('un toque sigue abriendo y cerrando', async () => {
+    montar();
+    fireEvent.pointerDown(await findToggle(), { clientX: 100, clientY: 780, pointerType: 'touch' });
+    act(() => { window.dispatchEvent(new PointerEvent('pointerup', { clientX: 101, clientY: 779, pointerType: 'touch' })); });
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
   });
 });
