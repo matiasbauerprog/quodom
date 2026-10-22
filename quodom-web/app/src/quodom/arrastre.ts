@@ -61,6 +61,13 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   /** La tarjeta que se levanta: se marca mientras el dedo espera y queda como
    *  hueco mientras se arrastra, y de ahí sale la foto del fantasma. */
   origen?: HTMLElement;
+  /** Mantener apretado sin mover lo pide quien llama, en vez de levantar el
+   *  producto: es entrar a seleccionar varios. Con el dedo el producto ya no se
+   *  levanta nunca; con el mouse moverse antes de tiempo sigue siendo arrastrar. */
+  onMantener?: () => void;
+  /** false: no hay dónde soltar (un invitado no tiene árbol), así que moverse
+   *  antes de tiempo cancela el gesto en vez de levantar el producto. */
+  arrastrable?: boolean;
 }): void {
   if (ev.button !== 0) return;
   // Con el dedo el arrastre arranca dejándolo apretado (ESPERA_TOQUE_MS). Hasta
@@ -77,6 +84,9 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   let fantasma: HTMLDivElement | null = null;
   let interior: HTMLDivElement | null = null;
   let rubroAvisado: string | null = null;
+  // Ya se cumplió el "mantener": el gesto terminó para el arrastre, sólo falta
+  // que se suelte el botón para tragarse el clic que viene detrás.
+  let mantenido = false;
 
   function limpiarResaltados() {
     document.querySelectorAll('.arrastre-encima, .arrastre-rechaza')
@@ -161,11 +171,23 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   // en ese hueco no haría nada.
   function sinMenu(e: Event) {
     e.preventDefault();
-    if (dedo && !vivo && espera !== null) {
+    if (dedo && !vivo && !mantenido && espera !== null) {
       clearTimeout(espera);
       espera = null;
-      levantarConDedo();
+      cumplirEspera();
     }
+  }
+
+  function cumplirEspera() {
+    if (opts.onMantener) mantener(); else levantarConDedo();
+  }
+
+  function mantener() {
+    mantenido = true;
+    window.getSelection()?.removeAllRanges();
+    opts.origen?.classList.remove('arrastre-cargando');
+    navigator.vibrate?.(15);
+    opts.onMantener!();
   }
 
   function levantarConDedo() {
@@ -182,6 +204,7 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   function alTeclear(e: KeyboardEvent) { if (e.key === 'Escape') abortar(); }
 
   function mover(e: PointerEvent) {
+    if (mantenido) return;
     if (dedo) {
       if (!vivo) {
         // Movió antes de tiempo: era scroll.
@@ -195,6 +218,8 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
       if (e.buttons === 0) { abortar(); return; }
       if (!vivo) {
         if (Math.abs(e.clientX - x0) < UMBRAL && Math.abs(e.clientY - y0) < UMBRAL) return;
+        if (opts.arrastrable === false) { abortar(); return; }
+        if (espera !== null) { clearTimeout(espera); espera = null; }
         levantar();
       }
     }
@@ -230,6 +255,11 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
   }
 
   function terminar(e: PointerEvent) {
+    if (mantenido) {
+      limpiar();
+      tragarClic();
+      return;
+    }
     const habiaLevantado = vivo;
     // Levantado y soltado sin moverlo: el toque de siempre, hecho despacio.
     if (dedo && habiaLevantado && !movioDespues) {
@@ -249,15 +279,15 @@ export function iniciarArrastre(ev: PointerEvent, opts: {
     if (blanco && blanco.idrubro === opts.idrubro) opts.onSoltar(blanco);
   }
 
-  if (dedo) {
-    // Mientras el dedo espera, la tarjeta se hunde de a poco: así se ve que
-    // dejarlo apretado está haciendo algo antes de que el producto se levante.
+  if (dedo || opts.onMantener) {
+    // Mientras espera, la tarjeta se hunde de a poco: así se ve que dejarlo
+    // apretado está haciendo algo antes de que pase.
     opts.origen?.classList.add('arrastre-cargando');
     espera = setTimeout(() => {
       espera = null;
-      levantarConDedo();
+      cumplirEspera();
     }, ESPERA_TOQUE_MS);
-    window.addEventListener('contextmenu', sinMenu);
+    if (dedo) window.addEventListener('contextmenu', sinMenu);
   }
   window.addEventListener('pointermove', mover);
   window.addEventListener('pointerup', terminar);

@@ -47,6 +47,12 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   const [elegido, setElegido] = useState<Record<number, Eleccion>>({});
   const [nonce, setNonce] = useState(0);
   const [errSoltar, setErrSoltar] = useState<string | null>(null);
+  // Seleccionar varios (2026-10-22): se entra manteniendo apretado un producto,
+  // como los mensajes de WhatsApp. Es de la subcategoría que se está mirando:
+  // cambiarla la pierde. En el orden en que se fueron marcando.
+  const [seleccion, setSeleccion] = useState<number[]>([]);
+  const [agregandoVarios, setAgregandoVarios] = useState(false);
+  const seleccionando = seleccion.length > 0;
   const { user } = useAuth();
   const nombresQuodom = useNombresQuodom(user?.id);
   // De dónde salió la ventana de destino: crece desde esa tarjeta.
@@ -84,7 +90,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
 
   useEffect(() => {
     let alive = true;
-    setProds(null); setErr(null); setSelected(null); setElegido({});
+    setProds(null); setErr(null); setSelected(null); setElegido({}); setSeleccion([]);
     productos.porCategoria(idsubcategoria)
       .then(d => { if (alive) setProds(d); })
       .catch(e => { if (alive) setErr(e instanceof ApiError ? e.message : 'Error.'); });
@@ -96,6 +102,43 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   // Si la lista desaparece con el arrastre a medias, el fantasma y los oyentes
   // no tienen dueño: se le avisa al arrastre que termine sin soltar.
   useEffect(() => () => { window.dispatchEvent(new Event('arrastre:abortar')); }, []);
+
+  useEffect(() => {
+    if (!seleccionando) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSeleccion([]); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [seleccionando]);
+
+  function alternar(id: number) {
+    setSeleccion(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  }
+
+  // Todos los de la selección van juntos: al abierto del rubro (o, si no hay
+  // ninguno, a la misma ventana de destino que el +, que los encola en una sola
+  // pregunta), o a otro, que siempre pregunta. De a uno y en orden, por la
+  // misma cola de useAgregarProducto que usa el +.
+  async function agregarSeleccion(otro: boolean) {
+    const elegidos = seleccion
+      .map(id => prods?.find(p => p.id === id))
+      .filter((p): p is Product => !!p);
+    setAgregandoVarios(true);
+    try {
+      for (const p of elegidos) await (otro ? pedirDestino : agregarLinea)(lineaDe(p), p.categoriaPadre);
+    } finally {
+      setAgregandoVarios(false);
+      setSeleccion([]);
+    }
+  }
+
+  // Lo que dice el botón de la barra: el mismo destino que el cartel del +.
+  function destinoDeLaSeleccion(): { texto: string; hayAbierto: boolean } {
+    const p = prods?.find(x => x.id === seleccion[0]);
+    if (!p || !user) return { texto: 'Agregar al carrito', hayAbierto: false };
+    const id = abiertoDe(p.categoriaPadre);
+    const nombre = id ? nombresQuodom[id] : undefined;
+    return nombre ? { texto: 'Agregar a ' + nombre, hayAbierto: true } : { texto: 'Agregar…', hayAbierto: false };
+  }
 
   function elegir(idproducto: number, slot: 1 | 2, valor: string) {
     setElegido(prev => {
@@ -172,6 +215,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   // Tocar el producto: lo que hace el clic en `.prod-info`, y también un toque
   // lento con el dedo, que el arrastre devuelve como toque.
   function tocar(info: HTMLElement, p: Product) {
+    if (seleccionando) { alternar(p.id); return; }
     if (!user) { setSelected(p); return; }
     setOrigen(tarjetaDe(info));
     agregarEnOtro(p);
@@ -187,9 +231,10 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   }
 
   function agarrar(ev: React.PointerEvent, p: Product) {
-    // Sin sesión no hay Quodoms en el árbol a dónde soltar. Y un clic que nace en
-    // un botón es del botón (+, los selectores): si no, dejarían de funcionar.
-    if (!user) return;
+    // Seleccionando, tocar marca y desmarca: no hay gesto que esperar. Y un
+    // clic que nace en un botón es del botón (+, los selectores): si no,
+    // dejarían de funcionar.
+    if (seleccionando) return;
     // La excepción es `.prod-info`: es un botón (abre el detalle) pero también casi
     // toda la tarjeta, y el umbral del arrastre deja pasar el clic.
     const boton = (ev.target as HTMLElement).closest('button, select, a, input');
@@ -202,6 +247,10 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       nombre: p.nombreproducto,
       nombreRubro: nombreRubro(p.categoriaPadre),
       origen: tarjeta,
+      // Sin sesión no hay Quodoms en el árbol a dónde soltar, pero sí se
+      // selecciona: los elegidos van al carrito del rubro.
+      arrastrable: !!user,
+      onMantener: () => setSeleccion(s => s.includes(p.id) ? s : [...s, p.id]),
       onSoltar: blanco => { void soltarEn(p, blanco); },
       onToqueLento: () => {
         const info = tarjeta.querySelector<HTMLElement>('.prod-info');
@@ -229,7 +278,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
   }
 
   return (
-    <div className="prods">
+    <div className={'prods' + (seleccionando ? ' prods-seleccionando' : '')}>
       {err && <ErrorState message={err} onRetry={() => setNonce(n => n + 1)} />}
       {errAgregar && <p className="prods-add-error" role="alert">{errAgregar}</p>}
       {errSoltar && <p className="prods-add-error" role="alert">{errSoltar}</p>}
@@ -237,17 +286,23 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       {prods && prods.length === 0 && <p className="prods-empty">No hay productos en esta subcategoría.</p>}
       {prods && prods.length > 0 && (
         <ul className="prod-list" ref={refLista}>
-          {prods.map(p => (
-            <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()} onClick={ev => tocarFila(ev, p)}>
+          {prods.map(p => {
+            const marcado = seleccion.includes(p.id);
+            return (
+            <li key={p.id} className={'prod-item' + (marcado ? ' prod-seleccionado' : '')} onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()} onClick={ev => tocarFila(ev, p)}>
               {/* Tocar el producto abre lo mismo que abría el "···": a qué Quodom
                   del rubro va. Un invitado no tiene nada que elegir —un carrito
                   por rubro—, así que para él el clic abre la ficha del producto.
 
                   Etiqueta explícita: sin ella el nombre accesible sale repetido,
                   porque adentro están el alt de la imagen y el texto. */}
+              {seleccionando && <span className="prod-check" aria-hidden="true" />}
               <button
                 className="prod-info"
-                aria-label={(user ? 'Elegir el Quodom de ' : 'Ver ') + p.nombreproducto}
+                aria-label={seleccionando
+                  ? (marcado ? 'Quitar de la selección ' : 'Seleccionar ') + p.nombreproducto
+                  : (user ? 'Elegir el Quodom de ' : 'Ver ') + p.nombreproducto}
+                aria-pressed={seleccionando ? marcado : undefined}
                 onClick={ev => tocar(ev.currentTarget, p)}
               >
                 <span className="prod-media">
@@ -277,9 +332,28 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
+      {seleccionando && (() => {
+        const { texto, hayAbierto } = destinoDeLaSeleccion();
+        const n = seleccion.length;
+        return (
+          // Sutil a propósito (lo pidió el usuario): una franja angosta al pie,
+          // no un modo que tape el catálogo, porque se sigue eligiendo debajo.
+          <div className="seleccion-barra" role="toolbar" aria-label="Productos seleccionados">
+            <button type="button" className="seleccion-cerrar" aria-label="Salir de la selección" onClick={() => setSeleccion([])}>✕</button>
+            <span className="seleccion-cuenta" aria-live="polite">{n} {n === 1 ? 'seleccionado' : 'seleccionados'}</span>
+            {/* Con un abierto, "Agregar a" va directo y esto elige otro; sin
+                ninguno, "Agregar…" ya pregunta. Un invitado no tiene a cuál. */}
+            {user && hayAbierto && (
+              <button type="button" className="seleccion-otro" disabled={agregandoVarios} onClick={() => void agregarSeleccion(true)}>otro…</button>
+            )}
+            <button type="button" className="seleccion-agregar" disabled={agregandoVarios} onClick={() => void agregarSeleccion(false)}>{texto}</button>
+          </div>
+        );
+      })()}
       {selected && (
         <DetalleProducto
           product={selected}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { ListaProductos } from '../ListaProductos';
 import { productos } from '../../../api/productos';
 import { useAgregarProducto } from '../../../quodom/useAgregarProducto';
@@ -455,9 +455,9 @@ describe('ListaProductos · arrastrar al árbol', () => {
   });
 });
 
-// Con el dedo, arrastrar arranca dejándolo apretado: si se mueve antes, es el
-// scroll de la lista, que es lo que el gesto se comía cuando era inmediato.
-describe('ListaProductos · arrastrar con el dedo', () => {
+// Con el dedo, mantenerlo apretado selecciona (antes levantaba el producto
+// para arrastrarlo): si se mueve antes, es el scroll de la lista.
+describe('ListaProductos · mantener apretado con el dedo', () => {
   async function info() {
     porCategoria.mockResolvedValue([COCA]);
     render(<ListaProductos idsubcategoria={70} />);
@@ -494,48 +494,6 @@ describe('ListaProductos · arrastrar con el dedo', () => {
     expect(document.querySelector('.arrastre-fantasma')).toBeNull();
   });
 
-  it('mantener apretado levanta el producto, por encima del dedo', async () => {
-    const el = await info();
-    vi.useFakeTimers();
-    apoyar(el);
-    vi.advanceTimersByTime(450);
-    expect(document.body.classList.contains('arrastrando')).toBe(true);
-
-    mover(300, 300);
-    const fantasma = document.querySelector<HTMLElement>('.arrastre-fantasma')!;
-    expect(fantasma.style.top).toBe(300 - 48 + 'px');
-  });
-
-  // Mucha gente toca despacio: que vibre y no haga nada sería romper el toque.
-  it('un toque lento sin mover abre el destino como un toque', async () => {
-    const el = await info();
-    vi.useFakeTimers();
-    apoyar(el);
-    vi.advanceTimersByTime(500);
-    soltar(102, 101);
-    fireEvent.click(el);
-
-    expect(pedirDestino).toHaveBeenCalledTimes(1);
-    expect(agregarADestino).not.toHaveBeenCalled();
-    expect(document.body.classList.contains('arrastrando')).toBe(false);
-  });
-
-  it('soltar con el dedo sobre un destino agrega', async () => {
-    const el = await info();
-    const host = document.createElement('div');
-    host.id = 'destinos';
-    host.innerHTML = '<button data-destino="q-7" data-rubro="7"></button>';
-    document.body.appendChild(host);
-    vi.spyOn(document, 'elementFromPoint').mockReturnValue(host.firstElementChild);
-    vi.useFakeTimers();
-    apoyar(el);
-    vi.advanceTimersByTime(450);
-    mover(300, 300);
-    soltar(300, 300);
-
-    expect(agregarADestino).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 700 }), 7, 'q-7');
-  });
-
   it('pointercancel antes de levantar no levanta ni agrega', async () => {
     const el = await info();
     vi.useFakeTimers();
@@ -569,30 +527,34 @@ describe('ListaProductos · arrastrar con el dedo', () => {
     expect(freno?.[2]).toEqual({ passive: false });
   });
 
-  it('el freno sólo frena con el producto levantado', async () => {
-    const el = await info();
-    const lista = document.querySelector('.prod-list')!;
-    expect(fireEvent.touchMove(lista)).toBe(true);
-    vi.useFakeTimers();
-    apoyar(el);
-    vi.advanceTimersByTime(ESPERA_TOQUE_MS);
-
-    expect(fireEvent.touchMove(lista)).toBe(false);
-  });
-
   // Chrome en Android dispara su "mantener apretado" (contextmenu) a los
-  // 400ms y desde ahí no manda el clic: si el arrastre levantara después, un
-  // toque soltado en ese hueco no haría nada.
-  it('el mantener apretado del navegador levanta el producto en el acto', async () => {
+  // 400ms y desde ahí no manda el clic: si la selección esperara a los 450ms,
+  // un dedo soltado en ese hueco no haría nada.
+  it('el mantener apretado del navegador selecciona en el acto', async () => {
     const el = await info();
     vi.useFakeTimers();
     apoyar(el);
     vi.advanceTimersByTime(ESPERA_TOQUE_MS - 50);
-    window.dispatchEvent(new Event('contextmenu'));
-    expect(document.body.classList.contains('arrastrando')).toBe(true);
+    act(() => { window.dispatchEvent(new Event('contextmenu')); });
 
+    expect(el.closest('li')).toHaveClass('prod-seleccionado');
     soltar(100, 100);
-    expect(pedirDestino).toHaveBeenCalledTimes(1);
+    fireEvent.click(el);
+    expect(pedirDestino).not.toHaveBeenCalled();
+  });
+
+  // En celular mantener apretado es seleccionar (2026-10-22): el producto no
+  // se levanta nunca, así que el scroll de la lista nunca se frena.
+  it('mantener apretado no levanta el producto ni frena el scroll', async () => {
+    const el = await info();
+    const lista = document.querySelector('.prod-list')!;
+    vi.useFakeTimers();
+    apoyar(el);
+    act(() => { vi.advanceTimersByTime(ESPERA_TOQUE_MS); });
+    mover(300, 300);
+
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+    expect(fireEvent.touchMove(lista)).toBe(true);
   });
 
   it('con mouse arranca al moverse, como siempre', async () => {
@@ -734,5 +696,145 @@ describe('ListaProductos · tocar cualquier parte de la fila', () => {
     const t = await tarjeta();
     fireEvent.click(t.querySelector('.prod-add')!);
     expect(pedirDestino).not.toHaveBeenCalled();
+  });
+});
+
+// Mantener apretado entra a seleccionar varios, como los mensajes de WhatsApp o
+// Telegram (2026-10-22, lo pidió el usuario): en celular reemplaza al arrastre,
+// en la compu convive con él (arrastrar es moverse antes de tiempo).
+describe('ListaProductos · seleccionar varios', () => {
+  const AGUA = { ...COCA, id: 701, nombreproducto: 'Agua 500ml' };
+
+  async function montar() {
+    porCategoria.mockResolvedValue([COCA, AGUA]);
+    const r = render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Agua 500ml');
+    return r;
+  }
+  const tarjeta = (nombre: string) => screen.getByText(nombre).closest('li')!;
+  const barra = () => screen.queryByRole('toolbar', { name: /seleccionados/i });
+
+  function mantener(el: Element, pointerType = 'touch') {
+    fireEvent.pointerDown(el, { clientX: 100, clientY: 100, button: 0, pointerType });
+    act(() => { vi.advanceTimersByTime(ESPERA_TOQUE_MS); });
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 100, clientY: 100, pointerType }));
+    // El clic que sigue a soltar el dedo es parte del mismo gesto.
+    fireEvent.click(el);
+  }
+
+  beforeEach(() => { localStorage.clear(); });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    window.dispatchEvent(new Event('arrastre:abortar'));
+  });
+
+  it('mantener el dedo apretado selecciona el producto, sin levantarlo', async () => {
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+
+    expect(tarjeta('Coca Cola 2L')).toHaveClass('prod-seleccionado');
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+    expect(document.querySelector('.arrastre-fantasma')).toBeNull();
+    expect(within(barra()!).getByText('1 seleccionado')).toBeInTheDocument();
+    expect(pedirDestino).not.toHaveBeenCalled();
+  });
+
+  it('con la selección abierta, tocar otro lo suma y tocarlo de nuevo lo saca', async () => {
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+
+    fireEvent.click(tarjeta('Agua 500ml').querySelector('.prod-info')!);
+    expect(tarjeta('Agua 500ml')).toHaveClass('prod-seleccionado');
+    expect(within(barra()!).getByText('2 seleccionados')).toBeInTheDocument();
+
+    fireEvent.click(tarjeta('Agua 500ml').querySelector('.prod-foot')!);
+    expect(tarjeta('Agua 500ml')).not.toHaveClass('prod-seleccionado');
+    expect(pedirDestino).not.toHaveBeenCalled();
+  });
+
+  it('desmarcar el último sale de la selección', async () => {
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+    fireEvent.click(tarjeta('Coca Cola 2L').querySelector('.prod-info')!);
+
+    expect(barra()).toBeNull();
+  });
+
+  it('"Agregar a" manda todos al Quodom abierto del rubro, con lo elegido en cada tarjeta', async () => {
+    localStorage.setItem('quodom.abierto', JSON.stringify({ 7: 'q-7' }));
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+    fireEvent.click(tarjeta('Agua 500ml').querySelector('.prod-info')!);
+    vi.useRealTimers();
+
+    fireEvent.click(await within(barra()!).findByRole('button', { name: 'Agregar a Bebidas oficina' }));
+
+    await waitFor(() => expect(agregar).toHaveBeenCalledTimes(2));
+    expect(agregar).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 700, cantidad: 1 }), 7);
+    expect(agregar).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 701, cantidad: 1 }), 7);
+    await waitFor(() => expect(barra()).toBeNull());
+  });
+
+  it('"otro" pregunta a qué Quodom van', async () => {
+    localStorage.setItem('quodom.abierto', JSON.stringify({ 7: 'q-7' }));
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+    vi.useRealTimers();
+
+    fireEvent.click(within(barra()!).getByRole('button', { name: /otro/i }));
+
+    await waitFor(() => expect(pedirDestino).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 700 }), 7));
+    expect(agregar).not.toHaveBeenCalled();
+  });
+
+  it('la ✕ y Escape salen de la selección', async () => {
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+    fireEvent.click(within(barra()!).getByRole('button', { name: /salir de la selección/i }));
+    expect(barra()).toBeNull();
+
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(barra()).toBeNull();
+  });
+
+  it('cambiar de subcategoría la pierde', async () => {
+    const { rerender } = await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+    vi.useRealTimers();
+
+    rerender(<ListaProductos idsubcategoria={71} />);
+    await screen.findByText('Agua 500ml');
+    expect(barra()).toBeNull();
+    expect(document.querySelector('.prod-seleccionado')).toBeNull();
+  });
+
+  it('con el mouse, dejar el clic apretado sin mover también selecciona', async () => {
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!, 'mouse');
+
+    expect(tarjeta('Coca Cola 2L')).toHaveClass('prod-seleccionado');
+    expect(document.body.classList.contains('arrastrando')).toBe(false);
+  });
+
+  it('sin sesión también se selecciona, y va al carrito del rubro', async () => {
+    auth.user = null;
+    await montar();
+    vi.useFakeTimers();
+    mantener(tarjeta('Coca Cola 2L').querySelector('.prod-name')!);
+
+    expect(within(barra()!).queryByRole('button', { name: /otro/i })).toBeNull();
+    fireEvent.click(within(barra()!).getByRole('button', { name: 'Agregar al carrito' }));
+    vi.useRealTimers();
+    await waitFor(() => expect(agregar).toHaveBeenCalledWith(expect.objectContaining({ idproducto: 700 }), 7));
   });
 });
