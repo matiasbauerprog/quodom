@@ -59,7 +59,7 @@ export function BarraQuodomInferior() {
   // usuario a mano no se toca.
   const abiertaPorArrastre = useRef(false);
   const panel = useRef<HTMLDivElement>(null);
-  const altoHoja = useCallback(() => panel.current?.offsetHeight || window.innerHeight * 0.5, []);
+  const altoHoja = useCallback(() => panel.current?.offsetHeight || window.innerHeight * 0.4, []);
   const cambiarConGesto = useCallback((a: boolean) => { abiertaPorArrastre.current = false; setAbierto(a); }, []);
   const hoja = useHojaDeslizable({ abierta: abierto, onCambio: cambiarConGesto, alto: altoHoja });
   const tieneDireccion = useTieneDireccion(!!user);
@@ -102,6 +102,21 @@ export function BarraQuodomInferior() {
     ro.observe(el);
     medir();
     return () => { ro.disconnect(); raiz.style.removeProperty('--alto-hoja'); };
+  }, [abierto]);
+
+  // Abrirla a mano acomoda el catálogo: las subcategorías suben hasta debajo
+  // del nav (lo pidió el usuario), así lo que queda a la vista arriba de la
+  // hoja es lo que se usa para buscar. Corre después del efecto de arriba, con
+  // el espacio de la hoja ya reservado al pie, que es lo que deja scrollear
+  // hasta ahí en una página corta. No si la abrió un arrastre: movería la
+  // página debajo del dedo.
+  useEffect(() => {
+    if (!abierto || abiertaPorArrastre.current) return;
+    const tabs = document.querySelector('.subtabs');
+    if (!tabs) return;
+    const nav = document.querySelector('.appbar')?.getBoundingClientRect().height ?? 0;
+    const top = window.scrollY + tabs.getBoundingClientRect().top - nav - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   }, [abierto]);
 
   // Con el producto quieto sobre la barra un rato, la hoja se abre sola para

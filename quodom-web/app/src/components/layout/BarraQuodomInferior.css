@@ -58,10 +58,10 @@
   background: var(--color-panel-oscuro);
   /* svh: el alto con la barra del navegador a la vista, así no salta cuando
      aparece o se esconde. La línea con vh es la reserva. */
-  /* La mitad (lo pidió el usuario): la otra mitad es para seguir usando el
-     catálogo con la hoja abierta. */
-  max-height: 50vh;
-  max-height: 50svh;
+  /* El 40% (lo pidió el usuario; con la mitad no quedaba lugar para buscar): el
+     resto es para seguir usando el catálogo con la hoja abierta. */
+  max-height: 40vh;
+  max-height: 40svh;
   overflow-y: auto;
   overscroll-behavior: contain;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);

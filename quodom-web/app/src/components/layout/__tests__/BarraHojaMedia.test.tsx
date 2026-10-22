@@ -92,3 +92,48 @@ describe('la hoja de celular: media pantalla', () => {
     expect(toggle()).toHaveAttribute('aria-expanded', 'false');
   });
 });
+
+// Al abrirla la página se acomoda para que las subcategorías queden arriba,
+// debajo del nav: con la hoja ocupando el 40% de abajo, lo que queda a la vista
+// tiene que ser lo que se usa para buscar (las pestañas y los productos).
+describe('la hoja de celular: abrirla acomoda el catálogo', () => {
+  function subtabsEn(top: number) {
+    const el = document.createElement('nav');
+    el.className = 'subtabs';
+    el.getBoundingClientRect = () => ({ top, bottom: top + 40, left: 0, right: 390, width: 390, height: 40, x: 0, y: top, toJSON() {} });
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('lleva las subcategorías arriba de todo', async () => {
+    const tabs = subtabsEn(500);
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    montar();
+    fireEvent.click(await screen.findByTestId('barra-toggle'));
+
+    expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ top: 492 }));
+    tabs.remove();
+    scroll.mockRestore();
+  });
+
+  it('sin subcategorías en pantalla no mueve nada', async () => {
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    montar();
+    fireEvent.click(await screen.findByTestId('barra-toggle'));
+
+    expect(scroll).not.toHaveBeenCalled();
+    scroll.mockRestore();
+  });
+
+  it('cerrarla no mueve nada', async () => {
+    const tabs = subtabsEn(500);
+    montar();
+    fireEvent.click(await screen.findByTestId('barra-toggle'));
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    fireEvent.click(toggle());
+
+    expect(scroll).not.toHaveBeenCalled();
+    tabs.remove();
+    scroll.mockRestore();
+  });
+});
