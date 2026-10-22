@@ -445,6 +445,32 @@ describe('ArbolQuodoms: crear un Quodom desde el rubro', () => {
     expect(screen.getByRole('textbox', { name: 'Nombre del Quodom' })).toHaveValue('Nuevo Quodom de Pintura');
   });
 
+  // En celular, entre que el servidor contesta y la lista se recarga pasaba un
+  // rato sin que nada cambiara, y el usuario podía pensar que no había andado.
+  it('al tocarlo ya muestra el Quodom que se está creando, aunque el servidor no conteste', () => {
+    vi.mocked(quodomApi.create).mockReturnValue(new Promise(() => {}) as never);
+    montar();
+    const [, enPintura] = screen.getAllByRole('button', { name: '+ Nuevo Quodom' });
+    fireEvent.click(enPintura);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Creando Nuevo Quodom de Pintura…');
+  });
+
+  it('sigue mostrándolo hasta que llega en la lista', async () => {
+    const onCambio = vi.fn();
+    const { rerender } = render(<MemoryRouter><ArbolQuodoms ramas={RAMAS} onCambio={onCambio} /></MemoryRouter>);
+    const [, enPintura] = screen.getAllByRole('button', { name: '+ Nuevo Quodom' });
+    await act(async () => { fireEvent.click(enPintura); });
+
+    // El servidor ya contestó, pero la recarga todavía no trajo el nuevo.
+    expect(screen.getByRole('status')).toHaveTextContent('Creando Nuevo Quodom de Pintura…');
+
+    const conNuevo = RAMAS.map(r => r.idrubro === 5
+      ? { ...r, quodoms: [...r.quodoms, q('p3', 'Nuevo Quodom de Pintura', 5)] } : r);
+    rerender(<MemoryRouter><ArbolQuodoms ramas={conNuevo} onCambio={onCambio} /></MemoryRouter>);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('si el servidor falla lo dice en ese rubro', async () => {
     vi.mocked(quodomApi.create).mockRejectedValue(new Error('x'));
     montar();
@@ -453,5 +479,30 @@ describe('ArbolQuodoms: crear un Quodom desde el rubro', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('No se pudo crear el Quodom.');
     expect(abiertoDe(5)).toBeNull();
+  });
+});
+
+// En la hoja de celular el último rubro se desplegaba fuera de la vista, y
+// "+ Nuevo Quodom" quedaba abajo: había que scrollear para encontrarlo.
+describe('ArbolQuodoms: desplegar un rubro lo trae a la vista', () => {
+  it('desplegarlo lo lleva a la vista con su pie', () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    montar();
+    const pintura = screen.getByRole('button', { name: /PINTURERÍA/ });
+    fireEvent.click(pintura);          // plegar
+    scroll.mockClear();
+    fireEvent.click(pintura);          // desplegar
+
+    expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ block: 'nearest' }));
+    expect(scroll.mock.instances[0] as unknown).toBe(pintura.closest('section'));
+  });
+
+  it('plegarlo no mueve nada', () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    montar();
+    fireEvent.click(screen.getByRole('button', { name: /PINTURERÍA/ }));
+    expect(scroll).not.toHaveBeenCalled();
   });
 });

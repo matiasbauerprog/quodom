@@ -15,7 +15,9 @@
 @media (max-width: 1024px) {
   /* El alto real de la barra lo escribe BarraQuodomInferior; 72px es el de
      una barra de un renglón, mientras no se midió. */
-  .layout-main > main { padding-bottom: var(--alto-barra, 72px); }
+  /* Con la hoja abierta, también su alto (`--alto-hoja`, que escribe la barra
+     mientras está abierta): si no, el final del catálogo queda debajo. */
+  .layout-main > main { padding-bottom: calc(var(--alto-barra, 72px) + var(--alto-hoja, 0px)); }
 }
 
 @media (min-width: 1025px) {

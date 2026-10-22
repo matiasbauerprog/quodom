@@ -320,16 +320,6 @@ describe('BarraQuodomInferior · como el panel oculto', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Latex agregado a Casa');
   });
 
-  it('tocar afuera la cierra', async () => {
-    montar();
-    fireEvent.click(await findToggle());
-    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
-
-    fireEvent.pointerDown(document.body);
-    fireEvent.click(document.body);
-    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
-  });
-
   // Apretar un producto para arrastrarlo es tocar afuera de la hoja: si eso la
   // cerrara, la que el usuario abrió para apuntar a un Quodom no sobreviviría
   // al arrastre.

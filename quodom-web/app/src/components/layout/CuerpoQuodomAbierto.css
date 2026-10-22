@@ -1,0 +1,46 @@
+/* Antes vivía en MisQuodomsSidebar.css, dentro del corte de escritorio: la
+   hoja de celular no mostraba el Quodom abierto y no le hacía falta. */
+/* El pie de la tarjeta del destino: motivo arriba, botón abajo. En ese orden
+   porque el motivo es lo que explica por qué el botón está apagado. */
+.mq-sidebar-enviar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  background: #F7F7F7;
+  border-top: 1px solid #EEEEEE;
+}
+/* Bloqueado se lee gris y no verde apagado: el verde de WhatsApp con opacidad
+   sigue pareciendo el botón, y el usuario lo toca igual. */
+.mq-sidebar-enviar .btn:disabled {
+  background: #E2E2E2;
+  color: #6E6E6E;
+  opacity: 1;
+}
+.mq-sidebar-enviar .btn { min-height: 48px; font-size: var(--fs-body); }
+
+.mq-sidebar-motivo {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #8A5A00;
+}
+.mq-sidebar-motivo a { color: #8A5A00; }
+.mq-sidebar-motivo-listo { color: #1B6E42; align-items: center; }
+.mq-sidebar-icono {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E9B562;
+  border-radius: 50%;
+  color: #fff;
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+}
+.mq-sidebar-icono-ok { background: var(--color-exito); }
