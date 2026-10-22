@@ -94,7 +94,6 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
-/* La barra y la campanita comparten la franja oscura. */
 .barra-quodom-fila {
   /* Encima de la hoja: mientras sube desde atrás de la barra, la barra la tapa. */
   position: relative;
@@ -104,10 +103,6 @@
   box-shadow: 0 -2px 8px rgba(0,0,0,.2);
 }
 .barra-quodom-fila .barra-quodom { flex: 1; min-width: 0; box-shadow: none; }
-.barra-quodom-notif {
-  display: flex; align-items: center;
-  padding: 0 var(--sp-3) env(safe-area-inset-bottom, 0px) 0;
-}
 
 /* Lo mismo que el panel oculto de escritorio: mientras se arrastra, la barra
    es el lugar donde se suelta (tapa la fila, del mismo alto o más), y lo que

@@ -60,6 +60,13 @@ describe('BarraQuodomInferior', () => {
 
   // Es la única entrada al panel en celular: esconderla justo cuando no hay nada
   // deja al que recién llega sin ver que el panel existe.
+  it('la campanita ya no vive en la barra: está arriba, en el nav', async () => {
+    misQuodom.mockResolvedValue([BEBIDAS]);
+    montar();
+    await findToggle();
+    expect(screen.queryByRole('button', { name: /notificaciones/i })).toBeNull();
+  });
+
   it('sin Quodoms sigue estando, y lo dice', async () => {
     misQuodom.mockResolvedValue([]);
     montar();

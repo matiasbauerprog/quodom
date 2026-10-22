@@ -22,7 +22,7 @@ function haceCuanto(iso: string): string {
 }
 
 /**
- * The bell next to "Mis Quodoms" (desktop panel and mobile bar). Opening the
+ * The bell next to "Mis Quodoms" (desktop panel) and in the top nav (mobile). Opening the
  * menu marks everything read. The provider selector is mounted here and not
  * inside the menu: the menu closes when it opens, and drawn inside it the
  * selector would go with it halfway through a send.
@@ -46,7 +46,7 @@ export function NotificacionesQuodom() {
 
   // `quodom:changed` is what a send dispatches, so the number shows up the
   // moment the Quodom leaves the tree. `notificaciones:leidas` keeps the
-  // panel's and the bar's copies in step (both are mounted, one hidden by CSS).
+  // panel's and the nav's copies in step (both can be mounted at once).
   useEffect(() => {
     if (!user) { setSinLeer(0); return; }
     contar();

@@ -1,5 +1,5 @@
-/* Va sobre el panel oscuro: la cabecera del sidebar y la barra inferior. El
-   menú se posiciona contra quien lo contenga (.mq-sidebar-cab o la barra), así
+/* Va sobre el panel oscuro de la cabecera del sidebar; en celular, sobre el nav claro (ver abajo). El
+   menú se posiciona contra quien lo contenga (.mq-sidebar-cab o .appbar), así
    que .notq no es `relative` a propósito: el menú toma todo ese ancho y no el
    del botón, que es lo único que hace entrar tres acciones. */
 .notq { display: inline-flex; }
@@ -66,5 +66,9 @@
 }
 .notq-todas:hover { text-decoration: underline; }
 
-/* En la barra inferior el menú abre hacia arriba. */
-.barra-quodom-wrap .notq-menu { top: auto; bottom: calc(100% + var(--sp-2)); left: var(--sp-3); right: var(--sp-3); }
+/* En el nav del celular el botón va sobre el fondo claro, y el menú cuelga
+   del ancho de la barra (es la que está posicionada, por `sticky`). */
+.appbar .notq-boton, .appbar .notq-boton-con { color: var(--color-texto); }
+.appbar .notq-boton:hover { background: rgba(0, 0, 0, 0.06); }
+.appbar .notq-boton:focus-visible { outline-color: var(--color-acento); }
+.appbar .notq-menu { top: 100%; left: var(--sp-3); right: var(--sp-3); }
