@@ -171,7 +171,8 @@
    pantalla con el catálogo, así que todo baja más o menos un 20%: aire, letra y
    alto de cada fila. Los botones que se tocan (+ / − / quitar) no bajan de 28px. */
 .barra-quodom-panel { gap: var(--sp-2); padding: 0 var(--sp-3) var(--sp-3); }
-.barra-quodom-panel .barra-quodom-manija { margin: 0 calc(-1 * var(--sp-3)); padding: 8px 0 4px; }
+/* 24px de alto: tocarla la cierra, y con 16px el dedo la erraba. */
+.barra-quodom-panel .barra-quodom-manija { margin: 0 calc(-1 * var(--sp-3)); padding: 10px 0; cursor: pointer; }
 .barra-quodom-panel .arbol { gap: var(--sp-3); }
 .barra-quodom-panel .arbol-rama { gap: 6px; }
 .barra-quodom-panel .arbol-rama-foco { padding: var(--sp-2); }

@@ -85,6 +85,15 @@ describe('la hoja de celular: media pantalla', () => {
     expect(toggle()).toHaveAttribute('aria-expanded', 'true');
   });
 
+  // La manija de arriba sólo servía para deslizarla: tocarla no hacía nada, y
+  // es justo donde el dedo va a cerrar.
+  it('tocar la manija de arriba la cierra', async () => {
+    montar();
+    fireEvent.click(await screen.findByTestId('barra-toggle'));
+    fireEvent.click(screen.getByTestId('barra-manija'));
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('la flecha la cierra', async () => {
     montar();
     fireEvent.click(await screen.findByTestId('barra-toggle'));
