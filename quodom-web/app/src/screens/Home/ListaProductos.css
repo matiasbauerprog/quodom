@@ -247,6 +247,11 @@
     width: var(--foto-fila);
   }
   .prod-item:not(.prod-item-row) .prod-name { min-height: 0; font-size: 13px; }
+  /* Los dos atributos (litros y marca, color y litros) en el mismo renglón que
+     el +: uno debajo del otro, cada producto con dos sumaba una fila entera. */
+  .prod-item:not(.prod-item-row) .prod-foot { align-items: center; }
+  .prod-item:not(.prod-item-row) .prod-attrs { flex-direction: row; }
+  .prod-item:not(.prod-item-row) .prod-attr { flex: 1 1 0; }
   .prod-item:hover { transform: none; }
 }
 @media (min-width: 1025px) {
