@@ -177,6 +177,15 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
     agregarEnOtro(p);
   }
 
+  // La fila entera es el producto: tocar el pie (al lado del atributo y del +)
+  // hace lo mismo que tocar el nombre. Lo que es de un control (el +, los
+  // selectores, el propio `.prod-info`) ya lo resolvió ese control.
+  function tocarFila(ev: React.MouseEvent, p: Product) {
+    if ((ev.target as HTMLElement).closest('button, select, a, input, label')) return;
+    const info = (ev.currentTarget as HTMLElement).querySelector<HTMLElement>('.prod-info');
+    if (info) tocar(info, p);
+  }
+
   function agarrar(ev: React.PointerEvent, p: Product) {
     // Sin sesión no hay Quodoms en el árbol a dónde soltar. Y un clic que nace en
     // un botón es del botón (+, los selectores): si no, dejarían de funcionar.
@@ -229,7 +238,7 @@ export function ListaProductos({ idsubcategoria }: { idsubcategoria: number }) {
       {prods && prods.length > 0 && (
         <ul className="prod-list" ref={refLista}>
           {prods.map(p => (
-            <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()}>
+            <li key={p.id} className="prod-item" onPointerDown={ev => agarrar(ev, p)} onDragStart={ev => ev.preventDefault()} onClick={ev => tocarFila(ev, p)}>
               {/* Tocar el producto abre lo mismo que abría el "···": a qué Quodom
                   del rubro va. Un invitado no tiene nada que elegir —un carrito
                   por rubro—, así que para él el clic abre la ficha del producto.

@@ -707,3 +707,32 @@ describe('ListaProductos · el cartel del +', () => {
     expect(mas).toHaveAccessibleDescription('Agregar a tu carrito de Bebidas');
   });
 });
+
+// En celular la fila es la tarjeta entera: tocar el pie (al lado del atributo y
+// del +) no hacía nada, porque sólo la foto y el nombre eran el botón.
+describe('ListaProductos · tocar cualquier parte de la fila', () => {
+  async function tarjeta() {
+    porCategoria.mockResolvedValue([COCA]);
+    render(<ListaProductos idsubcategoria={70} />);
+    await screen.findByText('Coca Cola 2L');
+    return document.querySelector<HTMLElement>('.prod-item')!;
+  }
+
+  it('el pie de la fila abre el destino, igual que el nombre', async () => {
+    const t = await tarjeta();
+    fireEvent.click(t.querySelector('.prod-foot')!);
+    expect(pedirDestino).toHaveBeenCalledTimes(1);
+  });
+
+  it('el nombre lo abre una sola vez, no dos', async () => {
+    const t = await tarjeta();
+    fireEvent.click(t.querySelector('.prod-name')!);
+    expect(pedirDestino).toHaveBeenCalledTimes(1);
+  });
+
+  it('el + sigue siendo el +: no abre el destino', async () => {
+    const t = await tarjeta();
+    fireEvent.click(t.querySelector('.prod-add')!);
+    expect(pedirDestino).not.toHaveBeenCalled();
+  });
+});
