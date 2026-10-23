@@ -14,9 +14,17 @@ import { nombreRubro } from '../../quodom/rubros';
  * several rubros and Quodoms it doesn't register on its own (user's call).
  */
 export function AvisoAgregado({ ramas, className = 'mq-sidebar-agregado' }: { ramas: RamaRubro[]; className?: string }) {
-  const [ultimo, setUltimo] = useState<Agregado | null>(null);
+  // Varios seguidos al mismo destino (una selección de varios, o varios + a
+  // la vez) se cuentan: nombrar sólo el último hacía parecer que había entrado uno.
+  const [ultimo, setUltimo] = useState<(Agregado & { cantidad: number }) | null>(null);
   useEffect(() => {
-    const oir = (e: Event) => setUltimo((e as CustomEvent<Agregado>).detail);
+    const oir = (e: Event) => {
+      const nuevo = (e as CustomEvent<Agregado>).detail;
+      setUltimo(antes => {
+        const mismo = antes && antes.idrubro === nuevo.idrubro && antes.idquodom === nuevo.idquodom;
+        return { ...nuevo, cantidad: mismo ? antes.cantidad + 1 : 1 };
+      });
+    };
     window.addEventListener('quodom:agregado', oir);
     return () => window.removeEventListener('quodom:agregado', oir);
   }, []);
@@ -33,10 +41,12 @@ export function AvisoAgregado({ ramas, className = 'mq-sidebar-agregado' }: { ra
     : ultimo.idquodom === null
       ? 'tu carrito de ' + nombreRubro(ultimo.idrubro)
       : 'tu Quodom de ' + nombreRubro(ultimo.idrubro);
+  const varios = ultimo.cantidad > 1;
+  const que = varios ? ultimo.cantidad + ' productos' : ultimo.nombre;
   return (
-    <p className={className} role="status" aria-label={'Agregado: ' + ultimo.nombre + ' a ' + destino}>
+    <p className={className} role="status" aria-label={(varios ? 'Agregados: ' : 'Agregado: ') + que + ' a ' + destino}>
       <span className={className + '-ok'} aria-hidden="true">✓</span>
-      <span><strong>{ultimo.nombre}</strong> agregado a {destino}</span>
+      <span><strong>{que}</strong> {varios ? 'agregados' : 'agregado'} a {destino}</span>
     </p>
   );
 }
