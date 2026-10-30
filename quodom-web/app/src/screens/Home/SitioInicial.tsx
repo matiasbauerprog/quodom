@@ -18,6 +18,7 @@ import type { ModoIa } from './PestanasIA';
 import { PanelConversacion } from '../ModoIA/PanelConversacion';
 // import { PanelLista } from '../ListaIA/PanelLista';
 import { Logo } from '../../components/Logo';
+import { intencionIa } from './intencionIa';
 import './SitioInicial.css';
 
 // Devuelve el número del param o null: "", "abc" y "0" son todos "sin valor".
@@ -38,6 +39,9 @@ export function SitioInicial() {
   // rubro, y el chat queda enlazable.
   const modoIa: ModoIa | null = params.get('ia') === 'chat' ? 'chat' : null;
   const [sugerencias, setSugerencias] = useState<BusquedaResult[] | null>(null);
+  // Lo que se escribió en el buscador cuando se eligió preguntarle al
+  // asistente: el chat arranca con eso en vez de vacío.
+  const [preguntaIa, setPreguntaIa] = useState<string | undefined>(undefined);
   // Nombre del último producto agregado desde el buscador: sin este acuse,
   // tocar un resultado no se ve por ningún lado.
   const [agregado, setAgregado] = useState<string | null>(null);
@@ -141,7 +145,18 @@ export function SitioInicial() {
   // Abrirlo saca el rubro de la URL: son excluyentes, y desde un rubro el
   // botón hace las dos cosas de una (salir y abrir la conversación).
   function abrirModoIa() {
+    setPreguntaIa(undefined);
     setParams(modo === 'chat' ? {} : { ia: 'chat' });
+  }
+
+  // Quienes probaron la app escribieron acá lo que hay que escribirle al
+  // asistente (2026-10-29): el desplegable lo ofrece, y abrirlo lleva el texto.
+  function preguntarAlAsistente() {
+    const texto = q.trim();
+    setSugerencias(null);
+    setQ('');
+    setPreguntaIa(texto);
+    setParams({ ia: 'chat' });
   }
 
   // Tocar un resultado agrega el producto y deja al usuario donde estaba. Antes
@@ -188,10 +203,30 @@ export function SitioInicial() {
         </span>
         <input className="input home-search-input" type="search" placeholder="¿Qué necesitás?" aria-label="Buscar productos" value={q} onChange={e => setQ(e.target.value)} />
 
-        {sugerencias !== null && (
+        {sugerencias !== null && (() => {
+          // Siempre está; lo que cambia es dónde y cuánto se nota. Un pedido
+          // ("quiero pintar mi casa") lo pone primero y destacado; el nombre
+          // de un producto, discreto y al final, para no taparle los resultados.
+          const pedido = intencionIa(q, sugerencias.length) === 'pedido';
+          const ofrecerIa = (
+            <button
+              type="button"
+              className={'home-sugerencia-ia' + (pedido ? ' home-sugerencia-ia-destacada' : '')}
+              onClick={preguntarAlAsistente}
+            >
+              <span className="home-sugerencia-ia-icono" aria-hidden="true">✨</span>
+              <span className="home-sugerencia-ia-texto">
+                Preguntale al Modo IA: <q>{q.trim()}</q>
+              </span>
+            </button>
+          );
+          return (
           <div className="home-sugerencias card hoja" role="listbox" aria-label="Sugerencias">
+            {pedido && ofrecerIa}
+            {/* Con el asistente destacado arriba, "sin resultados" sobra: la
+                respuesta a eso es el botón. */}
             {sugerencias.length === 0
-              ? <p className="home-sugerencias-vacio">Sin resultados para "{q.trim()}".</p>
+              ? !pedido && <p className="home-sugerencias-vacio">Sin resultados para "{q.trim()}".</p>
               : sugerencias.slice(0, 8).map(s => (
                 <button
                   key={s.id}
@@ -210,8 +245,10 @@ export function SitioInicial() {
                   <span className="home-sugerencia-accion" aria-hidden="true">+ Agregar</span>
                 </button>
               ))}
+            {!pedido && ofrecerIa}
           </div>
-        )}
+          );
+        })()}
       </form>
       )}
 
@@ -231,7 +268,7 @@ export function SitioInicial() {
         Modo IA — armá tu Quodom conversando
       </button>
 
-      {modo === 'chat' && <PanelConversacion />}
+      {modo === 'chat' && <PanelConversacion preguntaInicial={preguntaIa} />}
 
       {/* Subir un archivo está apagado por pedido del usuario (2026-08-23): en
           el home quedó sólo el botón de conversar. Para reactivarlo hay que
