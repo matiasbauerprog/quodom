@@ -19,6 +19,7 @@ import { PanelConversacion } from '../ModoIA/PanelConversacion';
 // import { PanelLista } from '../ListaIA/PanelLista';
 import { Logo } from '../../components/Logo';
 import { intencionIa } from './intencionIa';
+import { OfrecerModoIa, useAbrirModoIa, type EstadoPreguntaIa } from './OfrecerModoIa';
 import './SitioInicial.css';
 
 // Devuelve el número del param o null: "", "abc" y "0" son todos "sin valor".
@@ -40,8 +41,19 @@ export function SitioInicial() {
   const modoIa: ModoIa | null = params.get('ia') === 'chat' ? 'chat' : null;
   const [sugerencias, setSugerencias] = useState<BusquedaResult[] | null>(null);
   // Lo que se escribió en el buscador cuando se eligió preguntarle al
-  // asistente: el chat arranca con eso en vez de vacío.
+  // asistente: el chat arranca con eso en vez de vacío. Llega en el estado de
+  // la navegación (useAbrirModoIa, también desde la pantalla de búsqueda) y se
+  // pasa acá para sacarlo del historial: si quedara, Atrás y Adelante lo
+  // volverían a mandar. El primer render ya lo lee de la navegación, que es
+  // cuando el chat se monta.
   const [preguntaIa, setPreguntaIa] = useState<string | undefined>(undefined);
+  const preguntaDeRuta = (location.state as EstadoPreguntaIa | null)?.preguntaIa;
+  const abrirConPregunta = useAbrirModoIa();
+  useEffect(() => {
+    if (!preguntaDeRuta) return;
+    setPreguntaIa(preguntaDeRuta);
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }, [preguntaDeRuta, navigate, location.pathname, location.search]);
   // Nombre del último producto agregado desde el buscador: sin este acuse,
   // tocar un resultado no se ve por ningún lado.
   const [agregado, setAgregado] = useState<string | null>(null);
@@ -112,6 +124,15 @@ export function SitioInicial() {
     const term = q.trim();
     if (term.length < 2) return;
     setSugerencias(null);
+    // Un pedido con Enter va directo al asistente: un tester escribió
+    // "pintar", apretó Enter y terminó en una lista de productos (2026-10-30).
+    // Sin los resultados todavía (Enter antes de que contesten) no se cuenta
+    // "ninguno" como señal.
+    if (intencionIa(term, sugerencias?.length ?? 1) === 'pedido') {
+      setQ('');
+      abrirConPregunta(term);
+      return;
+    }
     navigate('/busqueda?q=' + encodeURIComponent(term));
   }
 
@@ -155,8 +176,7 @@ export function SitioInicial() {
     const texto = q.trim();
     setSugerencias(null);
     setQ('');
-    setPreguntaIa(texto);
-    setParams({ ia: 'chat' });
+    abrirConPregunta(texto);
   }
 
   // Tocar un resultado agrega el producto y deja al usuario donde estaba. Antes
@@ -208,18 +228,7 @@ export function SitioInicial() {
           // ("quiero pintar mi casa") lo pone primero y destacado; el nombre
           // de un producto, discreto y al final, para no taparle los resultados.
           const pedido = intencionIa(q, sugerencias.length) === 'pedido';
-          const ofrecerIa = (
-            <button
-              type="button"
-              className={'home-sugerencia-ia' + (pedido ? ' home-sugerencia-ia-destacada' : '')}
-              onClick={preguntarAlAsistente}
-            >
-              <span className="home-sugerencia-ia-icono" aria-hidden="true">✨</span>
-              <span className="home-sugerencia-ia-texto">
-                Preguntale al Modo IA: <q>{q.trim()}</q>
-              </span>
-            </button>
-          );
+          const ofrecerIa = <OfrecerModoIa texto={q} destacada={pedido} onClick={preguntarAlAsistente} />;
           return (
           <div className="home-sugerencias card hoja" role="listbox" aria-label="Sugerencias">
             {pedido && ofrecerIa}
@@ -268,7 +277,7 @@ export function SitioInicial() {
         Modo IA — armá tu Quodom conversando
       </button>
 
-      {modo === 'chat' && <PanelConversacion preguntaInicial={preguntaIa} />}
+      {modo === 'chat' && <PanelConversacion preguntaInicial={preguntaIa ?? preguntaDeRuta} />}
 
       {/* Subir un archivo está apagado por pedido del usuario (2026-08-23): en
           el home quedó sólo el botón de conversar. Para reactivarlo hay que

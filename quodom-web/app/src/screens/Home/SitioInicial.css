@@ -242,48 +242,6 @@
   color: var(--color-texto-muted);
 }
 
-/* El Modo IA ofrecido desde el buscador. Discreto, al pie y separado de los
-   productos, mientras lo escrito parece el nombre de uno; destacado y primero
-   cuando se lee como un pedido. Lleva el rojo del botón de Modo IA, que es lo
-   que abre. */
-.home-sugerencia-ia {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  width: 100%;
-  padding: var(--sp-2);
-  margin-top: var(--sp-1);
-  background: none;
-  border: none;
-  border-top: 1px solid #E6E6E6;
-  border-radius: 0;
-  font-family: var(--font-work);
-  font-size: 13px;
-  color: var(--color-texto-muted);
-  text-align: left;
-  cursor: pointer;
-}
-.home-sugerencia-ia:hover,
-.home-sugerencia-ia:focus-visible { color: var(--color-texto); background: var(--color-fondo); }
-.home-sugerencia-ia-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.home-sugerencia-ia-texto q { color: var(--color-texto); }
-.home-sugerencia-ia-destacada {
-  margin: 0 0 var(--sp-1);
-  padding: var(--sp-3);
-  border-top: none;
-  background: #FDECEE;
-  color: var(--color-acento);
-  font-family: var(--font-prompt);
-  font-size: 14px;
-  font-weight: 600;
-  border-top-left-radius: var(--radius-hoja-tl);
-  border-bottom-right-radius: var(--radius-hoja-br);
-}
-.home-sugerencia-ia-destacada .home-sugerencia-ia-texto { white-space: normal; }
-.home-sugerencia-ia-destacada .home-sugerencia-ia-texto q { font-family: var(--font-work); font-weight: 400; }
-.home-sugerencia-ia-destacada:hover,
-.home-sugerencia-ia-destacada:focus-visible { background: #FADADF; color: var(--color-acento); }
-
 .home-modo-ia {
   display: flex;
   align-items: center;

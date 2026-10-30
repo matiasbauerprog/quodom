@@ -11,6 +11,8 @@ import { nombreRubro } from '../../quodom/rubros';
 import { Loader } from '../../components/Loader';
 import { ProductImage } from '../../components/ProductImage';
 import { IconoMas } from '../../components/icons/IconoMas';
+import { intencionIa } from './intencionIa';
+import { OfrecerModoIa, useAbrirModoIa } from './OfrecerModoIa';
 import './BusquedaScreen.css';
 
 export function BusquedaScreen() {
@@ -23,6 +25,7 @@ export function BusquedaScreen() {
   const [err, setErr] = useState<string | null>(null);
   const [hist, setHist] = useState<string[]>([]);
   const { agregar: agregarLinea, agregando, error: errAgregar, destino, elegir, pedirDestino, crear, cancelar } = useAgregarProducto();
+  const abrirModoIa = useAbrirModoIa();
 
   useEffect(() => {
     if (!user) return;
@@ -55,6 +58,11 @@ export function BusquedaScreen() {
     runSearch(term);
   }
 
+  const pedido = !!results && intencionIa(q, results.length) === 'pedido';
+  const ofrecerIa = !busy && results
+    ? <OfrecerModoIa texto={q} destacada={pedido} onClick={() => abrirModoIa(q)} />
+    : null;
+
   function agregar(r: BusquedaResult) {
     agregarLinea({ idproducto: r.id, nombreProducto: r.nombre, cantidad: 1 }, r.categoriaPadre);
   }
@@ -83,6 +91,11 @@ export function BusquedaScreen() {
       {err && <p className="auth-error">{err}</p>}
       {errAgregar && <p className="auth-error" role="alert">{errAgregar}</p>}
       {busy && <Loader />}
+
+      {/* Lo mismo que el desplegable del inicio: a esta pantalla se llega con
+          Enter, y ahí también tiene que estar el asistente. Destacado arriba
+          para un pedido, discreto al final para un producto. */}
+      {ofrecerIa && pedido && ofrecerIa}
 
       {!busy && results && (
         results.length === 0
@@ -121,6 +134,8 @@ export function BusquedaScreen() {
             </ul>
           )
       )}
+
+      {ofrecerIa && !pedido && ofrecerIa}
 
       {user && hist.length > 0 && !results && (
         <>
