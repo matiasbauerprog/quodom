@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom';
 import { BusquedaScreen } from '../BusquedaScreen';
 import { busqueda } from '../../../api/busqueda';
 import { historial } from '../../../api/hist_busquedas';
@@ -62,5 +62,43 @@ describe('BusquedaScreen · el resultado y la sesión', () => {
     await screen.findByRole('button', { name: /^agregar coca cola 2l$/i });
 
     expect(screen.queryByRole('button', { name: /elegir el quodom/i })).not.toBeInTheDocument();
+  });
+});
+
+// Quien llega acá con Enter tampoco se queda sin el Modo IA (2026-10-30).
+describe('BusquedaScreen · ofrece el Modo IA', () => {
+  function Inicio() {
+    const loc = useLocation();
+    return <p>inicio {loc.search} {(loc.state as { preguntaIa?: string } | null)?.preguntaIa}</p>;
+  }
+  function montarCon(q: string) {
+    const router = createMemoryRouter(
+      [{ path: '/busqueda', element: <BusquedaScreen /> }, { path: '/', element: <Inicio /> }],
+      { initialEntries: ['/busqueda?q=' + encodeURIComponent(q)] }
+    );
+    render(<RouterProvider router={router} />);
+  }
+
+  it('sin resultados para un pedido, lo ofrece destacado', async () => {
+    vi.mocked(busqueda.buscar).mockResolvedValue([] as never);
+    montarCon('pintar casa');
+
+    const boton = await screen.findByRole('button', { name: /preguntale al modo ia/i });
+    expect(boton).toHaveClass('home-sugerencia-ia-destacada');
+  });
+
+  it('con resultados de un producto, lo ofrece discreto', async () => {
+    montarCon('coca');
+    await screen.findByText('Coca Cola 2L');
+
+    expect(screen.getByRole('button', { name: /preguntale al modo ia/i })).not.toHaveClass('home-sugerencia-ia-destacada');
+  });
+
+  it('tocarlo abre el Modo IA en el inicio con lo que se buscó', async () => {
+    vi.mocked(busqueda.buscar).mockResolvedValue([] as never);
+    montarCon('pintar casa');
+    fireEvent.click(await screen.findByRole('button', { name: /preguntale al modo ia/i }));
+
+    expect(await screen.findByText(/inicio \?ia=chat pintar casa/)).toBeInTheDocument();
   });
 });

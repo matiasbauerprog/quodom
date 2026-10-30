@@ -562,3 +562,50 @@ describe('SitioInicial · el buscador ofrece el Modo IA', () => {
     expect(await screen.findByText('panel chat')).toBeInTheDocument();
   });
 });
+
+// Un tester escribió "pintar" y apretó Enter (2026-10-30): Enter llevaba a la
+// pantalla de búsqueda y el Modo IA no aparecía por ningún lado.
+describe('SitioInicial · Enter con un pedido', () => {
+  function montarConRutas() {
+    const router = createMemoryRouter(
+      [{ path: '/', element: <SitioInicial /> }, { path: '/busqueda', element: <p>pantalla de búsqueda</p> }],
+      { initialEntries: ['/'] }
+    );
+    render(<RouterProvider router={router} />);
+    return router;
+  }
+
+  it.each(['pintar', 'quiero pintar mi casa'])('con "%s" abre el Modo IA con ese texto', async texto => {
+    const router = montarConRutas();
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: texto } });
+    fireEvent.submit(screen.getByRole('search'));
+
+    expect(await screen.findByText('panel chat: ' + texto)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/');
+  });
+
+  it('con el nombre de un producto sigue yendo a la búsqueda', async () => {
+    const router = montarConRutas();
+    await screen.findByRole('link', { name: /bebidas/i });
+
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'latex' } });
+    fireEvent.submit(screen.getByRole('search'));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/busqueda'));
+  });
+
+  // Llega con el texto en el estado de la navegación: si se quedara ahí, ir
+  // Atrás y Adelante lo volvería a mandar.
+  it('la pregunta se usa una vez y no queda en el historial', async () => {
+    const router = montarConRutas();
+    await screen.findByRole('link', { name: /bebidas/i });
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: 'pintar' } });
+    fireEvent.submit(screen.getByRole('search'));
+
+    await screen.findByText('panel chat: pintar');
+    await waitFor(() => expect(router.state.location.state).toBeNull());
+    expect(router.state.location.search).toBe('?ia=chat');
+  });
+});
