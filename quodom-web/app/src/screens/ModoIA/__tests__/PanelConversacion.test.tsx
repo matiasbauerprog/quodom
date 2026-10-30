@@ -326,3 +326,28 @@ describe('PanelConversacion (el foco se queda en el campo)', () => {
     await waitFor(() => expect(input).toHaveFocus());
   });
 });
+
+// Llega desde el buscador con lo que el usuario ya escribió (2026-10-29): no
+// tiene que volver a tipearlo.
+describe('PanelConversacion · la pregunta que viene del buscador', () => {
+  beforeEach(() => { (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockReset(); });
+
+  it('con sesión, la manda sola como primer mensaje', async () => {
+    (iaApi.chat as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ type: 'text', text: '¿Cuántos ambientes?' });
+    vi.mocked(useAuth).mockReturnValue({ user: { id: 'u1' } } as unknown as ReturnType<typeof useAuth>);
+    render(<MemoryRouter><PanelConversacion preguntaInicial="quiero pintar mi casa" /></MemoryRouter>);
+
+    expect(await screen.findByText('¿Cuántos ambientes?')).toBeInTheDocument();
+    expect(iaApi.chat).toHaveBeenCalledTimes(1);
+    expect(iaApi.chat).toHaveBeenCalledWith([{ role: 'user', text: 'quiero pintar mi casa' }]);
+  });
+
+  it('sin sesión, la deja escrita y pide entrar', async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof useAuth>);
+    render(<MemoryRouter><PanelConversacion preguntaInicial="quiero pintar mi casa" /></MemoryRouter>);
+
+    expect(screen.getByPlaceholderText(/escrib/i)).toHaveValue('quiero pintar mi casa');
+    expect(iaApi.chat).not.toHaveBeenCalled();
+    expect(await screen.findByRole('link', { name: /iniciar sesión|ingresar|entrar/i })).toBeInTheDocument();
+  });
+});

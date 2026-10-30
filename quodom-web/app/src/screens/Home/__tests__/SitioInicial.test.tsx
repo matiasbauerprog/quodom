@@ -28,7 +28,9 @@ vi.mock('../../../quodom/useAgregarProducto', async () => {
     }
   };
 });
-vi.mock('../../ModoIA/PanelConversacion', () => ({ PanelConversacion: () => <p>panel chat</p> }));
+vi.mock('../../ModoIA/PanelConversacion', () => ({
+  PanelConversacion: ({ preguntaInicial }: { preguntaInicial?: string }) => <p>panel chat{preguntaInicial ? ': ' + preguntaInicial : ''}</p>
+}));
 // Subir un archivo está apagado en el home; vuelve junto con su bloque en
 // SitioInicial.tsx y el describe comentado al final de este archivo.
 // vi.mock('../../ListaIA/PanelLista', () => ({ PanelLista: () => <p>panel lista</p> }));
@@ -497,5 +499,66 @@ describe('SitioInicial (agregar desde el buscador con la sesión iniciada)', () 
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.queryByText(/agregado ✓/i)).toBeNull();
+  });
+});
+
+// Quienes probaron la app escribieron en el buscador lo que hay que escribirle
+// al Modo IA (2026-10-29): el buscador lo ofrece en sus resultados, destacado
+// cuando el texto se lee como un pedido, y lo abre con lo que ya escribieron.
+describe('SitioInicial · el buscador ofrece el Modo IA', () => {
+  const COCAS = [
+    { id: 700, nombre: 'Coca Cola 2L', descripcion: null, imagen: null, refreshImagen: null, categoriaPadre: 7 }
+  ];
+  async function escribir(texto: string) {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+    fireEvent.change(screen.getByRole('searchbox', { name: /buscar productos/i }), { target: { value: texto } });
+  }
+  const ofrecer = () => screen.findByRole('button', { name: /preguntale al modo ia/i });
+
+  it('con un pedido, lo ofrece destacado y antes de los productos', async () => {
+    buscar.mockResolvedValue(COCAS);
+    await escribir('quiero bebidas para un cumpleaños');
+    const boton = await ofrecer();
+    await screen.findByText('Coca Cola 2L');
+
+    expect(boton).toHaveClass('home-sugerencia-ia-destacada');
+    const producto = screen.getByRole('option', { name: /coca cola 2l/i });
+    expect(boton.compareDocumentPosition(producto) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('con una búsqueda de producto, lo ofrece discreto y al final', async () => {
+    buscar.mockResolvedValue(COCAS);
+    await escribir('coca');
+    const boton = await ofrecer();
+    await screen.findByText('Coca Cola 2L');
+
+    expect(boton).not.toHaveClass('home-sugerencia-ia-destacada');
+    const producto = screen.getByRole('option', { name: /coca cola 2l/i });
+    expect(boton.compareDocumentPosition(producto) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it('sin resultados y con varias palabras, lo destaca en vez de dejar sólo "sin resultados"', async () => {
+    buscar.mockResolvedValue([]);
+    await escribir('pintar casa');
+
+    expect(await ofrecer()).toHaveClass('home-sugerencia-ia-destacada');
+    expect(screen.queryByText(/sin resultados/i)).toBeNull();
+  });
+
+  it('tocarlo abre el Modo IA con lo que se escribió', async () => {
+    buscar.mockResolvedValue([]);
+    await escribir('quiero pintar mi casa');
+    fireEvent.click(await ofrecer());
+
+    expect(await screen.findByText('panel chat: quiero pintar mi casa')).toBeInTheDocument();
+  });
+
+  it('el botón de siempre abre el Modo IA vacío', async () => {
+    montar('/');
+    await screen.findByRole('link', { name: /bebidas/i });
+    fireEvent.click(screen.getByRole('button', { name: /modo ia — armá/i }));
+
+    expect(await screen.findByText('panel chat')).toBeInTheDocument();
   });
 });

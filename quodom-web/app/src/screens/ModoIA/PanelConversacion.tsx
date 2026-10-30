@@ -36,13 +36,16 @@ function agregarItemAlQuodom(idquodom: string, it: IaProposalItem) {
   });
 }
 
-export function PanelConversacion() {
+/** `preguntaInicial`: lo que el usuario escribió en el buscador antes de que
+ *  le ofreciéramos el asistente. Con sesión se manda sola; sin sesión queda
+ *  escrita para cuando entre. */
+export function PanelConversacion({ preguntaInicial }: { preguntaInicial?: string } = {}) {
   const { user } = useAuth();
   const location = useLocation();
   const [agregadoEn, setAgregadoEn] = useState<string | null>(null);
   const [necesitaLogin, setNecesitaLogin] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([{ role: 'assistant', text: WELCOME }]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(preguntaInicial ?? '');
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const lote = useDestinoLote<IaProposalItem>({ agregarItem: agregarItemAlQuodom, descripcion: descripcionIa });
@@ -57,9 +60,18 @@ export function PanelConversacion() {
     setInput('');
   }
 
-  async function send() {
+  // Una sola vez por montaje: el doble efecto de StrictMode la mandaría dos veces.
+  const inicialHecha = useRef(false);
+  useEffect(() => {
+    if (!preguntaInicial || inicialHecha.current) return;
+    inicialHecha.current = true;
+    if (user) void send(preguntaInicial);
+    else setNecesitaLogin(true);
+  }, []);
+
+  async function send(textoDado?: string) {
     if (!user) { setNecesitaLogin(true); return; }
-    const text = input.trim();
+    const text = (textoDado ?? input).trim();
     if (busy || text.length < 2) return;
 
     const next: UiMessage[] = [...messages, { role: 'user', text }];
@@ -159,7 +171,7 @@ export function PanelConversacion() {
         />
         <button
           className="btn btn-exito mia-send"
-          onClick={send}
+          onClick={() => void send()}
           disabled={busy || confirming || input.trim().length < 2}
         >
           {busy ? '…' : 'Enviar'}
