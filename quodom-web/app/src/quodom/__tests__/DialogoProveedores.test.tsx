@@ -312,4 +312,16 @@ describe('DialogoProveedores', () => {
     expect(screen.getByText('JB Artículos de Limpieza')).toBeInTheDocument();
     expect(screen.getByText('Resultados de Google')).toBeInTheDocument();
   });
+
+  it('sin ninguna dirección ofrece cargarla, y no un error de mapa', async () => {
+    vi.mocked(proveedores.delQuodom).mockRejectedValue(
+      new ApiError('Cargá una dirección antes de enviar: define a qué proveedores les llega el pedido.', 409, 'falta_direccion'));
+    montar();
+
+    const link = await screen.findByRole('link', { name: 'Cargar dirección' });
+    expect(link).toHaveAttribute('href', '/direcciones/nuevo');
+    expect(screen.queryByText(/consultar el mapa/)).not.toBeInTheDocument();
+    // El backend rechazaría el envío igual: no se ofrece un botón que va a fallar.
+    expect(screen.getByRole('button', { name: 'Enviar sin elegir proveedor' })).toBeDisabled();
+  });
 });

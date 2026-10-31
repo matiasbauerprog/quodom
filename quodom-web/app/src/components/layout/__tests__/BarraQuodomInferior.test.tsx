@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Link } from 'react-router-dom';
 import { BarraQuodomInferior } from '../BarraQuodomInferior';
 import { quodom as quodomApi } from '../../../api/quodom';
 import { useAuth } from '../../../auth/AuthContext';
@@ -65,6 +65,72 @@ describe('BarraQuodomInferior', () => {
     montar();
     await findToggle();
     expect(screen.queryByRole('button', { name: /notificaciones/i })).toBeNull();
+  });
+
+  it('con sesión ofrece el historial de pedidos', async () => {
+    misQuodom.mockResolvedValue([]);
+    montar();
+    await findToggle();
+    expect(screen.getByRole('link', { name: 'Historial de pedidos' })).toHaveAttribute('href', '/mis-quodoms');
+  });
+
+  it('sin sesión no ofrece el historial', async () => {
+    logout();
+    montar();
+    await findToggle();
+    expect(screen.queryByRole('link', { name: 'Historial de pedidos' })).toBeNull();
+  });
+
+  // Tocar "Cargar dirección" en la hoja llevaba al formulario con la hoja
+  // abierta encima, tapando el buscador y sus sugerencias.
+  it('cambiar de pantalla cierra la hoja', async () => {
+    misQuodom.mockResolvedValue([]);
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Link to="/direcciones/nuevo">ir</Link>
+        <BarraQuodomInferior />
+      </MemoryRouter>
+    );
+    fireEvent.click(await findToggle());
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(screen.getByRole('link', { name: 'ir' }));
+
+    await waitFor(() => expect(toggle()).toHaveAttribute('aria-expanded', 'false'));
+  });
+
+  it('deslizar hacia abajo el contenido de la hoja la cierra, no sólo la manija', async () => {
+    misQuodom.mockResolvedValue([]);
+    montar();
+    fireEvent.click(await findToggle());
+    const hoja = screen.getByRole('region', { name: /Quodoms activos/i });
+    const toque = (y: number) => ({ touches: [{ clientX: 100, clientY: y }] });
+
+    // Desde el texto del panel vacío, no desde la manija. Un tirón rápido.
+    const desde = screen.getByText(/armá tu primer quodom/i);
+    fireEvent.touchStart(desde, toque(300));
+    fireEvent.touchMove(desde, toque(330));
+    fireEvent.touchMove(desde, toque(420));
+    fireEvent.touchEnd(desde, { touches: [] });
+
+    await waitFor(() => expect(toggle()).toHaveAttribute('aria-expanded', 'false'));
+    expect(hoja).not.toBeInTheDocument();
+  });
+
+  it('con la lista scrolleada, deslizar hacia abajo scrollea y la hoja queda', async () => {
+    misQuodom.mockResolvedValue([]);
+    montar();
+    fireEvent.click(await findToggle());
+    const hoja = screen.getByRole('region', { name: /Quodoms activos/i });
+    hoja.scrollTop = 80;
+    const toque = (y: number) => ({ touches: [{ clientX: 100, clientY: y }] });
+
+    fireEvent.touchStart(hoja, toque(300));
+    fireEvent.touchMove(hoja, toque(330));
+    fireEvent.touchMove(hoja, toque(420));
+    fireEvent.touchEnd(hoja, { touches: [] });
+
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('sin Quodoms sigue estando, y lo dice', async () => {

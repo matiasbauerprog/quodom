@@ -51,6 +51,21 @@ const UNO = {
 };
 
 describe('GET /quodom/proveedores/:id', () => {
+  it('sin ninguna dirección contesta falta_direccion, no un error de ubicación', async () => {
+    // Borró su única dirección: el diálogo decía "No pudimos ubicar tu
+    // dirección", que es un error de mapa sobre una dirección que no existe.
+    const guardadas = await db.user_direcciones.findAll({ where: { userid: userId } });
+    await db.user_direcciones.destroy({ where: { userid: userId } });
+    try {
+      const res = await auth(request(app).get('/quodom/proveedores/' + idquodom));
+      expect(res.status).toBe(409);
+      expect(res.body.error).toBe('falta_direccion');
+      expect(places.buscarProveedores).not.toHaveBeenCalled();
+    } finally {
+      for (const d of guardadas) await db.user_direcciones.create(d.get({ plain: true }));
+    }
+  });
+
   it('devuelve los proveedores del rubro, con distancia y teléfono listo para WhatsApp', async () => {
     places.buscarProveedores.mockResolvedValue([UNO]);
 

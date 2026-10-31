@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { AvisoPuntoAproximado } from './AvisoPuntoAproximado';
 import { FilaProveedor } from './FilaProveedor';
 import { useProveedores } from './useProveedores';
@@ -32,9 +33,10 @@ type Props = {
  */
 export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSinProveedor }: Props) {
   const {
-    datos, cargando, error, errorEnvio, ocupado,
+    datos, cargando, error, faltaDireccion, errorEnvio, ocupado,
     preguntandoMotivo, setPreguntandoMotivo, enviarA, enviarSinProveedor, deshacer
   } = useProveedores(idquodom, { onEnviado, onEnviadoSinProveedor });
+  const location = useLocation();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !ocupado) onCerrar(); };
@@ -77,7 +79,19 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSin
           </ul>
         )}
 
-        {error && (
+        {faltaDireccion && (
+          // No es la búsqueda caída: no hay dirección (la borró, o el panel
+          // tenía el dato viejo). Enviar sin proveedor tampoco pasaría —el
+          // backend da el mismo 409—, así que la salida es cargarla.
+          <p className="dp-error" role="alert">
+            {error}{' '}
+            <Link to="/direcciones/nuevo" state={{ volver: location.pathname + location.search }} onClick={onCerrar}>
+              Cargar dirección
+            </Link>
+          </p>
+        )}
+
+        {error && !faltaDireccion && (
           // La salida está en el pie, justo debajo: el aviso la nombra porque
           // es lo único que el comprador puede hacer con esto.
           <p className="dp-error" role="alert">{error} Podés enviar sin elegir proveedor.</p>
@@ -112,7 +126,7 @@ export function DialogoProveedores({ idquodom, onCerrar, onEnviado, onEnviadoSin
             type="button"
             className="btn btn-ghost btn-block"
             onClick={enviarSinProveedor}
-            disabled={ocupado === 'sin-proveedor'}
+            disabled={ocupado === 'sin-proveedor' || faltaDireccion}
           >
             {ocupado === 'sin-proveedor' ? 'Abriendo WhatsApp…' : 'Enviar sin elegir proveedor'}
           </button>

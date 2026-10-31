@@ -15,6 +15,16 @@ async function listar(idquodom, userId) {
     if (!quodom) throw 'El Quodom no existe.';
     if (quodom.createdBy !== userId) throw 'El Id Quodom no pertenece a el usuario.';
 
+    // Sin ninguna dirección no hay a quién proponerle proveedores, y el envío
+    // tampoco va a pasar (`GET /quodom/whatsapp/:id` da el mismo 409). Antes
+    // esto caía en `sin_ubicacion`, que se lee como un problema del mapa sobre
+    // una dirección que el usuario acaba de borrar.
+    const alguna = await db.user_direcciones.findOne({ where: { userid: userId } });
+    if (!alguna) {
+        throw httpError(409, 'falta_direccion',
+            'Cargá una dirección antes de enviar: define a qué proveedores les llega el pedido.');
+    }
+
     const termino = terminoDeRubro(quodom.idrubro);
     if (!termino) {
         // Un rubro activo sin término es un olvido de configuración, no un caso

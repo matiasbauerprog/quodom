@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import {
   getGuestCart, guestRubrosConLineas, removeGuestLine, setGuestDescripcion,
@@ -61,6 +61,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
   const { user } = useAuth();
   const tieneDireccion = useTieneDireccion(!!user);
   const navigate = useNavigate();
+  const location = useLocation();
   const mode: Mode = id ? 'server' : 'guest';
 
   const [descripcion, setDescripcion] = useState<string>('');
@@ -521,7 +522,7 @@ export function DetalleQuodom({ idquodom, nombrar: nombrarProp, onNombrado, onCe
         <p className="dq-bloqueo" role="status">
           {bloqueo.texto}{' '}
           {bloqueo.motivo === 'direccion'
-            ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
+            ? <Link to="/direcciones/nuevo" state={{ volver: location.pathname + location.search }}>{bloqueo.accion}</Link>
             : 'Tocá "Elegir" en el producto que lo tenga.'}
         </p>
       )}

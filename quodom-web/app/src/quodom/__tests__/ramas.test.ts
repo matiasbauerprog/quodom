@@ -44,4 +44,16 @@ describe('ramasDeQuodoms', () => {
     expect(ramas.every(r => r.quodoms.length === 0)).toBe(true);
     expect(ramas.find(r => r.idrubro === 7)!.nombre).toBe('Bebidas');
   });
+
+  it('pone primero el Quodom usado más recientemente, y debajo el anterior', () => {
+    const usos = { b: 2000, c: 1000 };
+    const ramas = ramasDeQuodoms([q('a', 5), q('b', 5), q('c', 5)], TODOS, usos);
+    // `a` nunca se usó: queda al final, en el orden en que vino.
+    expect(ramas.find(r => r.idrubro === 5)!.quodoms.map(x => x.id)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('ordena los rubros por su último uso, y los nunca usados por idrubro', () => {
+    const ramas = ramasDeQuodoms([q('a', 1), q('b', 5), q('c', 7)], TODOS, { b: 100, c: 200 });
+    expect(ramas.map(r => r.idrubro)).toEqual([7, 5, 1, 2, 3]);
+  });
 });

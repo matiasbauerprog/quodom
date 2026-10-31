@@ -8,10 +8,13 @@ export function forgetLegacyToken(): void {
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** El `error` del cuerpo (`falta_direccion`, `rubro_mismatch`…), si vino. */
+  codigo?: string;
+  constructor(message: string, status: number, codigo?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.codigo = codigo;
   }
 }
 
@@ -50,7 +53,8 @@ export async function apiFetch<T = unknown>(path: string, options: Options = {})
 
   if (!res.ok) {
     const msg = (payload && payload.message) || 'Error del servidor.';
-    throw new ApiError(msg, res.status);
+    const codigo = payload && typeof payload.error === 'string' ? payload.error : undefined;
+    throw new ApiError(msg, res.status, codigo);
   }
   return payload as T;
 }
