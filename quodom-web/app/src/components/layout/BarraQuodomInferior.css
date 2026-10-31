@@ -108,6 +108,23 @@
   box-shadow: 0 -2px 8px rgba(0,0,0,.2);
 }
 .barra-quodom-fila .barra-quodom { flex: 1; min-width: 0; box-shadow: none; }
+/* Al costado del toggle y separado por una raya: es otra cosa (lo ya enviado),
+   no una parte del armado. Mismo alto que la fila, para que sea fácil de tocar. */
+.barra-quodom-historial {
+  flex-shrink: 0;
+  display: flex; align-items: center;
+  max-width: 34%;
+  padding: var(--sp-3) var(--sp-4);
+  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-prompt);
+  font-size: var(--fs-small);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+}
+.barra-quodom-historial:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
 
 /* Lo mismo que el panel oculto de escritorio: mientras se arrastra, la barra
    es el lugar donde se suelta (tapa la fila, del mismo alto o más), y lo que

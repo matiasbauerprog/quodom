@@ -40,6 +40,9 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
   const [datos, setDatos] = useState<RespuestaProveedores | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // No es una falla de la búsqueda: el usuario no tiene ninguna dirección (la
+  // borró). Se distingue porque la salida es otra: cargarla.
+  const [faltaDireccion, setFaltaDireccion] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   // Qué renglón está trabajando: un placeid, o 'sin-proveedor' para el pie.
   const [ocupado, setOcupado] = useState<string | null>(null);
@@ -60,7 +63,11 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
       setError(null);
     } catch (e) {
       setDatos(null);
-      setError(mensajeDeBusqueda(e));
+      const sinDireccion = e instanceof ApiError && e.codigo === 'falta_direccion';
+      setFaltaDireccion(sinDireccion);
+      // El texto del servidor sí sirve acá (lo escribió este repo y dice qué
+      // hacer); el diálogo, además, ofrece el link para cargarla.
+      setError(sinDireccion ? (e as ApiError).message : mensajeDeBusqueda(e));
     } finally {
       setCargando(false);
     }
@@ -145,7 +152,7 @@ export function useProveedores(idquodom: string, { onEnviado, onEnviadoSinProvee
   }
 
   return {
-    datos, cargando, error, errorEnvio, ocupado,
+    datos, cargando, error, faltaDireccion, errorEnvio, ocupado,
     preguntandoMotivo, setPreguntandoMotivo,
     enviarA, enviarSinProveedor, deshacer
   };

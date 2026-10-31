@@ -3,7 +3,7 @@ import { quodomLines } from '../api/quodom_lines';
 import { ApiError } from '../api/client';
 import type { Quodom } from '../api/types';
 import { addGuestLine, type GuestLine } from '../guest/guestQuodom';
-import { abiertoDe, abrirQuodom, cerrarQuodom } from './quodomAbierto';
+import { abiertoDe, abrirQuodom, cerrarQuodom, marcarUso } from './quodomAbierto';
 
 export type AgregarResult =
   | { estado: 'agregado'; idquodom: string | null }
@@ -48,6 +48,7 @@ export async function conAbierto(idrubro: number, agregar: (idquodom: string) =>
   if (!abierto) return null;
   try {
     await agregar(abierto);
+    marcarUso(abierto);
     return abierto;
   } catch (e) {
     if (!(e instanceof ApiError)) throw e;

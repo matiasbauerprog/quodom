@@ -27,7 +27,8 @@ describe('useQuodomsEnArmado', () => {
     const { result } = renderHook(() => useQuodomsEnArmado('u-1'));
 
     await waitFor(() => expect(result.current.list).not.toBeNull());
-    expect(result.current.ramas.map(r => r.idrubro)).toEqual([4, 5]);
+    // Pintura primero: es el rubro del último Quodom usado (abierto arriba).
+    expect(result.current.ramas.map(r => r.idrubro)).toEqual([5, 4]);
     expect(result.current.ramas.flatMap(r => r.quodoms).map(q => q.id)).toEqual(['p1']);
     expect(leerAbiertos()).toEqual({ 5: 'p1' });
   });

@@ -29,7 +29,13 @@ export function ListaDirecciones() {
   }
   async function eliminar(id: number) {
     if (!confirm('¿Eliminar esta dirección?')) return;
-    try { await userDirecciones.eliminar(id); setNonce(n => n + 1); }
+    try {
+      await userDirecciones.eliminar(id);
+      // Sin el aviso, el panel (que vive en el Layout) seguía creyendo que había
+      // dirección y dejaba tocar "Cotizar" sobre una cuenta que ya no tiene.
+      window.dispatchEvent(new Event('direcciones:changed'));
+      setNonce(n => n + 1);
+    }
     catch (e) { setErr(e instanceof ApiError ? e.message : 'Error.'); }
   }
 

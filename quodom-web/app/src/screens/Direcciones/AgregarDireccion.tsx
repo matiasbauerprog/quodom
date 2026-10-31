@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { provincias } from '../../api/provincias';
 import { localidades } from '../../api/localidades';
 import { userDirecciones, DireccionInput } from '../../api/user_direcciones';
@@ -13,6 +13,11 @@ import './AgregarDireccion.css';
 
 export function AgregarDireccion() {
   const navigate = useNavigate();
+  // Quien vino desde un Quodom ("Falta tu dirección") vuelve a él al guardar.
+  // Sólo rutas internas: el `state` lo escribe la app, pero no se confía en él.
+  const volverCrudo = (useLocation().state as { volver?: unknown } | null)?.volver;
+  const volver = typeof volverCrudo === 'string' && volverCrudo.startsWith('/') && !volverCrudo.startsWith('//')
+    ? volverCrudo : null;
   const [provs, setProvs] = useState<Provincia[]>([]);
   const [locs, setLocs] = useState<Localidad[]>([]);
   const [f, setF] = useState<DireccionInput>({ default: false });
@@ -34,7 +39,7 @@ export function AgregarDireccion() {
       // El sidebar vive en el Layout y no se desmonta al cambiar de pantalla:
       // sin este aviso seguiría bloqueando el envío por falta de dirección.
       window.dispatchEvent(new Event('direcciones:changed'));
-      navigate('/direcciones', { replace: true });
+      navigate(volver ?? '/direcciones', { replace: true });
     } catch (e) { setErr(e instanceof ApiError ? e.message : 'No se pudo guardar.'); }
     finally { setBusy(false); }
   }

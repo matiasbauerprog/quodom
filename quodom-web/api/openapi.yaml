@@ -939,7 +939,9 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409':
-          description: No se puede ubicar la dirección ni por su localidad
+          description: >-
+            El usuario no tiene ninguna dirección cargada (falta_direccion), o la
+            que tiene no se puede ubicar ni por su localidad (sin_ubicacion).
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
         '429': { $ref: '#/components/responses/TooMany' }
         '503': { $ref: '#/components/responses/ServicioExterno' }

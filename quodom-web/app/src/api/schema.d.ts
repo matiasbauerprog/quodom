@@ -1514,7 +1514,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
-                /** @description No se puede ubicar la dirección ni por su localidad */
+                /** @description El usuario no tiene ninguna dirección cargada (falta_direccion), o la que tiene no se puede ubicar ni por su localidad (sin_ubicacion). */
                 409: {
                     headers: {
                         [name: string]: unknown;

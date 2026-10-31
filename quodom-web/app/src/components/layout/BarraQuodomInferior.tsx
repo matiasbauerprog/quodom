@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { resumenCarritosInvitado } from '../../guest/resumenInvitado';
 import { AvisoSinGuardar } from '../AvisoSinGuardar';
@@ -43,6 +43,7 @@ export function BarraQuodomInferior() {
   const { user } = useAuth();
   const { list, ramas, refresh } = useQuodomsEnArmado(user?.id);
   const [params] = useSearchParams();
+  const { pathname } = useLocation();
   const enPantalla = Number(params.get('rubro')) || null;
   const [invitados, setInvitados] = useState<ItemActivo[]>(itemsCarritosInvitado);
   const [abierto, setAbierto] = useState(false);
@@ -61,7 +62,7 @@ export function BarraQuodomInferior() {
   const panel = useRef<HTMLDivElement>(null);
   const altoHoja = useCallback(() => panel.current?.offsetHeight || window.innerHeight * 0.4, []);
   const cambiarConGesto = useCallback((a: boolean) => { abiertaPorArrastre.current = false; setAbierto(a); }, []);
-  const hoja = useHojaDeslizable({ abierta: abierto, onCambio: cambiarConGesto, alto: altoHoja });
+  const hoja = useHojaDeslizable({ abierta: abierto, onCambio: cambiarConGesto, alto: altoHoja, cuerpo: panel });
   const tieneDireccion = useTieneDireccion(!!user);
   // Como en el panel de escritorio: vive acá y no en la tarjeta, porque el envío
   // saca al Quodom del árbol y el diálogo se iría con él.
@@ -80,6 +81,19 @@ export function BarraQuodomInferior() {
       window.removeEventListener('quodom:abierto', releer);
     };
   }, [user?.id]);
+
+  // Cambiar de pantalla la cierra. Vive en el Layout y no se desmonta, así que
+  // al tocar "Cargar dirección" quedaba abierta tapando la mitad de abajo del
+  // formulario —y con ella las sugerencias del buscador—: en celular no se podía
+  // cargar la dirección desde el Quodom (en escritorio el panel va al costado).
+  // Sólo la ruta: `?rubro`, `?sub` y `?quodom` son la misma pantalla.
+  const rutaAnterior = useRef(pathname);
+  useEffect(() => {
+    if (rutaAnterior.current === pathname) return;
+    rutaAnterior.current = pathname;
+    abiertaPorArrastre.current = false;
+    setAbierto(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!abierto) return;
@@ -219,6 +233,7 @@ export function BarraQuodomInferior() {
           <div
             className="barra-quodom-manija"
             data-testid="barra-manija"
+            data-hoja-agarre
             aria-hidden="true"
             onPointerDown={hoja.onPointerDown}
             onClick={() => { if (!hoja.consumirClic()) setAbierto(false); }}
@@ -277,6 +292,12 @@ export function BarraQuodomInferior() {
         </span>
         <span className="barra-quodom-arrow" aria-hidden="true">{abierto ? '⌄' : '⌃'}</span>
       </button>
+      {/* En escritorio "Ver historial" está en la cabecera del panel y el menú
+          siempre a la vista; en celular el menú está escondido y lo enviado
+          no tenía una entrada a mano (lo pidió el usuario, 2026-10-31). */}
+      {user && (
+        <Link to="/mis-quodoms" className="barra-quodom-historial">Historial de pedidos</Link>
+      )}
       </div>
       {proveedoresDe && (
         <DialogoProveedores

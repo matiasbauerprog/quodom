@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { leerAbiertos, abiertoDe, abrirQuodom, cerrarQuodom, sanearAbiertos } from '../quodomAbierto';
+import { leerAbiertos, abiertoDe, abrirQuodom, cerrarQuodom, sanearAbiertos, leerUsos, marcarUso } from '../quodomAbierto';
 
 beforeEach(() => { localStorage.clear(); });
 
@@ -66,5 +66,25 @@ describe('quodomAbierto', () => {
     localStorage.setItem('quodom.abierto', '["no", "es", "un", "mapa"]');
 
     expect(leerAbiertos()).toEqual({});
+  });
+});
+
+describe('usos', () => {
+  it('abrir un Quodom lo marca como usado', () => {
+    abrirQuodom(5, 'q1');
+    expect(leerUsos().q1).toEqual(expect.any(Number));
+  });
+
+  it('sanear olvida el uso de los que ya no están en armado', () => {
+    marcarUso('vivo', 1); marcarUso('enviado', 2);
+    sanearAbiertos(['vivo']);
+    expect(leerUsos()).toEqual({ vivo: 1 });
+  });
+
+  it('ignora basura en localStorage', () => {
+    localStorage.setItem('quodom.usos', '{"a":"x","b":3}');
+    expect(leerUsos()).toEqual({ b: 3 });
+    localStorage.setItem('quodom.usos', 'no-json');
+    expect(leerUsos()).toEqual({});
   });
 });

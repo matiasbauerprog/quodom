@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
 /** Desde cuántos px un gesto deja de ser un toque. */
 const UMBRAL = 6;
@@ -18,6 +18,20 @@ export function decidirFinal(desplazamiento: number, velocidad: number, alto: nu
 }
 
 /**
+ * Un gesto que empieza en el **contenido** de la hoja abierta: ¿lo toma la hoja
+ * o es scroll? Se decide una vez, con el primer movimiento que pasa el umbral
+ * (`null` mientras no lo pasa). Lo toma la hoja sólo si la lista estaba arriba
+ * de todo al apoyar el dedo y el gesto va hacia abajo y más vertical que
+ * horizontal: es la regla de las hojas nativas, y sin ella deslizar para leer
+ * la lista la cerraría.
+ */
+export function quienTomaElGesto(scrollTopAlEmpezar: number, dx: number, dy: number): 'hoja' | 'scroll' | null {
+  if (scrollTopAlEmpezar > 0) return 'scroll';
+  if (Math.abs(dx) < UMBRAL && Math.abs(dy) < UMBRAL) return null;
+  return dy > 0 && Math.abs(dy) > Math.abs(dx) ? 'hoja' : 'scroll';
+}
+
+/**
  * Abrir y cerrar la hoja de la barra deslizando el dedo, a mano y con eventos
  * de puntero, como el arrastre de productos: sin dependencias. Los manejadores
  * van en lo que se agarra (la fila de la barra y la manija de la hoja), que
@@ -26,10 +40,15 @@ export function decidirFinal(desplazamiento: number, velocidad: number, alto: nu
  * Mientras dura el gesto la hoja sigue al dedo (`desplazamiento`, en px desde
  * su posición de reposo) y está montada aunque arranque cerrada, para verla subir.
  */
-export function useHojaDeslizable({ abierta, onCambio, alto }: {
+export function useHojaDeslizable({ abierta, onCambio, alto, cuerpo }: {
   abierta: boolean;
   onCambio: (abierta: boolean) => void;
   alto: () => number;
+  /** El contenido que scrollea: con la hoja abierta, bajarlo desde arriba de
+   *  todo también la cierra (lo pidió el usuario, 2026-10-31: agarrarla sólo de
+   *  la manija era apuntarle a una rayita). Lo que lleva `data-hoja-agarre` ya
+   *  tiene sus propios manejadores de puntero y se saltea. */
+  cuerpo?: RefObject<HTMLElement>;
 }) {
   const [arrastrando, setArrastrando] = useState(false);
   const [desplazamiento, setDesplazamiento] = useState(0);
@@ -81,6 +100,65 @@ export function useHojaDeslizable({ abierta, onCambio, alto }: {
     window.addEventListener('pointercancel', limpiar);
     fin.current = limpiar;
   }, [abierta, onCambio, alto]);
+
+  // Con eventos táctiles y no de puntero: en un contenido que scrollea, el
+  // navegador se queda con el gesto y manda `pointercancel` apenas el dedo se
+  // mueve. `touchmove` no pasivo es lo único que deja frenar ese scroll.
+  useEffect(() => {
+    const el = cuerpo?.current;
+    if (!el || !abierta) return;
+    let estado: 'hoja' | 'scroll' | null = 'scroll';
+    let x0 = 0, y0 = 0, scrollInicial = 0, dy = 0, velocidad = 0;
+    let ultimo = { y: 0, t: 0 };
+
+    const empezar = (e: TouchEvent) => {
+      const t = e.touches[0];
+      const agarre = e.target instanceof Element && e.target.closest('[data-hoja-agarre]');
+      if (e.touches.length !== 1 || !t || agarre) { estado = 'scroll'; return; }
+      x0 = t.clientX; y0 = t.clientY; dy = 0; velocidad = 0;
+      scrollInicial = el.scrollTop;
+      ultimo = { y: t.clientY, t: performance.now() };
+      estado = null;
+    };
+    const mover = (e: TouchEvent) => {
+      if (estado === 'scroll') return;
+      const t = e.touches[0];
+      if (!t) return;
+      dy = t.clientY - y0;
+      if (estado === null) {
+        estado = quienTomaElGesto(scrollInicial, t.clientX - x0, dy);
+        if (estado !== 'hoja') return;
+        setArrastrando(true);
+      }
+      e.preventDefault();
+      const ahora = performance.now();
+      const dt = ahora - ultimo.t;
+      if (dt > 0) velocidad = (t.clientY - ultimo.y) / dt;
+      ultimo = { y: t.clientY, t: ahora };
+      setDesplazamiento(dy);
+    };
+    const terminar = (e: TouchEvent) => {
+      const eraHoja = estado === 'hoja';
+      estado = 'scroll';
+      if (!eraHoja) return;
+      setArrastrando(false);
+      setDesplazamiento(0);
+      tragarClic.current = true;
+      setTimeout(() => { tragarClic.current = false; }, 400);
+      // Cancelado (el sistema se llevó el toque), la hoja vuelve a donde estaba.
+      if (e.type === 'touchend') onCambio(decidirFinal(dy, velocidad, alto(), true));
+    };
+    el.addEventListener('touchstart', empezar, { passive: true });
+    el.addEventListener('touchmove', mover, { passive: false });
+    el.addEventListener('touchend', terminar);
+    el.addEventListener('touchcancel', terminar);
+    return () => {
+      el.removeEventListener('touchstart', empezar);
+      el.removeEventListener('touchmove', mover);
+      el.removeEventListener('touchend', terminar);
+      el.removeEventListener('touchcancel', terminar);
+    };
+  }, [abierta, onCambio, alto, cuerpo]);
 
   /** Lo llama el `onClick` de lo que se agarra: true si el clic es el final de
    *  un gesto y hay que ignorarlo. */

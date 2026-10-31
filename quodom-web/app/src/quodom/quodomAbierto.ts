@@ -38,6 +38,7 @@ export function abiertoDe(idrubro: number): string | null {
 export function abrirQuodom(idrubro: number, idquodom: string): void {
   const mapa = leerAbiertos();
   mapa[idrubro] = idquodom;
+  marcarUso(idquodom);
   guardar(mapa);
 }
 
@@ -53,10 +54,50 @@ export function cerrarQuodom(idrubro: number): void {
  * el resto ya sabe resolver, así que eso es lo que queda.
  */
 export function sanearAbiertos(vivos: string[]): void {
+  const usos = leerUsos();
+  if (Object.keys(usos).some(id => !vivos.includes(id))) {
+    for (const id of Object.keys(usos)) if (!vivos.includes(id)) delete usos[id];
+    try { localStorage.setItem(CLAVE_USOS, JSON.stringify(usos)); } catch {}
+  }
   const mapa = leerAbiertos();
   let cambio = false;
   for (const clave of Object.keys(mapa)) {
     if (!vivos.includes(mapa[Number(clave)])) { delete mapa[Number(clave)]; cambio = true; }
   }
   if (cambio) guardar(mapa);
+}
+
+const CLAVE_USOS = 'quodom.usos';
+
+/**
+ * Cuándo se usó por última vez cada Quodom en armado: `{ id: epoch ms }`.
+ *
+ * El árbol los muestra del más usado al menos usado (lo pidió el usuario,
+ * 2026-10-31). Antes salían por fecha de creación, así que "el que estoy usando
+ * primero" se cumplía sólo cuando el que se usaba era también el último creado
+ * — y eso se veía como un orden que a veces andaba y a veces no. Usar es
+ * abrirlo o agregarle algo. Como "abierto", es estado del navegador.
+ */
+export type Usos = Record<string, number>;
+
+export function leerUsos(): Usos {
+  try {
+    const crudo = localStorage.getItem(CLAVE_USOS);
+    if (!crudo) return {};
+    const p = JSON.parse(crudo);
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return {};
+    const limpio: Usos = {};
+    for (const [k, v] of Object.entries(p as Record<string, unknown>)) {
+      if (typeof v === 'number' && Number.isFinite(v)) limpio[k] = v;
+    }
+    return limpio;
+  } catch {
+    return {};
+  }
+}
+
+export function marcarUso(idquodom: string, cuando: number = Date.now()): void {
+  const usos = leerUsos();
+  usos[idquodom] = cuando;
+  try { localStorage.setItem(CLAVE_USOS, JSON.stringify(usos)); } catch {}
 }

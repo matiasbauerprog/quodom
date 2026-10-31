@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { Quodom } from '../../api/types';
 import { LineasQuodomSidebar } from './LineasQuodomSidebar';
 import { bloqueoDeEnvio, conFaltaConcreta, type FaltaAtributo } from '../../quodom/bloqueosEnvio';
@@ -23,6 +23,9 @@ export function CuerpoQuodomAbierto({ q, tieneDireccion, onCambio, onCotizar }: 
   // Qué línea frena el envío, para nombrarla en el motivo. La reporta la lista,
   // que es la única que tiene las líneas.
   const [falta, setFalta] = useState<FaltaAtributo | null>(null);
+  // Guardada la dirección, se vuelve acá y no a la lista de direcciones: se
+  // fue a cargarla para poder cotizar.
+  const location = useLocation();
   // El bloqueo lo decide el resumen (es el que coincide con lo que va a
   // contestar el backend); las líneas sólo le ponen nombre.
   const bloqueo = conFaltaConcreta(bloqueoDeEnvio(q, tieneDireccion), falta);
@@ -42,7 +45,7 @@ export function CuerpoQuodomAbierto({ q, tieneDireccion, onCambio, onCotizar }: 
             <span>
               {bloqueo.texto}{' '}
               {bloqueo.motivo === 'direccion'
-                ? <Link to="/direcciones/nuevo">{bloqueo.accion}</Link>
+                ? <Link to="/direcciones/nuevo" state={{ volver: location.pathname + location.search }}>{bloqueo.accion}</Link>
                 : <span>{bloqueo.accion}</span>}
             </span>
           </p>
